@@ -12,9 +12,13 @@ database, with enforced internal boundaries.
 Companion documents: `docs/BASELINE.md` records the audit this contract was
 built on and the toolchain measured on the machine. `docs/adr/` records the
 decisions behind it — when an ADR and this document disagree, the most recent
-accepted ADR is correct and this document needs updating. As of this writing the repository
-still contains no application code; this document describes the target that the
-first scaffold must satisfy, and every path below is a path to be created.
+accepted ADR is correct and this document needs updating.
+
+Implementation status: the application foundation exists — Next.js App Router,
+TypeScript, the `src/` layout below, configuration validation, and the ESLint
+boundary rules that enforce section 4. No business features, database, or
+authentication have been built, so `prisma/`, `tests/`, and most module layers
+are still targets rather than existing files.
 
 ## 1. Why a modular monolith
 
@@ -32,55 +36,61 @@ boundaries defined here are what make extracting it possible.
 ## 2. Directory structure
 
 ```
-app/                      Delivery layer: routing, rendering, HTTP only
-  (storefront)/           Public: catalogue, product, cart, checkout
-  (account)/              Authenticated customer area
-  admin/                  Staff-only catalogue and order management
-  api/                    Route handlers for webhooks and non-UI clients
-modules/                  Domain layer: the modular-monolith seam
-  catalog/
-    index.ts              PUBLIC ENTRY POINT — the module's only export
-    service.ts            Use cases; the only caller of this module's repo
-    repository.ts         Data access; the only file that touches catalog tables
-    types.ts              Domain types exported through index.ts
-  cart/
-  orders/
-  payments/
-  delivery/
-  identity/
-  media/
-  pricing/
-lib/                      Cross-cutting infrastructure with no domain knowledge
-  db.ts                   Database client and transaction helper
-  config.ts               Validated environment configuration
-  logger.ts               Structured logging
-  errors.ts               Error taxonomy
-  i18n/                   Locale resolution and message catalogues
+src/
+  app/                    Delivery layer: routing, rendering, HTTP only
+    (storefront)/         Public: catalogue, product, cart, checkout
+    (account)/            Authenticated customer area
+    admin/                Staff-only catalogue and order management
+    api/                  Route handlers for webhooks and non-UI clients
+  modules/                Domain layer: the modular-monolith seam
+    catalog/
+      index.ts            PUBLIC ENTRY POINT — the module's only export
+      domain/             Pure business rules; no I/O, no framework, no config
+      application/        Use cases and the ports they depend on
+      infrastructure/     Port implementations: Prisma repositories, adapters
+    cart/
+    orders/
+    payments/
+    delivery/
+    identity/
+    media/
+    pricing/
+  lib/                    Cross-cutting infrastructure with no domain knowledge
+    db.ts                 Database client and transaction helper
+    config.ts             Validated environment configuration
+    logger.ts             Structured logging
+    errors.ts             Error taxonomy
+    i18n/                 Locale resolution and message catalogues
 prisma/
   schema.prisma           Single Prisma schema; models grouped by owning module
   migrations/             Generated SQL migrations, committed and reviewed
+scripts/                  Operational scripts, run outside the application
 tests/
   integration/            Cross-module tests against a real database
 docs/
 ```
 
+Path aliases are `@/app/*`, `@/modules/*`, and `@/lib/*`. There is deliberately
+no catch-all `@/*` alias: the three explicit aliases are what make the import
+restrictions in section 4 expressible.
+
 Nothing else belongs at the root of `modules/`. A new domain concept is either a
-new module folder with the same four files, or it belongs inside an existing one.
+new module folder with the same shape, or it belongs inside an existing one.
 
 ## 3. Domain modules
 
 Each module owns a slice of the business and the tables backing it.
 
-| Module | Owns | Does not own |
-| --- | --- | --- |
-| `catalog` | Products, variants (frame size, colour), categories, specifications, stock levels | Prices shown to customers |
-| `pricing` | Price calculation, VAT presentation, discounts, currency formatting | Product identity |
-| `cart` | Cart aggregate, line items, quantity rules | Payment, stock decrement |
-| `orders` | Order lifecycle and status transitions, order history | Payment execution, shipment tracking |
-| `payments` | Payment provider abstraction, transaction records, webhook verification | Order status semantics |
-| `delivery` | Shipping methods, regional zones, cost calculation, pickup points | Order status semantics |
-| `identity` | Users, sessions, roles, addresses | Order data |
-| `media` | Image upload, storage references, derivative URLs | Which product an image belongs to |
+| Module     | Owns                                                                              | Does not own                         |
+| ---------- | --------------------------------------------------------------------------------- | ------------------------------------ |
+| `catalog`  | Products, variants (frame size, colour), categories, specifications, stock levels | Prices shown to customers            |
+| `pricing`  | Price calculation, VAT presentation, discounts, currency formatting               | Product identity                     |
+| `cart`     | Cart aggregate, line items, quantity rules                                        | Payment, stock decrement             |
+| `orders`   | Order lifecycle and status transitions, order history                             | Payment execution, shipment tracking |
+| `payments` | Payment provider abstraction, transaction records, webhook verification           | Order status semantics               |
+| `delivery` | Shipping methods, regional zones, cost calculation, pickup points                 | Order status semantics               |
+| `identity` | Users, sessions, roles, addresses                                                 | Order data                           |
+| `media`    | Image upload, storage references, derivative URLs                                 | Which product an image belongs to    |
 
 `catalog` and `pricing` are deliberately separate: promotions, VAT display, and
 currency rules change on a different schedule from the product catalogue, and
@@ -88,17 +98,34 @@ merging them tends to scatter price logic across product queries.
 
 ### Module anatomy
 
-`index.ts` is the module's entire public surface. It re-exports the service
-functions and the domain types other modules may use, and nothing else.
+A module is layered internally by how much each part is allowed to depend on:
 
-```ts
-// modules/catalog/index.ts
-export { getProductBySlug, listProducts, reserveStock } from "./service";
-export type { Product, ProductVariant } from "./types";
+```
+infrastructure/  ->  application/  ->  domain/
 ```
 
-`repository.ts` is never exported and never imported from outside the module. If another module needs data that lives behind them, the
-owning module adds a function to its service and exports it.
+- `domain/` depends on nothing. Entities, value objects, invariants, and state
+  transitions live here and must be testable in milliseconds with no database.
+  It may not import `lib/`, the framework, or its own sibling layers.
+- `application/` defines the **ports** it needs — a repository, a payment
+  provider, a clock — and implements use cases against them. Dependencies
+  arrive as arguments, never as imports of concrete implementations. This is
+  what keeps use cases unit-testable and callable from background jobs.
+- `infrastructure/` implements those ports and is the only place a Prisma
+  client, HTTP client, or third-party SDK may appear.
+
+`index.ts` is the module's entire public surface. It re-exports the use cases
+and domain types other modules may use, and nothing else.
+
+```ts
+// src/modules/catalog/index.ts
+export { getProductBySlug, listProducts, reserveStock } from "./application/use-cases";
+export type { Product, ProductVariant } from "./domain/product";
+```
+
+The three internal layers are never imported from outside the module. If
+another module needs data behind them, the owning module adds a use case and
+exports it from `index.ts`.
 
 ## 4. Dependency direction
 
@@ -116,17 +143,20 @@ The rules, each of which a reviewer can check mechanically:
 3. `lib/` may not import from `app/` or `modules/`. It contains no domain
    knowledge; if something in `lib/` mentions a bicycle, an order, or a price, it
    is in the wrong place.
-4. No module may import another module's `repository.ts` or `service.ts`
-   directly. `import { x } from "@/modules/orders"` is permitted;
-   `import { x } from "@/modules/orders/repository"` is not.
-5. No import cycles between modules. If `orders` and `payments` each need the
+4. No module may import another module's internals.
+   `import { x } from "@/modules/orders"` is permitted;
+   `import { x } from "@/modules/orders/application/use-cases"` is not.
+5. A module's `domain/` layer imports nothing outside itself — not `lib/`, not
+   the framework, not its own `application/` or `infrastructure/`.
+6. No import cycles between modules. If `orders` and `payments` each need the
    other, the dependency is inverted: `orders` defines an interface, `payments`
    is passed in.
 
-Enforcement is not left to discipline. The scaffold must configure an ESLint
-`no-restricted-imports` rule (or equivalent boundary plugin) that fails the build
-on deep module imports and on any import from `lib/` into a domain module's
-direction of travel. A boundary that CI does not check is a suggestion.
+Enforcement is not left to discipline. Rules 1–5 are implemented as
+`no-restricted-imports` blocks in `eslint.config.mjs` and fail `pnpm lint`,
+which CI runs on every pull request. A lint error from that rule is a design
+error, not a style complaint. A boundary that CI does not check is a
+suggestion.
 
 Direction of concrete couplings: `cart` depends on `catalog` and `pricing`;
 `orders` depends on `cart`, `catalog`, and `identity`; `payments` and `delivery`
@@ -169,11 +199,11 @@ components, so **there is no general-purpose public REST API and none should be
 built speculatively.** HTTP endpoints exist only where something outside our
 rendering pipeline must call in.
 
-| Surface | Location | Use for |
-| --- | --- | --- |
-| Server components | `app/**/page.tsx` | Reading data for rendering |
-| Server actions | `app/**/actions.ts` | Mutations from our own UI |
-| Route handlers | `app/api/**/route.ts` | Payment webhooks, health checks, sitemap, future third-party clients |
+| Surface           | Location              | Use for                                                              |
+| ----------------- | --------------------- | -------------------------------------------------------------------- |
+| Server components | `app/**/page.tsx`     | Reading data for rendering                                           |
+| Server actions    | `app/**/actions.ts`   | Mutations from our own UI                                            |
+| Route handlers    | `app/api/**/route.ts` | Payment webhooks, health checks, sitemap, future third-party clients |
 
 Rules for all three: every entry point validates its input with a schema
 (Zod or equivalent) at the boundary and passes typed, validated data inward, so
@@ -216,7 +246,7 @@ know which provider is in use.
 export interface PaymentProvider {
   createPayment(input: {
     orderId: string;
-    amountMinor: number;   // integer minor units, never floats
+    amountMinor: number; // integer minor units, never floats
     currency: "BYN";
     returnUrl: string;
   }): Promise<{ paymentId: string; redirectUrl: string }>;
@@ -250,8 +280,10 @@ Belpochta, and in-store collection are not yet decided.
 ```ts
 export interface DeliveryMethod {
   readonly code: string;
-  quote(input: { destination: Destination; items: ParcelItem[] }):
-    Promise<{ costMinor: number; estimatedDays: number } | null>;
+  quote(input: {
+    destination: Destination;
+    items: ParcelItem[];
+  }): Promise<{ costMinor: number; estimatedDays: number } | null>;
 }
 ```
 
@@ -338,11 +370,11 @@ pipeline, or log aggregation cluster is in scope.**
 
 Weighted toward the layers where ecommerce bugs actually cost money.
 
-| Layer | Tool | Covers | Speed |
-| --- | --- | --- | --- |
-| Unit | Vitest | Pricing arithmetic, VAT, delivery cost rules, order state transitions, cart quantity rules | Milliseconds, no I/O |
-| Integration | Vitest + real Postgres | Repositories and service use cases against actual SQL, including transaction rollback | Seconds |
-| End-to-end | Playwright | Browse, add to cart, checkout with the mock payment provider | Slowest; few of them |
+| Layer       | Tool                   | Covers                                                                                     | Speed                |
+| ----------- | ---------------------- | ------------------------------------------------------------------------------------------ | -------------------- |
+| Unit        | Vitest                 | Pricing arithmetic, VAT, delivery cost rules, order state transitions, cart quantity rules | Milliseconds, no I/O |
+| Integration | Vitest + real Postgres | Repositories and service use cases against actual SQL, including transaction rollback      | Seconds              |
+| End-to-end  | Playwright             | Browse, add to cart, checkout with the mock payment provider                               | Slowest; few of them |
 
 Rules:
 
@@ -446,12 +478,14 @@ silently settled by whoever writes the first line of relevant code.
 7. **Admin scope: custom admin area or an off-the-shelf CMS.** Determines
    whether `app/admin/` is built out at all. Note that ADR-0006's manual-first
    delivery assumes staff have somewhere to record tracking references.
-8. **VAT and currency presentation.** Business decision. Blocks `pricing`.
+8. **Styling approach.** The foundation ships plain CSS. Tailwind 4.x was the
+   baseline's recommendation but is neither installed nor decided.
+9. **VAT and currency presentation.** Business decision. Blocks `pricing`.
    ADR-0010 fixes the representation; how VAT is displayed and whether a second
    currency is shown are not settled.
-9. **Whether Belarusian is added as a second locale.** Business decision.
-   ADR-0009 ships Russian-only and defers the routing segment; this answer
-   activates that deferred work.
+10. **Whether Belarusian is added as a second locale.** Business decision.
+    ADR-0009 ships Russian-only and defers the routing segment; this answer
+    activates that deferred work.
 
 Amending this document is expected as these resolve. Amend it in the pull
 request that makes the change, and record the decision as a new ADR.

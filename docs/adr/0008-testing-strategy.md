@@ -14,11 +14,11 @@ how often tests get run.
 
 Three tiers, weighted toward where defects are expensive.
 
-| Tier | Tool | Covers |
-| --- | --- | --- |
-| Unit | Vitest | Pricing and VAT arithmetic, delivery rate rules, order state transitions, cart quantity rules |
-| Integration | Vitest + real PostgreSQL | Repositories and service use cases against actual SQL, including transaction behaviour |
-| End-to-end | Playwright | Browse, add to cart, checkout against the mock payment provider |
+| Tier        | Tool                     | Covers                                                                                        |
+| ----------- | ------------------------ | --------------------------------------------------------------------------------------------- |
+| Unit        | Vitest                   | Pricing and VAT arithmetic, delivery rate rules, order state transitions, cart quantity rules |
+| Integration | Vitest + real PostgreSQL | Repositories and service use cases against actual SQL, including transaction behaviour        |
+| End-to-end  | Playwright               | Browse, add to cart, checkout against the mock payment provider                               |
 
 Binding rules:
 

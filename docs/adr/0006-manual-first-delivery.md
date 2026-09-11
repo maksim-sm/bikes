@@ -27,8 +27,10 @@ still exposes the interface from `docs/architecture.md`:
 ```ts
 export interface DeliveryMethod {
   readonly code: string;
-  quote(input: { destination: Destination; items: ParcelItem[] }):
-    Promise<{ costMinor: number; estimatedDays: number } | null>;
+  quote(input: {
+    destination: Destination;
+    items: ParcelItem[];
+  }): Promise<{ costMinor: number; estimatedDays: number } | null>;
 }
 ```
 

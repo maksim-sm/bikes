@@ -1,0 +1,60 @@
+# Domain modules
+
+Each folder here is one domain module as defined in `docs/architecture.md`.
+Modules own their tables exclusively, expose a single public entry point, and
+never reach into each other's internals.
+
+## Internal layering
+
+Within a module, code is separated by how much it is allowed to depend on:
+
+```
+modules/<name>/
+  index.ts            PUBLIC ENTRY POINT — the only file other modules may import
+  domain/             Pure business rules. No I/O, no framework, no config.
+  application/        Use cases. Orchestrates domain logic and calls ports.
+  infrastructure/     Implementations of ports: Prisma repositories, provider adapters.
+```
+
+The dependency direction inside a module mirrors the one between layers:
+
+```
+infrastructure/  ->  application/  ->  domain/
+```
+
+- `domain/` depends on nothing. Entities, value objects, invariants, and state
+  transitions live here, and they must be testable in milliseconds with no
+  database. ESLint enforces that this directory imports neither `@/lib/*` nor
+  the module's own `application/` or `infrastructure/`.
+- `application/` defines the **ports** (interfaces) it needs — a repository, a
+  payment provider, a clock — and implements use cases against them. It
+  receives its dependencies as arguments rather than importing concrete
+  implementations, which is what keeps use cases unit-testable and callable
+  from background jobs.
+- `infrastructure/` implements those ports. It is the only place a Prisma
+  client, an HTTP client, or a third-party SDK may appear.
+- `index.ts` re-exports the use cases and domain types other modules may use,
+  and nothing else. Everything below it is internal.
+
+## Adding a module
+
+Create the folder, add `index.ts`, and add the layers you actually need — a
+module with no external dependencies does not need an `infrastructure/`
+directory yet. Do not create a module for something that is a concept inside an
+existing one.
+
+## Current modules
+
+These are structural placeholders. No business logic exists yet; the folders
+establish ownership so that the first feature has an obvious home.
+
+| Module     | Owns                                                  |
+| ---------- | ----------------------------------------------------- |
+| `catalog`  | Products, variants, categories, specifications, stock |
+| `pricing`  | Price calculation, VAT, discounts, currency rules     |
+| `cart`     | Cart aggregate, line items, quantity rules            |
+| `orders`   | Order lifecycle and status transitions                |
+| `payments` | Payment provider abstraction and transaction records  |
+| `delivery` | Shipping methods, zones, cost calculation             |
+| `identity` | Users, sessions, roles, addresses                     |
+| `media`    | Image storage abstraction                             |

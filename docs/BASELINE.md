@@ -29,17 +29,17 @@ Consequences for the surrounding tasks:
 
 Measured on the audit machine, not inferred from config:
 
-| Tool | Version | Notes |
-| --- | --- | --- |
-| Node.js | 22.14.0 | Active LTS line; satisfies Next.js `engines.node >= 20.9.0` |
-| npm | 10.9.7 | Available |
-| pnpm | 10.33.3 | Available |
-| Yarn | 1.22.22 | Classic only |
-| Bun | not installed | — |
-| Python | 3.12.3 | Not needed for the intended stack |
-| Docker | not installed | Blocks local containerised Postgres |
-| PostgreSQL client (`psql`) | not installed | No local database server present |
-| Redis | not installed | No cache/queue backend present |
+| Tool                       | Version       | Notes                                                       |
+| -------------------------- | ------------- | ----------------------------------------------------------- |
+| Node.js                    | 22.14.0       | Active LTS line; satisfies Next.js `engines.node >= 20.9.0` |
+| npm                        | 10.9.7        | Available                                                   |
+| pnpm                       | 10.33.3       | Available                                                   |
+| Yarn                       | 1.22.22       | Classic only                                                |
+| Bun                        | not installed | —                                                           |
+| Python                     | 3.12.3        | Not needed for the intended stack                           |
+| Docker                     | not installed | Blocks local containerised Postgres                         |
+| PostgreSQL client (`psql`) | not installed | No local database server present                            |
+| Redis                      | not installed | No cache/queue backend present                              |
 
 Other environment facts:
 
@@ -88,16 +88,16 @@ layer never touches the database directly.
 
 Decisions still open, with the recommendation and its reason:
 
-| Concern | Recommendation | Reason |
-| --- | --- | --- |
-| Framework | Next.js (App Router) | Server-rendered catalogue matters for SEO on a retail storefront |
-| Package manager | pnpm | Already installed at 10.33.3; strict module resolution catches accidental cross-module imports |
-| Database | PostgreSQL | Relational order/inventory data with transactional integrity |
-| ORM | Prisma, pinned to stable 7.10.0 | Settled in ADR-0004; see the version risk in section 5 |
-| Auth | Auth.js / NextAuth | Sessions plus a role flag for admin access |
-| Styling | Tailwind CSS 4.x | Utility-first; low ceremony for a small team |
-| Tests | Vitest | Fast unit tests; add Playwright later for checkout flows |
-| Deployment | Not chosen | Depends on where Postgres will be hosted |
+| Concern         | Recommendation                  | Reason                                                                                         |
+| --------------- | ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Framework       | Next.js (App Router)            | Server-rendered catalogue matters for SEO on a retail storefront                               |
+| Package manager | pnpm                            | Already installed at 10.33.3; strict module resolution catches accidental cross-module imports |
+| Database        | PostgreSQL                      | Relational order/inventory data with transactional integrity                                   |
+| ORM             | Prisma, pinned to stable 7.10.0 | Settled in ADR-0004; see the version risk in section 5                                         |
+| Auth            | Auth.js / NextAuth              | Sessions plus a role flag for admin access                                                     |
+| Styling         | Tailwind CSS 4.x                | Utility-first; low ceremony for a small team                                                   |
+| Tests           | Vitest                          | Fast unit tests; add Playwright later for checkout flows                                       |
+| Deployment      | Not chosen                      | Depends on where Postgres will be hosted                                                       |
 
 ## 4. Dependency map
 
@@ -107,15 +107,15 @@ absent.
 Latest published versions observed at audit time, for the packages the proposal
 above would pull in:
 
-| Package | Published version | Comment |
-| --- | --- | --- |
-| `next` | 16.3.4 | Requires Node >= 20.9.0; satisfied |
-| `react` | 19.3.0 | Matches current Next.js major |
-| `drizzle-orm` | 0.45.2 | Stable |
-| `prisma` | 8.0.0-rc.13 | `latest` dist-tag is a **release candidate**; last stable is 7.10.0 under the `prev` tag |
-| `next-auth` | 4.24.15 stable, 5.0.0-beta.32 under `beta` | v5 is still beta after a long run |
-| `tailwindcss` | 4.3.3 | v4 config model differs substantially from v3 |
-| `vitest` | 5.0.0 | Stable |
+| Package       | Published version                          | Comment                                                                                  |
+| ------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `next`        | 16.3.4                                     | Requires Node >= 20.9.0; satisfied                                                       |
+| `react`       | 19.3.0                                     | Matches current Next.js major                                                            |
+| `drizzle-orm` | 0.45.2                                     | Stable                                                                                   |
+| `prisma`      | 8.0.0-rc.13                                | `latest` dist-tag is a **release candidate**; last stable is 7.10.0 under the `prev` tag |
+| `next-auth`   | 4.24.15 stable, 5.0.0-beta.32 under `beta` | v5 is still beta after a long run                                                        |
+| `tailwindcss` | 4.3.3                                      | v4 config model differs substantially from v3                                            |
+| `vitest`      | 5.0.0                                      | Stable                                                                                   |
 
 ## 5. Risks and unknowns
 
