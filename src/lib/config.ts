@@ -17,6 +17,19 @@ const serverSchema = z.object({
   APP_LOCALE: z.literal("ru").default("ru"),
 
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+
+  /**
+   * PostgreSQL connection URL. Required for migrations and any code that
+   * imports `@/lib/db`. The default is the local development database.
+   */
+  DATABASE_URL: z
+    .string()
+    .min(1)
+    .refine(
+      (value) => value.startsWith("postgres"),
+      "Must be a PostgreSQL connection URL",
+    )
+    .default("postgresql://bikes:bikes@localhost:5432/bikes"),
 });
 
 export type Env = z.infer<typeof serverSchema>;

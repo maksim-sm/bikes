@@ -15,6 +15,9 @@ build/
 .env.*
 !.env.example
 
+# prisma generated client — produced by `pnpm db:generate`
+src/generated/
+
 # typescript
 *.tsbuildinfo
 

@@ -13,12 +13,15 @@ Companion documents: `docs/BASELINE.md` records the audit this contract was
 built on and the toolchain measured on the machine. `docs/adr/` records the
 decisions behind it — when an ADR and this document disagree, the most recent
 accepted ADR is correct and this document needs updating.
+`docs/inventory.md` defines on-hand, reserved, available, expiration, release,
+and commit.
 
 Implementation status: the application foundation exists — Next.js App Router,
-TypeScript, the `src/` layout below, configuration validation, and the ESLint
-boundary rules that enforce section 4. No business features, database, or
-authentication have been built, so `prisma/`, `tests/`, and most module layers
-are still targets rather than existing files.
+TypeScript, the `src/` layout below, configuration validation, the ESLint
+boundary rules, the design system, and the Prisma schema through commerce
+entities and the inventory ledger. No storefront features, authentication, or
+repositories have been built yet. `tests/` and most module layers are still
+targets rather than existing files.
 
 ## 1. Why a modular monolith
 
@@ -54,7 +57,10 @@ src/
     delivery/
     identity/
     media/
+    media/
     pricing/
+    inventory/
+    audit/
   ui/                     Design system: tokens and domain-agnostic primitives
     tokens.css            Type, spacing, colour, radii, motion — every token
     base.css              Element reset and the single global focus style
@@ -90,16 +96,18 @@ new module folder with the same shape, or it belongs inside an existing one.
 
 Each module owns a slice of the business and the tables backing it.
 
-| Module     | Owns                                                                              | Does not own                         |
-| ---------- | --------------------------------------------------------------------------------- | ------------------------------------ |
-| `catalog`  | Products, variants (frame size, colour), categories, specifications, stock levels | Prices shown to customers            |
-| `pricing`  | Price calculation, VAT presentation, discounts, currency formatting               | Product identity                     |
-| `cart`     | Cart aggregate, line items, quantity rules                                        | Payment, stock decrement             |
-| `orders`   | Order lifecycle and status transitions, order history                             | Payment execution, shipment tracking |
-| `payments` | Payment provider abstraction, transaction records, webhook verification           | Order status semantics               |
-| `delivery` | Shipping methods, regional zones, cost calculation, pickup points                 | Order status semantics               |
-| `identity` | Users, sessions, roles, addresses                                                 | Order data                           |
-| `media`    | Image upload, storage references, derivative URLs                                 | Which product an image belongs to    |
+| Module      | Owns                                                                          | Does not own                         |
+| ----------- | ----------------------------------------------------------------------------- | ------------------------------------ |
+| `catalog`   | Products, variants (frame size, colour), categories, specifications           | Prices shown to customers, stock     |
+| `pricing`   | Price calculation, VAT presentation, discounts, currency formatting           | Product identity                     |
+| `cart`      | Cart aggregate, line items, quantity rules                                    | Payment, stock decrement             |
+| `orders`    | Order agreement, line-item snapshots, denormalized payment/fulfillment status | Payment execution, shipment tracking |
+| `payments`  | Payment attempts, webhook events, refunds                                     | Order status semantics               |
+| `delivery`  | Methods, zones, shipment assignment                                           | Order status semantics               |
+| `identity`  | Users, sessions, roles, customer profiles, addresses, wishlists               | Order data                           |
+| `media`     | Image upload, storage references, opaque keys                                 | Which product an image belongs to    |
+| `inventory` | On-hand, reservations, movements (one item per variant)                       | Product identity, order status       |
+| `audit`     | Append-only change history                                                    | Domain state itself                  |
 
 `catalog` and `pricing` are deliberately separate: promotions, VAT display, and
 currency rules change on a different schedule from the product catalogue, and
@@ -196,8 +204,10 @@ imported nowhere but module repositories.
   transaction handle through service functions. Service signatures accept an
   optional transaction context so that checkout can reserve stock and create an
   order atomically.
-- **Migrations** live in `db/migrations/`, are generated from module schemas,
-  committed to the repository, and reviewed like code. No schema change is
+- **Migrations** live in `prisma/migrations/`, are generated from the Prisma
+  schema, committed to the repository, and reviewed like code. Partial unique
+  indexes and check constraints that Prisma cannot express are part of those
+  SQL files and must not be discarded on regenerate. No schema change is
   applied by hand to any environment, and migrations must be
   backward-compatible with the currently deployed application version.
 
@@ -223,8 +233,9 @@ internal error details and stack traces never reach the client.
 
 ## 7. Authentication and authorization boundary
 
-`identity` owns users, credentials, sessions, and roles. Roles are `customer`
-and `staff`; add a third only when a real permission diverges.
+`identity` owns users, credentials, sessions, roles, customer profiles,
+addresses, and wishlists. Roles are `customer` and `staff`; add a third only
+when a real permission diverges.
 
 - Session establishment and verification live in `identity`. No other module
   reads session cookies or tokens.
@@ -462,8 +473,11 @@ reconsideration except under the conditions each ADR names: the modular monolith
 to stable 7.10.0 (ADR-0004), the provider-neutral payment abstraction
 (ADR-0005), manual-first delivery (ADR-0006), object storage for media
 (ADR-0007), the testing strategy (ADR-0008), Russian-first localization
-(ADR-0009), BYN as integer minor units (ADR-0010), and CSS Modules with design
-tokens for styling (ADR-0011).
+(ADR-0009), BYN as integer minor units (ADR-0010), CSS Modules with design
+tokens for styling (ADR-0011), the first catalogue schema with per-variant
+stock grain and no EAV (ADR-0012), independent order/payment/fulfillment
+statuses (ADR-0013), and the race-safe inventory ledger (ADR-0014). Availability
+vocabulary is in `docs/inventory.md`.
 
 What remains open. Each names who must decide and what it blocks; none should be
 silently settled by whoever writes the first line of relevant code.
@@ -476,22 +490,19 @@ silently settled by whoever writes the first line of relevant code.
 3. **Delivery rate table contents and the eventual carrier.** Business decision.
    ADR-0006 settles the manual-first approach; the actual zones, rates, and
    which carrier is used are still to be supplied by the business.
-4. **Catalogue depth: whether variants carry independent stock.** Product
-   decision with schema consequences. Blocks `catalog`'s first migration and is
-   the most expensive open item to change later.
-5. **Hosting target and managed PostgreSQL provider.** Blocks section 15's
+4. **Hosting target and managed PostgreSQL provider.** Blocks section 15's
    specifics and the local development database that section 13's integration
    tier depends on. This is the highest-priority unblock: ADR-0008's integration
    tier cannot run without it.
-6. **Object storage provider and credentials.** Blocks production media under
+5. **Object storage provider and credentials.** Blocks production media under
    ADR-0007; the filesystem implementation covers development meanwhile.
-7. **Admin scope: custom admin area or an off-the-shelf CMS.** Determines
+6. **Admin scope: custom admin area or an off-the-shelf CMS.** Determines
    whether `app/admin/` is built out at all. Note that ADR-0006's manual-first
    delivery assumes staff have somewhere to record tracking references.
-8. **VAT and currency presentation.** Business decision. Blocks `pricing`.
+7. **VAT and currency presentation.** Business decision. Blocks `pricing`.
    ADR-0010 fixes the representation; how VAT is displayed and whether a second
    currency is shown are not settled.
-9. **Whether Belarusian is added as a second locale.** Business decision.
+8. **Whether Belarusian is added as a second locale.** Business decision.
    ADR-0009 ships Russian-only and defers the routing segment; this answer
    activates that deferred work.
 

@@ -8,10 +8,11 @@ foundation only — no business features yet.
 
 ## Requirements
 
-| Tool    | Version         | Why                                            |
-| ------- | --------------- | ---------------------------------------------- |
-| Node.js | **24 or newer** | Enforced by `engines`; `.nvmrc` pins the major |
-| pnpm    | 10 or newer     | Declared in `packageManager`                   |
+| Tool       | Version         | Why                                            |
+| ---------- | --------------- | ---------------------------------------------- |
+| Node.js    | **24 or newer** | Enforced by `engines`; `.nvmrc` pins the major |
+| pnpm       | 10 or newer     | Declared in `packageManager`                   |
+| PostgreSQL | 16 or newer     | Required by Prisma migrations                  |
 
 With nvm:
 
@@ -29,35 +30,44 @@ cd bikes
 nvm use
 pnpm install
 cp .env.example .env.local
+pnpm db:migrate:deploy
 pnpm dev
 ```
 
 The site is then at http://localhost:3000 and the health endpoint at
 http://localhost:3000/api/health.
 
-No database is required yet; there is no data layer. Once one is added, this
-section will gain a migration step.
+PostgreSQL must be running and match `DATABASE_URL` in `.env.local`. The default
+is `postgresql://bikes:bikes@localhost:5432/bikes`. `pnpm db:migrate:deploy`
+applies committed migrations to an empty database; `pnpm db:migrate` is the
+development command that also creates new migrations and needs `CREATEDB` on
+the database role (Prisma's shadow database).
 
 ## Scripts
 
-| Command             | Does                                                        |
-| ------------------- | ----------------------------------------------------------- |
-| `pnpm dev`          | Development server with hot reload                          |
-| `pnpm build`        | Production build                                            |
-| `pnpm start`        | Serve a production build (run `build` first)                |
-| `pnpm lint`         | ESLint, including the architecture boundary rules           |
-| `pnpm lint:fix`     | ESLint with autofix                                         |
-| `pnpm typecheck`    | `tsc --noEmit`                                              |
-| `pnpm format`       | Rewrite files with Prettier                                 |
-| `pnpm format:check` | Fail if anything is unformatted                             |
-| `pnpm env:check`    | Validate environment configuration without starting the app |
-| `pnpm check`        | Everything CI runs: lint, format check, typecheck, build    |
+| Command                  | Does                                                        |
+| ------------------------ | ----------------------------------------------------------- |
+| `pnpm dev`               | Development server with hot reload                          |
+| `pnpm build`             | Production build                                            |
+| `pnpm start`             | Serve a production build (run `build` first)                |
+| `pnpm lint`              | ESLint, including the architecture boundary rules           |
+| `pnpm lint:fix`          | ESLint with autofix                                         |
+| `pnpm typecheck`         | `tsc --noEmit`                                              |
+| `pnpm format`            | Rewrite files with Prettier                                 |
+| `pnpm format:check`      | Fail if anything is unformatted                             |
+| `pnpm env:check`         | Validate environment configuration without starting the app |
+| `pnpm db:generate`       | Generate the Prisma client into `src/generated/`            |
+| `pnpm db:migrate`        | Create and apply a development migration                    |
+| `pnpm db:migrate:deploy` | Apply committed migrations (safe on an empty database)      |
+| `pnpm db:status`         | Show whether the database is up to date                     |
+| `pnpm check`             | Lint, format check, generate client, build, typecheck       |
 
 Before pushing, `pnpm check` is the one command worth remembering.
 
-All scripts are safe to run repeatedly: none of them writes to a database,
-calls a third-party service, or deletes anything. `pnpm format` is the only one
-that modifies files, and only by reformatting them.
+`pnpm db:migrate` and `pnpm db:migrate:deploy` write to the database. Everything
+else is safe to run repeatedly: none of the remaining scripts call a third-party
+service or delete anything. `pnpm format` is the only non-database command that
+modifies files, and only by reformatting them.
 
 ## Configuration
 
@@ -80,13 +90,17 @@ src/
     api/health/   Liveness endpoint
   modules/        Domain modules — the modular-monolith seam
     catalog/ pricing/ cart/ orders/
-    payments/ delivery/ identity/ media/
+    payments/ delivery/ identity/ media/ inventory/ audit/
   ui/             Design system: tokens and domain-agnostic primitives
   lib/            Cross-cutting infrastructure with no domain knowledge
     config.ts     Validated environment configuration
     logger.ts     Structured JSON logging
     errors.ts     Error taxonomy
     i18n/         Locale resolution, Russian messages, Intl formatting
+    db.ts         Prisma client (imported only by module repositories)
+prisma/           Schema and committed SQL migrations
+  schema.prisma   Models grouped by owning module
+  migrations/     Generated SQL, reviewed like code
 scripts/          Operational scripts, run outside the application
 docs/             Architecture contract and decision records
 ```
@@ -157,12 +171,13 @@ decide it. See `src/modules/README.md` for the internal layering rules.
 ## Documentation
 
 - `docs/architecture.md` — the architecture contract: what goes where and why.
+- `docs/inventory.md` — on-hand, reserved, available, expiration, release, commit.
 - `docs/adr/` — decision records. Read these before proposing a change to the
   stack; each lists the conditions under which reopening it is legitimate.
 - `docs/BASELINE.md` — the pre-implementation audit.
 
 ## Status
 
-Foundation and visual system only. No catalogue, cart, checkout, database, or
-authentication yet. The module folders exist so that the first feature has an
-unambiguous home.
+Foundation, visual system, and the database schema through inventory. No
+catalogue UI, cart, checkout, or authentication yet. The module folders exist so
+that the first feature has an unambiguous home.
