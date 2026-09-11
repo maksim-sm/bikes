@@ -9,8 +9,10 @@ Scope: the Belarus-focused, Russian-language bicycle ecommerce store in this
 repository, built as a **modular monolith** — one deployable application, one
 database, with enforced internal boundaries.
 
-Companion document: `docs/BASELINE.md` records the audit this contract was built
-on and the toolchain measured on the machine. As of this writing the repository
+Companion documents: `docs/BASELINE.md` records the audit this contract was
+built on and the toolchain measured on the machine. `docs/adr/` records the
+decisions behind it — when an ADR and this document disagree, the most recent
+accepted ADR is correct and this document needs updating. As of this writing the repository
 still contains no application code; this document describes the target that the
 first scaffold must satisfy, and every path below is a path to be created.
 
@@ -40,7 +42,6 @@ modules/                  Domain layer: the modular-monolith seam
     index.ts              PUBLIC ENTRY POINT — the module's only export
     service.ts            Use cases; the only caller of this module's repo
     repository.ts         Data access; the only file that touches catalog tables
-    schema.ts             Drizzle table definitions owned by this module
     types.ts              Domain types exported through index.ts
   cart/
   orders/
@@ -55,7 +56,8 @@ lib/                      Cross-cutting infrastructure with no domain knowledge
   logger.ts               Structured logging
   errors.ts               Error taxonomy
   i18n/                   Locale resolution and message catalogues
-db/
+prisma/
+  schema.prisma           Single Prisma schema; models grouped by owning module
   migrations/             Generated SQL migrations, committed and reviewed
 tests/
   integration/            Cross-module tests against a real database
@@ -63,7 +65,7 @@ docs/
 ```
 
 Nothing else belongs at the root of `modules/`. A new domain concept is either a
-new module folder with the same five files, or it belongs inside an existing one.
+new module folder with the same four files, or it belongs inside an existing one.
 
 ## 3. Domain modules
 
@@ -95,8 +97,7 @@ export { getProductBySlug, listProducts, reserveStock } from "./service";
 export type { Product, ProductVariant } from "./types";
 ```
 
-`repository.ts` and `schema.ts` are never exported and never imported from
-outside the module. If another module needs data that lives behind them, the
+`repository.ts` is never exported and never imported from outside the module. If another module needs data that lives behind them, the
 owning module adds a function to its service and exports it.
 
 ## 4. Dependency direction
@@ -115,8 +116,8 @@ The rules, each of which a reviewer can check mechanically:
 3. `lib/` may not import from `app/` or `modules/`. It contains no domain
    knowledge; if something in `lib/` mentions a bicycle, an order, or a price, it
    is in the wrong place.
-4. No module may import another module's `repository.ts`, `schema.ts`, or
-   `service.ts` directly. `import { x } from "@/modules/orders"` is permitted;
+4. No module may import another module's `repository.ts` or `service.ts`
+   directly. `import { x } from "@/modules/orders"` is permitted;
    `import { x } from "@/modules/orders/repository"` is not.
 5. No import cycles between modules. If `orders` and `payments` each need the
    other, the dependency is inverted: `orders` defines an interface, `payments`
@@ -138,8 +139,10 @@ One PostgreSQL database. One connection pool, created once in `lib/db.ts` and
 imported nowhere but module repositories.
 
 - **Table ownership is exclusive.** Every table has exactly one owning module,
-  declared in that module's `schema.ts`. A repository may only read and write
-  tables its own module owns.
+  declared in a commented per-module section of `prisma/schema.prisma`. A
+  repository may only read and write tables its own module owns. Because Prisma
+  keeps all models in one file (ADR-0004), this ownership is enforced by review
+  rather than by file location.
 - **No cross-module joins.** If `orders` needs a product name, it calls
   `catalog`'s service. Yes, this costs a query that a join would avoid. That cost
   is the price of being able to change `catalog`'s schema without auditing the
@@ -412,33 +415,43 @@ fleet, no cache tier until a measured problem demands one.
 
 ## 16. Unresolved decisions
 
-These are open. Each names who must decide and what it blocks; none should be
+Decisions already settled are recorded in `docs/adr/` and are **not** open for
+reconsideration except under the conditions each ADR names: the modular monolith
+(ADR-0001), Next.js App Router (ADR-0002), PostgreSQL (ADR-0003), Prisma pinned
+to stable 7.10.0 (ADR-0004), the provider-neutral payment abstraction
+(ADR-0005), manual-first delivery (ADR-0006), object storage for media
+(ADR-0007), the testing strategy (ADR-0008), Russian-first localization
+(ADR-0009), and BYN as integer minor units (ADR-0010).
+
+What remains open. Each names who must decide and what it blocks; none should be
 silently settled by whoever writes the first line of relevant code.
 
-1. **ORM: Drizzle or Prisma.** Engineering decision. Blocks section 5's schema
-   files. Drizzle 0.45.2 is stable; Prisma's `latest` tag is currently a release
-   candidate and would need pinning to 7.10.0. This contract is written assuming
-   Drizzle's file-based schema, but only section 2's `schema.ts` naming depends
-   on it.
-2. **Auth implementation: Auth.js v4 stable or v5 beta.** Engineering decision.
+1. **Auth implementation: Auth.js v4 stable or v5 beta.** Engineering decision.
    Blocks `identity`. Section 7's boundaries hold either way.
-3. **Payment provider: bePaid, WebPay, or ERIP.** Business decision, requires a
+2. **Payment provider: bePaid, WebPay, or ERIP.** Business decision, requires a
    merchant account. Blocks real checkout but not its construction, because of
-   the mock provider in section 8.
-4. **Second locale: Russian only, or Russian plus Belarusian.** Business
-   decision. Blocks the routing shape in section 11; the string-extraction rule
-   applies regardless and should not wait for this answer.
-5. **Delivery model.** Business decision. Blocks the concrete implementations
-   behind section 9's interface.
-6. **Catalogue depth: whether variants carry independent stock.** Product
+   the mock provider in section 8 and ADR-0005.
+3. **Delivery rate table contents and the eventual carrier.** Business decision.
+   ADR-0006 settles the manual-first approach; the actual zones, rates, and
+   which carrier is used are still to be supplied by the business.
+4. **Catalogue depth: whether variants carry independent stock.** Product
    decision with schema consequences. Blocks `catalog`'s first migration and is
-   the most expensive item here to change later.
-7. **Hosting target and managed PostgreSQL provider.** Blocks section 15's
+   the most expensive open item to change later.
+5. **Hosting target and managed PostgreSQL provider.** Blocks section 15's
    specifics and the local development database that section 13's integration
-   tier depends on.
-8. **Admin scope: custom admin area or an off-the-shelf CMS.** Determines
-   whether `app/admin/` is built out at all.
-9. **VAT and currency presentation.** Business decision. Blocks `pricing`.
+   tier depends on. This is the highest-priority unblock: ADR-0008's integration
+   tier cannot run without it.
+6. **Object storage provider and credentials.** Blocks production media under
+   ADR-0007; the filesystem implementation covers development meanwhile.
+7. **Admin scope: custom admin area or an off-the-shelf CMS.** Determines
+   whether `app/admin/` is built out at all. Note that ADR-0006's manual-first
+   delivery assumes staff have somewhere to record tracking references.
+8. **VAT and currency presentation.** Business decision. Blocks `pricing`.
+   ADR-0010 fixes the representation; how VAT is displayed and whether a second
+   currency is shown are not settled.
+9. **Whether Belarusian is added as a second locale.** Business decision.
+   ADR-0009 ships Russian-only and defers the routing segment; this answer
+   activates that deferred work.
 
 Amending this document is expected as these resolve. Amend it in the pull
-request that makes the change, not afterwards.
+request that makes the change, and record the decision as a new ADR.

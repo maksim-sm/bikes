@@ -58,7 +58,8 @@ The stated intent is a modular monolith for a Belarus-focused,
 Russian-language bicycle ecommerce store. The following is a concrete shape
 consistent with that intent; it is a proposal for review, not a decision already
 encoded in the repository. It is elaborated and made binding in
-`docs/architecture.md`, which is the authoritative version if the two differ.
+`docs/architecture.md`, and the choices are recorded in `docs/adr/`. Those are
+authoritative where they differ from the sketch below.
 
 ```
 app/                     HTTP + rendering layer only (routes, layouts, server actions)
@@ -92,7 +93,7 @@ Decisions still open, with the recommendation and its reason:
 | Framework | Next.js (App Router) | Server-rendered catalogue matters for SEO on a retail storefront |
 | Package manager | pnpm | Already installed at 10.33.3; strict module resolution catches accidental cross-module imports |
 | Database | PostgreSQL | Relational order/inventory data with transactional integrity |
-| ORM | Drizzle (stable 0.45.2) or Prisma | See the Prisma version risk in section 5 |
+| ORM | Prisma, pinned to stable 7.10.0 | Settled in ADR-0004; see the version risk in section 5 |
 | Auth | Auth.js / NextAuth | Sessions plus a role flag for admin access |
 | Styling | Tailwind CSS 4.x | Utility-first; low ceremony for a small team |
 | Tests | Vitest | Fast unit tests; add Playwright later for checkout flows |
@@ -121,8 +122,10 @@ above would pull in:
 Technical risks:
 
 1. **Prisma's `latest` tag is a prerelease.** Installing `prisma` without pinning
-   yields `8.0.0-rc.13`. If Prisma is chosen, pin to the stable `7.10.0`;
-   otherwise prefer Drizzle, which has a clean stable release.
+   yields `8.0.0-rc.13`. ADR-0004 selects Prisma and requires an exact pin to
+   the stable `7.10.0` for both `prisma` and `@prisma/client`. This risk is
+   mitigated but not eliminated: a careless dependency update can still pull the
+   prerelease in.
 2. **Auth.js v4 versus v5.** v4 is stable but on the older API; v5 remains in
    beta. Choosing v5 buys the App Router-native API at the cost of a beta
    dependency in the authentication path.
