@@ -13,13 +13,15 @@ Companion documents: `docs/BASELINE.md` records the audit this contract was
 built on and the toolchain measured on the machine. `docs/adr/` records the
 decisions behind it — when an ADR and this document disagree, the most recent
 accepted ADR is correct and this document needs updating.
+`docs/inventory.md` defines on-hand, reserved, available, expiration, release,
+and commit.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
 boundary rules, the design system, and the Prisma schema through commerce
-entities (orders, payments, deliveries, audit). No storefront features,
-authentication, or repositories have been built yet. `tests/` and most module
-layers are still targets rather than existing files.
+entities and the inventory ledger. No storefront features, authentication, or
+repositories have been built yet. `tests/` and most module layers are still
+targets rather than existing files.
 
 ## 1. Why a modular monolith
 
@@ -55,7 +57,9 @@ src/
     delivery/
     identity/
     media/
+    media/
     pricing/
+    inventory/
     audit/
   ui/                     Design system: tokens and domain-agnostic primitives
     tokens.css            Type, spacing, colour, radii, motion — every token
@@ -92,17 +96,18 @@ new module folder with the same shape, or it belongs inside an existing one.
 
 Each module owns a slice of the business and the tables backing it.
 
-| Module     | Owns                                                                              | Does not own                         |
-| ---------- | --------------------------------------------------------------------------------- | ------------------------------------ |
-| `catalog`  | Products, variants (frame size, colour), categories, specifications, stock levels | Prices shown to customers            |
-| `pricing`  | Price calculation, VAT presentation, discounts, currency formatting               | Product identity                     |
-| `cart`     | Cart aggregate, line items, quantity rules                                        | Payment, stock decrement             |
-| `orders`   | Order agreement, line-item snapshots, denormalized payment/fulfillment status     | Payment execution, shipment tracking |
-| `payments` | Payment attempts, webhook events, refunds                                         | Order status semantics               |
-| `delivery` | Methods, zones, shipment assignment                                               | Order status semantics               |
-| `identity` | Users, sessions, roles, customer profiles, addresses, wishlists                   | Order data                           |
-| `media`    | Image upload, storage references, opaque keys                                     | Which product an image belongs to    |
-| `audit`    | Append-only change history                                                        | Domain state itself                  |
+| Module      | Owns                                                                          | Does not own                         |
+| ----------- | ----------------------------------------------------------------------------- | ------------------------------------ |
+| `catalog`   | Products, variants (frame size, colour), categories, specifications           | Prices shown to customers, stock     |
+| `pricing`   | Price calculation, VAT presentation, discounts, currency formatting           | Product identity                     |
+| `cart`      | Cart aggregate, line items, quantity rules                                    | Payment, stock decrement             |
+| `orders`    | Order agreement, line-item snapshots, denormalized payment/fulfillment status | Payment execution, shipment tracking |
+| `payments`  | Payment attempts, webhook events, refunds                                     | Order status semantics               |
+| `delivery`  | Methods, zones, shipment assignment                                           | Order status semantics               |
+| `identity`  | Users, sessions, roles, customer profiles, addresses, wishlists               | Order data                           |
+| `media`     | Image upload, storage references, opaque keys                                 | Which product an image belongs to    |
+| `inventory` | On-hand, reservations, movements (one item per variant)                       | Product identity, order status       |
+| `audit`     | Append-only change history                                                    | Domain state itself                  |
 
 `catalog` and `pricing` are deliberately separate: promotions, VAT display, and
 currency rules change on a different schedule from the product catalogue, and
@@ -470,8 +475,9 @@ to stable 7.10.0 (ADR-0004), the provider-neutral payment abstraction
 (ADR-0007), the testing strategy (ADR-0008), Russian-first localization
 (ADR-0009), BYN as integer minor units (ADR-0010), CSS Modules with design
 tokens for styling (ADR-0011), the first catalogue schema with per-variant
-stock (ADR-0012), and independent order/payment/fulfillment statuses
-(ADR-0013).
+stock grain and no EAV (ADR-0012), independent order/payment/fulfillment
+statuses (ADR-0013), and the race-safe inventory ledger (ADR-0014). Availability
+vocabulary is in `docs/inventory.md`.
 
 What remains open. Each names who must decide and what it blocks; none should be
 silently settled by whoever writes the first line of relevant code.
