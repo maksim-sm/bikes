@@ -30,3 +30,5 @@ Rules:
 | [0008](0008-testing-strategy.md)          | Testing strategy                        | Accepted |
 | [0009](0009-russian-first-i18n.md)        | Russian-first localization              | Accepted |
 | [0010](0010-byn-money-representation.md)  | BYN money as integer minor units        | Accepted |
+| [0011](0011-css-modules-design-tokens.md) | CSS Modules with design tokens          | Accepted |
+| [0012](0012-first-catalogue-schema.md)    | Variants own stock; no EAV              | Accepted |
