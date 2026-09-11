@@ -1,0 +1,98 @@
+/**
+ * Mobile-first layout primitives.
+ *
+ * These handle arrangement and nothing else — no colour, no typography. Pages
+ * compose them rather than writing bespoke flexbox, which is what stops
+ * one-off spacing values from accumulating.
+ */
+
+/* Centred page container with a gutter that widens on larger screens. */
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding-inline: var(--space-5);
+  }
+}
+
+.containerProse {
+  max-width: var(--container-prose);
+}
+
+/* Vertical rhythm. The overwhelmingly common layout need. */
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Horizontal group that wraps rather than overflowing on narrow screens. */
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.clusterBetween {
+  justify-content: space-between;
+}
+
+.clusterEnd {
+  justify-content: flex-end;
+}
+
+/**
+ * Responsive grid with no breakpoint of its own: columns are as wide as they
+ * can be until they no longer fit, then they wrap. One column on a phone,
+ * several on a desktop, without a media query.
+ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--grid-min, 16rem), 1fr));
+}
+
+/* Pushes following content away in a flex container. */
+.spacer {
+  flex: 1 1 auto;
+}
+
+/**
+ * Available to screen readers, invisible on screen. For labels and headings
+ * that the visual design implies but assistive technology still needs.
+ */
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link: hidden until focused, then pinned to the top of the viewport. */
+.skipLink {
+  position: absolute;
+  left: var(--space-2);
+  top: var(--space-2);
+  z-index: var(--z-dialog);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-border-interactive);
+  border-radius: var(--radius-md);
+  transform: translateY(-200%);
+}
+
+.skipLink:focus-visible {
+  transform: translateY(0);
+}

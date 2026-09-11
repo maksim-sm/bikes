@@ -1,0 +1,90 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+
+  /* Every interactive control clears the 44px touch target floor. */
+  min-height: var(--target-min);
+  padding: var(--space-2) var(--space-5);
+
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing),
+    border-color var(--duration-fast) var(--easing);
+}
+
+.button:disabled,
+.button[aria-disabled="true"] {
+  cursor: not-allowed;
+  background: var(--color-surface-sunken);
+  border-color: transparent;
+  color: var(--color-text-disabled);
+}
+
+/* Primary: one per view. More than one and neither is primary. */
+.primary {
+  background: var(--color-brand);
+  color: var(--color-text-inverse);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--color-brand-hover);
+}
+
+.primary:active:not(:disabled) {
+  background: var(--color-brand-active);
+}
+
+/* Secondary: the default for most actions. */
+.secondary {
+  background: var(--color-bg);
+  border-color: var(--color-border-interactive);
+  color: var(--color-text);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+/* Quiet: for tertiary actions inside dense layouts. */
+.quiet {
+  background: transparent;
+  color: var(--color-text);
+  padding-inline: var(--space-3);
+}
+
+.quiet:hover:not(:disabled) {
+  background: var(--color-surface);
+}
+
+/* Destructive actions. Never the primary button of a form. */
+.danger {
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--color-danger-hover);
+}
+
+.small {
+  min-height: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.fullWidth {
+  width: 100%;
+}

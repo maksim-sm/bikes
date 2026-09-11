@@ -1,0 +1,59 @@
+.page {
+  padding-block: var(--space-6) var(--space-8);
+}
+
+.section {
+  padding-top: var(--space-6);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--space-3);
+}
+
+.swatch {
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.swatchChip {
+  height: 2.5rem;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-sm);
+  border: var(--border-width) solid var(--color-border);
+}
+
+.ratio {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.scaleRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding-block: var(--space-1);
+}
+
+.scaleLabel {
+  flex: none;
+  width: 5rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.spaceBar {
+  height: 1rem;
+  background: var(--color-brand-subtle);
+  border-left: 2px solid var(--color-brand);
+}
+
+.formWidth {
+  max-width: 26rem;
+}

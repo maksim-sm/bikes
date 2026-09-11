@@ -1,0 +1,46 @@
+/**
+ * Links are underlined.
+ *
+ * Colour alone is not a sufficient signal — it fails for users who cannot
+ * distinguish the hue, and inside body copy an un-underlined link is simply
+ * invisible. The underline is offset so Cyrillic descenders stay legible.
+ */
+.link {
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+  border-radius: var(--radius-sm);
+}
+
+.link:hover {
+  color: var(--color-brand-hover);
+  text-decoration-thickness: 2px;
+}
+
+/* For navigation, where position and context already identify the link. */
+.subtle {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.subtle:hover {
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Looks like a button, behaves like a link. Use when the action navigates. */
+.asButton {
+  text-decoration: none;
+}
+
+.asButton:hover {
+  text-decoration: none;
+}
+
+.externalMark {
+  margin-inline-start: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}

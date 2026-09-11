@@ -1,0 +1,122 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+.optional {
+  margin-inline-start: var(--space-2);
+  font-weight: var(--weight-normal);
+  color: var(--color-text-muted);
+}
+
+.hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/**
+ * Error text carries a visible marker as well as colour, so the failure is
+ * perceivable without distinguishing red from grey.
+ */
+.error {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}
+
+.errorMark {
+  flex: none;
+  font-weight: var(--weight-bold);
+}
+
+/* Shared by input, textarea, and select. */
+.control {
+  width: 100%;
+  min-height: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-border-interactive);
+  border-radius: var(--radius-md);
+
+  /* 16px minimum: smaller text causes iOS Safari to zoom on focus. */
+  font-size: var(--text-base);
+
+  transition: border-color var(--duration-fast) var(--easing);
+}
+
+.control::placeholder {
+  color: var(--color-text-disabled);
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+
+.control:disabled {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+/* Invalid state is signalled by a thicker, darker edge as well as colour. */
+.controlInvalid,
+.control[aria-invalid="true"] {
+  border-color: var(--color-danger);
+  border-width: 2px;
+}
+
+.textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.select {
+  /* Leave room for the native chevron. */
+  padding-inline-end: var(--space-6);
+}
+
+/* Checkbox and radio rows: control and label share one hit target. */
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--target-min);
+  padding-block: var(--space-2);
+  cursor: pointer;
+}
+
+.choiceInput {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  /* Recolours the native control, keeping its built-in keyboard behaviour. */
+  accent-color: var(--color-brand);
+}
+
+.choiceLabel {
+  font-size: var(--text-base);
+}
+
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.legend {
+  padding: 0;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
