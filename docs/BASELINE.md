@@ -57,7 +57,8 @@ Other environment facts:
 The stated intent is a modular monolith for a Belarus-focused,
 Russian-language bicycle ecommerce store. The following is a concrete shape
 consistent with that intent; it is a proposal for review, not a decision already
-encoded in the repository.
+encoded in the repository. It is elaborated and made binding in
+`docs/architecture.md`, which is the authoritative version if the two differ.
 
 ```
 app/                     HTTP + rendering layer only (routes, layouts, server actions)
@@ -66,13 +67,14 @@ app/                     HTTP + rendering layer only (routes, layouts, server ac
   admin/                 internal catalogue and order management
 modules/                 the modular-monolith seam; one folder per domain
   catalog/               bicycles, categories, specs, variants, stock
-  cart/                  cart aggregate and pricing rules
+  pricing/               price calculation, VAT, discounts, currency
+  cart/                  cart aggregate and quantity rules
   orders/                order lifecycle, status transitions
   payments/              payment provider adapters
   delivery/              shipping zones and cost calculation
   identity/              users, sessions, roles
-  i18n/                  locale and message catalogues
-lib/                     cross-cutting only: db client, logging, config, errors
+  media/                 image storage abstraction
+lib/                     cross-cutting only: db client, logging, config, errors, i18n
 db/                      schema definitions and migrations
 tests/                   unit and integration suites
 ```
