@@ -90,7 +90,7 @@ src/
     api/health/   Liveness endpoint
   modules/        Domain modules — the modular-monolith seam
     catalog/ pricing/ cart/ orders/
-    payments/ delivery/ identity/ media/
+    payments/ delivery/ identity/ media/ audit/
   ui/             Design system: tokens and domain-agnostic primitives
   lib/            Cross-cutting infrastructure with no domain knowledge
     config.ts     Validated environment configuration
