@@ -90,7 +90,7 @@ src/
     api/health/   Liveness endpoint
   modules/        Domain modules — the modular-monolith seam
     catalog/ pricing/ cart/ orders/
-    payments/ delivery/ identity/ media/
+    payments/ delivery/ identity/ media/ inventory/ audit/
   ui/             Design system: tokens and domain-agnostic primitives
   lib/            Cross-cutting infrastructure with no domain knowledge
     config.ts     Validated environment configuration
@@ -171,12 +171,13 @@ decide it. See `src/modules/README.md` for the internal layering rules.
 ## Documentation
 
 - `docs/architecture.md` — the architecture contract: what goes where and why.
+- `docs/inventory.md` — on-hand, reserved, available, expiration, release, commit.
 - `docs/adr/` — decision records. Read these before proposing a change to the
   stack; each lists the conditions under which reopening it is legitimate.
 - `docs/BASELINE.md` — the pre-implementation audit.
 
 ## Status
 
-Foundation, visual system, and the first database schema. No catalogue UI, cart,
-checkout, or authentication yet. The module folders exist so that the first
-feature has an unambiguous home.
+Foundation, visual system, and the database schema through inventory. No
+catalogue UI, cart, checkout, or authentication yet. The module folders exist so
+that the first feature has an unambiguous home.

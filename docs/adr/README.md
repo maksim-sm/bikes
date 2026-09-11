@@ -18,17 +18,19 @@ Rules:
   history of how it got that way. When they disagree, the most recent accepted
   ADR is correct and the contract needs updating.
 
-| ADR                                       | Decision                                | Status   |
-| ----------------------------------------- | --------------------------------------- | -------- |
-| [0001](0001-modular-monolith.md)          | Modular monolith, not microservices     | Accepted |
-| [0002](0002-nextjs-app-router.md)         | Next.js App Router                      | Accepted |
-| [0003](0003-postgresql.md)                | PostgreSQL                              | Accepted |
-| [0004](0004-prisma.md)                    | Prisma as ORM, pinned to stable         | Accepted |
-| [0005](0005-provider-neutral-payments.md) | Provider-neutral payment abstraction    | Accepted |
-| [0006](0006-manual-first-delivery.md)     | Manual-first delivery integration       | Accepted |
-| [0007](0007-object-storage-media.md)      | Object storage for media, keys not URLs | Accepted |
-| [0008](0008-testing-strategy.md)          | Testing strategy                        | Accepted |
-| [0009](0009-russian-first-i18n.md)        | Russian-first localization              | Accepted |
-| [0010](0010-byn-money-representation.md)  | BYN money as integer minor units        | Accepted |
-| [0011](0011-css-modules-design-tokens.md) | CSS Modules with design tokens          | Accepted |
-| [0012](0012-first-catalogue-schema.md)    | Variants own stock; no EAV              | Accepted |
+| ADR                                           | Decision                                       | Status                                                      |
+| --------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------- |
+| [0001](0001-modular-monolith.md)              | Modular monolith, not microservices            | Accepted                                                    |
+| [0002](0002-nextjs-app-router.md)             | Next.js App Router                             | Accepted                                                    |
+| [0003](0003-postgresql.md)                    | PostgreSQL                                     | Accepted                                                    |
+| [0004](0004-prisma.md)                        | Prisma as ORM, pinned to stable                | Accepted                                                    |
+| [0005](0005-provider-neutral-payments.md)     | Provider-neutral payment abstraction           | Accepted                                                    |
+| [0006](0006-manual-first-delivery.md)         | Manual-first delivery integration              | Accepted                                                    |
+| [0007](0007-object-storage-media.md)          | Object storage for media, keys not URLs        | Accepted                                                    |
+| [0008](0008-testing-strategy.md)              | Testing strategy                               | Accepted                                                    |
+| [0009](0009-russian-first-i18n.md)            | Russian-first localization                     | Accepted                                                    |
+| [0010](0010-byn-money-representation.md)      | BYN money as integer minor units               | Accepted                                                    |
+| [0011](0011-css-modules-design-tokens.md)     | CSS Modules with design tokens                 | Accepted                                                    |
+| [0012](0012-first-catalogue-schema.md)        | Variants own stock grain; no EAV               | Partially superseded by [0014](0014-race-safe-inventory.md) |
+| [0013](0013-independent-commerce-statuses.md) | Independent order/payment/fulfillment statuses | Accepted                                                    |
+| [0014](0014-race-safe-inventory.md)           | Race-safe inventory ledger in `inventory`      | Accepted                                                    |

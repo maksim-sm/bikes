@@ -1,6 +1,6 @@
 # ADR-0012: First catalogue schema — variants own stock
 
-- Status: Accepted
+- Status: Partially superseded by ADR-0014 (stock **location** only; per-variant grain and no-EAV stand)
 - Date: 2026-09-11
 
 ## Context
