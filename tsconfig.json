@@ -26,7 +26,9 @@
     "paths": {
       "@/app/*": ["./src/app/*"],
       "@/modules/*": ["./src/modules/*"],
-      "@/lib/*": ["./src/lib/*"]
+      "@/lib/*": ["./src/lib/*"],
+      "@/ui": ["./src/ui/index.ts"],
+      "@/ui/*": ["./src/ui/*"]
     }
   },
   "include": [

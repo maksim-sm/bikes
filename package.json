@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run build",
+    "check": "pnpm run lint && pnpm run format:check && pnpm run build && pnpm run typecheck",
     "env:check": "tsx --env-file-if-exists=.env.local scripts/check-env.ts"
   },
   "dependencies": {

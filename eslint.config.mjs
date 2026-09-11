@@ -60,9 +60,9 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ["@/modules/*", "@/app/*"],
+              group: ["@/modules/*", "@/app/*", "@/ui", "@/ui/*"],
               message:
-                "lib/ must not depend on domain modules or the app layer. Invert the dependency.",
+                "lib/ must not depend on domain modules, the app layer, or the design system. Invert the dependency.",
             },
           ],
         },
@@ -123,6 +123,26 @@ export default tseslint.config(
               group: ["@/lib/db", "@/lib/db/*"],
               message:
                 "The app layer must not access the database directly. Call a module's service instead.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // The design system is presentation only: it must not know what a bicycle,
+  // an order, or a price is.
+  {
+    files: ["src/ui/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/modules/*", "@/app/*"],
+              message:
+                "src/ui holds domain-agnostic primitives. A component that knows about products or orders is a feature component and belongs with its module or in src/app.",
             },
           ],
         },

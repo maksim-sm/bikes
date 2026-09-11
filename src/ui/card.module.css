@@ -1,0 +1,71 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  padding: var(--space-4);
+  background: var(--color-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: var(--space-5);
+  }
+}
+
+.filled {
+  background: var(--color-surface);
+  border-color: transparent;
+}
+
+/**
+ * Interactive card.
+ *
+ * The card itself is never the clickable element: a link or button inside it
+ * is, and this rule stretches that control's hit area over the whole card.
+ * That keeps one real focusable element per card instead of a nested,
+ * unreachable mess.
+ */
+.interactive {
+  position: relative;
+  transition: border-color var(--duration-fast) var(--easing);
+}
+
+.interactive:hover {
+  border-color: var(--color-border-interactive);
+}
+
+.interactive:focus-within {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.stretchedTarget::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+/* The stretched control's own ring is redundant with the card's. */
+.interactive:focus-within .stretchedTarget:focus-visible {
+  outline: none;
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
+
+.body {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: var(--space-2);
+}

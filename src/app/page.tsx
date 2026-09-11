@@ -1,10 +1,23 @@
+import { t } from "@/lib/i18n";
+import { ButtonLink, Container, Stack } from "@/ui";
+import styles from "./page.module.css";
+
 export default function HomePage() {
   return (
-    <main style={{ maxWidth: "42rem", margin: "0 auto", padding: "4rem 1.5rem" }}>
-      <h1>Веломагазин</h1>
-      <p style={{ color: "var(--muted)" }}>
-        Приложение находится в разработке. Витрина появится позже.
-      </p>
-    </main>
+    <Container>
+      <div className={styles.page}>
+        <Stack space={5}>
+          <h1>{t.site.name}</h1>
+          <p className={styles.lead}>
+            {t.dev.underConstruction}. {t.dev.foundationOnly}
+          </p>
+          <div>
+            <ButtonLink href="/ui-kit" variant="secondary">
+              {t.dev.uiKit}
+            </ButtonLink>
+          </div>
+        </Stack>
+      </div>
+    </Container>
   );
 }

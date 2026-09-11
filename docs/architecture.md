@@ -55,6 +55,10 @@ src/
     identity/
     media/
     pricing/
+  ui/                     Design system: tokens and domain-agnostic primitives
+    tokens.css            Type, spacing, colour, radii, motion — every token
+    base.css              Element reset and the single global focus style
+    index.ts              PUBLIC ENTRY POINT for primitives
   lib/                    Cross-cutting infrastructure with no domain knowledge
     db.ts                 Database client and transaction helper
     config.ts             Validated environment configuration
@@ -70,9 +74,14 @@ tests/
 docs/
 ```
 
-Path aliases are `@/app/*`, `@/modules/*`, and `@/lib/*`. There is deliberately
-no catch-all `@/*` alias: the three explicit aliases are what make the import
-restrictions in section 4 expressible.
+Path aliases are `@/app/*`, `@/modules/*`, `@/lib/*`, and `@/ui`. There is
+deliberately no catch-all `@/*` alias: the explicit aliases are what make the
+import restrictions in section 4 expressible.
+
+`src/ui` is presentation only. It may be imported by `app/` and by feature
+components, but it must not know what a bicycle, an order, or a price is —
+ESLint forbids it from importing `@/modules/*` or `@/app/*`. Anything
+domain-aware is a feature component and belongs with its module or in `app/`.
 
 Nothing else belongs at the root of `modules/`. A new domain concept is either a
 new module folder with the same shape, or it belongs inside an existing one.
@@ -453,7 +462,8 @@ reconsideration except under the conditions each ADR names: the modular monolith
 to stable 7.10.0 (ADR-0004), the provider-neutral payment abstraction
 (ADR-0005), manual-first delivery (ADR-0006), object storage for media
 (ADR-0007), the testing strategy (ADR-0008), Russian-first localization
-(ADR-0009), and BYN as integer minor units (ADR-0010).
+(ADR-0009), BYN as integer minor units (ADR-0010), and CSS Modules with design
+tokens for styling (ADR-0011).
 
 What remains open. Each names who must decide and what it blocks; none should be
 silently settled by whoever writes the first line of relevant code.
@@ -478,14 +488,12 @@ silently settled by whoever writes the first line of relevant code.
 7. **Admin scope: custom admin area or an off-the-shelf CMS.** Determines
    whether `app/admin/` is built out at all. Note that ADR-0006's manual-first
    delivery assumes staff have somewhere to record tracking references.
-8. **Styling approach.** The foundation ships plain CSS. Tailwind 4.x was the
-   baseline's recommendation but is neither installed nor decided.
-9. **VAT and currency presentation.** Business decision. Blocks `pricing`.
+8. **VAT and currency presentation.** Business decision. Blocks `pricing`.
    ADR-0010 fixes the representation; how VAT is displayed and whether a second
    currency is shown are not settled.
-10. **Whether Belarusian is added as a second locale.** Business decision.
-    ADR-0009 ships Russian-only and defers the routing segment; this answer
-    activates that deferred work.
+9. **Whether Belarusian is added as a second locale.** Business decision.
+   ADR-0009 ships Russian-only and defers the routing segment; this answer
+   activates that deferred work.
 
 Amending this document is expected as these resolve. Amend it in the pull
 request that makes the change, and record the decision as a new ADR.

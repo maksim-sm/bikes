@@ -81,10 +81,12 @@ src/
   modules/        Domain modules — the modular-monolith seam
     catalog/ pricing/ cart/ orders/
     payments/ delivery/ identity/ media/
+  ui/             Design system: tokens and domain-agnostic primitives
   lib/            Cross-cutting infrastructure with no domain knowledge
     config.ts     Validated environment configuration
     logger.ts     Structured JSON logging
     errors.ts     Error taxonomy
+    i18n/         Locale resolution, Russian messages, Intl formatting
 scripts/          Operational scripts, run outside the application
 docs/             Architecture contract and decision records
 ```
@@ -107,8 +109,35 @@ other than its public `index.ts`, if `lib/` depends on a domain module, or if a
 `domain/` folder reaches for configuration or I/O. A lint error from
 `no-restricted-imports` is a design error, not a style complaint.
 
-Path aliases: `@/app/*`, `@/modules/*`, `@/lib/*`. There is deliberately no
-catch-all `@/*` alias.
+Path aliases: `@/app/*`, `@/modules/*`, `@/lib/*`, `@/ui`. There is deliberately
+no catch-all `@/*` alias.
+
+## Design system
+
+`src/ui` holds the visual foundation: design tokens plus a small set of
+keyboard-accessible primitives — `Button`, `TextLink`, `Card`, `Dialog`, the
+form fields, and the `Container`/`Stack`/`Cluster`/`Grid` layout primitives. It
+is presentation only and may not import domain modules.
+
+Run the app and open **`/ui-kit`** to see every primitive on one page. Tab
+through it: each interactive element must show a visible focus ring, and the
+dialog must trap focus and close on Escape.
+
+Three rules matter more than the rest:
+
+- **Use tokens, never literals.** Every colour, size, and spacing value comes
+  from `src/ui/tokens.css`. Colour pairs there are annotated with their
+  measured WCAG contrast ratio; if you add a colour, measure it first.
+- **Use the real element.** A `<div>` with an onClick handler is not a button.
+  `Button` renders a `<button>`, `TextLink` renders an anchor, and `Dialog` is
+  built on the native `<dialog>` element so the browser provides focus
+  trapping, Escape, and focus restoration.
+- **Never remove the focus ring.** It is defined once, globally, on
+  `:focus-visible`. If it clips, fix the layout.
+
+All user-facing copy lives in `src/lib/i18n/messages/ru.ts`, never inline in a
+component (ADR-0009). Prices are formatted from integer kopeks by
+`formatPrice` (ADR-0010).
 
 ## Where does new code go?
 
@@ -118,6 +147,8 @@ catch-all `@/*` alias.
 | A business rule with no I/O                     | `src/modules/<name>/domain/`         |
 | A use case that coordinates rules and data      | `src/modules/<name>/application/`    |
 | A database query or third-party API call        | `src/modules/<name>/infrastructure/` |
+| A visual primitive with no domain knowledge     | `src/ui/`                            |
+| A user-facing string                            | `src/lib/i18n/messages/ru.ts`        |
 | Something every module needs and no module owns | `src/lib/`                           |
 
 If the answer is not obvious, the module boundaries in `docs/architecture.md`
@@ -132,5 +163,6 @@ decide it. See `src/modules/README.md` for the internal layering rules.
 
 ## Status
 
-Foundation only. No catalogue, cart, checkout, database, or authentication yet.
-The module folders exist so that the first feature has an unambiguous home.
+Foundation and visual system only. No catalogue, cart, checkout, database, or
+authentication yet. The module folders exist so that the first feature has an
+unambiguous home.
