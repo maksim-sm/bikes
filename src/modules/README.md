@@ -48,14 +48,15 @@ existing one.
 These are structural placeholders. No business logic exists yet; the folders
 establish ownership so that the first feature has an obvious home.
 
-| Module     | Owns                                                   |
-| ---------- | ------------------------------------------------------ |
-| `catalog`  | Products, variants, categories, specifications, stock  |
-| `pricing`  | Price calculation, VAT, discounts, currency rules      |
-| `cart`     | Cart aggregate, line items, quantity rules             |
-| `orders`   | Order lifecycle, snapshots, status transitions         |
-| `payments` | Payment attempts, events, refunds                      |
-| `delivery` | Methods, zones, shipment assignment                    |
-| `identity` | Users, sessions, roles, profiles, addresses, wishlists |
-| `media`    | Image storage abstraction                              |
-| `audit`    | Append-only change history                             |
+| Module      | Owns                                                   |
+| ----------- | ------------------------------------------------------ |
+| `catalog`   | Products, variants, categories, specifications         |
+| `pricing`   | Price calculation, VAT, discounts, currency rules      |
+| `cart`      | Cart aggregate, line items, quantity rules             |
+| `orders`    | Order lifecycle, snapshots, status transitions         |
+| `payments`  | Payment attempts, events, refunds                      |
+| `delivery`  | Methods, zones, shipment assignment                    |
+| `identity`  | Users, sessions, roles, profiles, addresses, wishlists |
+| `media`     | Image storage abstraction                              |
+| `inventory` | On-hand, reservations, movements (per variant)         |
+| `audit`     | Append-only change history                             |
