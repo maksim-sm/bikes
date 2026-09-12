@@ -57,5 +57,17 @@ export function createPrismaAuditRepository(
       });
       return rows.map(toRecord);
     },
+    async listRecent(query) {
+      const rows = await client.auditLog.findMany({
+        where: {
+          ...(query.action ? { action: query.action } : {}),
+          ...(query.entityType ? { entityType: query.entityType } : {}),
+          ...(query.entityId ? { entityId: query.entityId } : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        take: query.limit ?? 80,
+      });
+      return rows.map(toRecord);
+    },
   };
 }

@@ -8,6 +8,7 @@ import { t } from "@/lib/i18n";
 import { adminHref } from "../../_lib/paths";
 import { parseProductForm } from "../../_lib/product-form";
 import { recordAdminAudit } from "../../_lib/audit";
+import { pricesChanged, productAuditSnapshot } from "../../_lib/product-audit";
 import { requireAdminCatalog } from "../../_lib/staff";
 
 export type ProductFormState = { ok: boolean; message: string } | null;
@@ -49,7 +50,7 @@ export async function createProductAction(
       action: "catalog.product.create",
       entityType: "product",
       entityId: created.id,
-      after: { slug: created.slug, status: created.status },
+      after: productAuditSnapshot(created),
     });
   } catch (error) {
     return fail(error);
@@ -71,13 +72,24 @@ export async function updateProductAction(
     const admin = await getCatalogAdminServices();
     const before = await admin.getProduct(principal, id);
     const after = await admin.updateProduct(principal, id, parsed);
+    const beforeSnap = productAuditSnapshot(before);
+    const afterSnap = productAuditSnapshot(after);
     await recordAdminAudit(principal, {
       action: "catalog.product.update",
       entityType: "product",
       entityId: id,
-      before: { status: before.status },
-      after: { status: after.status },
+      before: beforeSnap,
+      after: afterSnap,
     });
+    if (pricesChanged(beforeSnap, afterSnap)) {
+      await recordAdminAudit(principal, {
+        action: "catalog.price.update",
+        entityType: "product",
+        entityId: id,
+        before: { prices: beforeSnap.prices },
+        after: { prices: afterSnap.prices },
+      });
+    }
     const removed = [...imageKeysOf(before)].filter(
       (key) => !imageKeysOf(after).has(key),
     );

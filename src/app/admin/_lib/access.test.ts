@@ -31,6 +31,9 @@ describe("admin access", () => {
       "/admin/orders",
       "/admin/deliveries",
       "/admin/inventory",
+      "/admin/customers",
+      "/admin/staff",
+      "/admin/audit",
     ]);
   });
 });

@@ -7,6 +7,7 @@ export interface Clock {
 export interface UserAccountRepository {
   findByEmail(email: string): Promise<AuthUser | null>;
   findById(id: string): Promise<AuthUser | null>;
+  listStaff(): Promise<AuthUser[]>;
   create(input: {
     id?: string;
     email: string;

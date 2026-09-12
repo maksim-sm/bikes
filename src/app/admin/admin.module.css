@@ -189,3 +189,11 @@
     max-width: none;
   }
 }
+
+.payload {
+  display: block;
+  max-width: 18rem;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: var(--text-sm);
+}

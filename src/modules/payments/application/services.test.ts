@@ -203,7 +203,14 @@ describe("payment services", () => {
     provider.succeed(retry.paymentId);
     expect(await payments.getPaymentStatus(retry.paymentId)).toBe("SUCCEEDED");
 
-    const refunded = await payments.refundPayment(retry.paymentId, 4500);
+    await expect(
+      payments.refundAsStaff(customerPrincipal("u1"), retry.paymentId, 4500),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    const refunded = await payments.refundAsStaff(
+      staffPrincipal("ops", ["order_management"]),
+      retry.paymentId,
+      4500,
+    );
     expect(refunded.status).toBe("REFUNDED");
     await expect(payments.refundPayment(retry.paymentId, 1)).rejects.toBeInstanceOf(
       ConflictError,

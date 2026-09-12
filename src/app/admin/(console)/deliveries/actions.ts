@@ -1,6 +1,10 @@
 "use server";
 
-import { getDeliveryServices } from "@/app/api/_lib/compose";
+import {
+  getDeliveryServices,
+  getOrderServices,
+  getPaymentServices,
+} from "@/app/api/_lib/compose";
 import { isAppError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { fromDateTimeLocal } from "../../_lib/datetime";
@@ -153,5 +157,81 @@ export async function markDeliveredAction(
     return { ok: true, message: t.admin.markedDelivered };
   } catch (error) {
     return fail(error, t.admin.deliverFailed);
+  }
+}
+
+export async function completeOrderAction(
+  _previous: DeliveryFormState,
+  formData: FormData,
+): Promise<DeliveryFormState> {
+  const principal = await requireAdminOrderManagement();
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  if (!orderId) {
+    return { ok: false, message: t.admin.completeFailed };
+  }
+  try {
+    const order = await (await getOrderServices()).completeOrder(orderId, principal);
+    await recordAdminAudit(principal, {
+      action: "order.complete",
+      entityType: "order",
+      entityId: order.id,
+      after: { status: order.status },
+    });
+    return { ok: true, message: t.admin.orderCompleted };
+  } catch (error) {
+    return fail(error, t.admin.completeFailed);
+  }
+}
+
+export async function cancelOrderAction(
+  _previous: DeliveryFormState,
+  formData: FormData,
+): Promise<DeliveryFormState> {
+  const principal = await requireAdminOrderManagement();
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  if (!orderId) {
+    return { ok: false, message: t.admin.cancelFailed };
+  }
+  try {
+    const orders = await getOrderServices();
+    const order = await orders.cancelOrder(orderId, principal);
+    await orders.applyFulfillmentEvent(orderId, principal, { type: "cancelled" });
+    await recordAdminAudit(principal, {
+      action: "order.cancel",
+      entityType: "order",
+      entityId: order.id,
+      after: { status: "CANCELLED" },
+    });
+    return { ok: true, message: t.admin.orderCancelled };
+  } catch (error) {
+    return fail(error, t.admin.cancelFailed);
+  }
+}
+
+export async function refundPaymentAction(
+  _previous: DeliveryFormState,
+  formData: FormData,
+): Promise<DeliveryFormState> {
+  const principal = await requireAdminOrderManagement();
+  const paymentId = String(formData.get("paymentId") ?? "").trim();
+  const amountMinor = parsePriceBynToMinor(String(formData.get("amountByn") ?? ""));
+  if (!paymentId || amountMinor === null) {
+    return { ok: false, message: t.admin.refundFailed };
+  }
+  try {
+    const payment = await getPaymentServices().refundAsStaff(
+      principal,
+      paymentId,
+      amountMinor,
+    );
+    await recordAdminAudit(principal, {
+      action: "payment.refund",
+      entityType: "payment",
+      entityId: payment.id,
+      after: { status: payment.status, amountMinor },
+    });
+    return { ok: true, message: t.admin.refundDone };
+  } catch (error) {
+    return fail(error, t.admin.refundFailed);
   }
 }

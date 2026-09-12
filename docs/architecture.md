@@ -288,7 +288,8 @@ the helpers in `identity` — do not invent a second permission matrix.
   (`docs/admin.md`). Authorization is checked on the page, in `withRoute`,
   and again inside the service. Staff sessions expire after 30 minutes idle
   or 12 hours absolute (ADR-0029). Admin writes append an `audit` row with
-  actor and request id.
+  actor and request id. Payloads never store secrets or payment instruments;
+  admins read the ledger at `/admin/audit` (ADR-0032).
 
 ## 8. Payment abstraction
 

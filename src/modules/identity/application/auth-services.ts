@@ -1,11 +1,19 @@
 import {
   ConflictError,
+  ForbiddenError,
   NotFoundError,
   RateLimitedError,
   UnauthenticatedError,
   ValidationError,
 } from "@/lib/errors";
-import { requireAuthenticated, requireCustomer, requireStaff } from "./authorization";
+import {
+  requireAdmin,
+  requireAuthenticated,
+  requireCustomer,
+  requireStaff,
+} from "./authorization";
+import { hasCapability } from "../domain/authorization";
+import { isStaffRole, type StaffRole } from "../domain/roles";
 import {
   EMAIL_VERIFY_TTL_MS,
   PASSWORD_RESET_TTL_MS,
@@ -83,6 +91,18 @@ export interface AuthServices {
     principal: Principal,
     userIds: readonly string[],
   ): Promise<Array<{ userId: string; email: string }>>;
+  listStaff(
+    principal: Principal,
+  ): Promise<Array<{ userId: string; email: string; roles: StaffRole[] }>>;
+  setStaffRoles(
+    principal: Principal,
+    userId: string,
+    roles: readonly string[],
+  ): Promise<{ userId: string; email: string; before: StaffRole[]; after: StaffRole[] }>;
+  lookupCustomer(
+    principal: Principal,
+    email: string,
+  ): Promise<{ userId: string; email: string }>;
   changePassword(input: {
     principal: Principal;
     currentPassword: string;
@@ -367,6 +387,49 @@ export function createAuthServices(deps: {
       return found.flatMap((user) =>
         user ? [{ userId: user.id, email: user.email }] : [],
       );
+    },
+
+    async listStaff(principal) {
+      requireAdmin(principal);
+      const staff = await deps.users.listStaff();
+      return staff.map((user) => ({
+        userId: user.id,
+        email: user.email,
+        roles: user.staffRoles,
+      }));
+    },
+
+    async setStaffRoles(principal, userId, roles) {
+      const actor = requireAdmin(principal);
+      const next = [...new Set(roles.filter(isStaffRole))];
+      if (
+        next.length !== new Set(roles.map((role) => role.trim()).filter(Boolean)).size
+      ) {
+        throw new ValidationError("unknown staff role");
+      }
+      if (userId === actor.userId && !next.includes("admin")) {
+        throw new ConflictError("cannot remove own admin role");
+      }
+      const user = await deps.users.findById(userId);
+      if (!user || user.role !== "STAFF") {
+        throw new NotFoundError("staff account not found", { userId });
+      }
+      const before = [...user.staffRoles];
+      user.staffRoles = next;
+      await deps.users.save(user);
+      return { userId: user.id, email: user.email, before, after: [...user.staffRoles] };
+    },
+
+    async lookupCustomer(principal, email) {
+      const staff = requireStaff(principal);
+      if (!hasCapability(staff, "read_any_customer")) {
+        throw new ForbiddenError("customer records are not readable");
+      }
+      const user = await deps.users.findByEmail(normalizeEmail(email));
+      if (!user || user.role !== "CUSTOMER") {
+        throw new NotFoundError("customer not found");
+      }
+      return { userId: user.id, email: user.email };
     },
 
     async changePassword(input) {

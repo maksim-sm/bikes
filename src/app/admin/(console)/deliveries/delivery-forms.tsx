@@ -7,8 +7,11 @@ import { toDateTimeLocal } from "../../_lib/datetime";
 import styles from "../../admin.module.css";
 import {
   assignShipmentAction,
+  cancelOrderAction,
+  completeOrderAction,
   markDeliveredAction,
   markShippedAction,
+  refundPaymentAction,
   updateTrackingAction,
   type DeliveryFormState,
 } from "./actions";
@@ -190,6 +193,64 @@ export function MarkDeliveredForm({ orderId }: { orderId?: string }) {
       )}
       <Button type="submit" variant="primary" disabled={pending}>
         {t.admin.deliverSubmit}
+      </Button>
+      {state ? <FormStatus state={state} /> : null}
+    </form>
+  );
+}
+
+export function CompleteOrderForm() {
+  const [state, action, pending] = useActionState<DeliveryFormState, FormData>(
+    completeOrderAction,
+    null,
+  );
+  return (
+    <form action={action} className={styles.form}>
+      <h2>{t.admin.completeTitle}</h2>
+      <TextField name="orderId" label={t.admin.orderId} required autoComplete="off" />
+      <Button type="submit" variant="primary" disabled={pending}>
+        {t.admin.completeSubmit}
+      </Button>
+      {state ? <FormStatus state={state} /> : null}
+    </form>
+  );
+}
+
+export function CancelOrderForm() {
+  const [state, action, pending] = useActionState<DeliveryFormState, FormData>(
+    cancelOrderAction,
+    null,
+  );
+  return (
+    <form action={action} className={styles.form}>
+      <h2>{t.admin.cancelTitle}</h2>
+      <TextField name="orderId" label={t.admin.orderId} required autoComplete="off" />
+      <Button type="submit" variant="primary" disabled={pending}>
+        {t.admin.cancelSubmit}
+      </Button>
+      {state ? <FormStatus state={state} /> : null}
+    </form>
+  );
+}
+
+export function RefundPaymentForm() {
+  const [state, action, pending] = useActionState<DeliveryFormState, FormData>(
+    refundPaymentAction,
+    null,
+  );
+  return (
+    <form action={action} className={styles.form}>
+      <h2>{t.admin.refundTitle}</h2>
+      <p className={styles.hint}>{t.admin.refundLead}</p>
+      <TextField name="paymentId" label={t.admin.paymentId} required autoComplete="off" />
+      <TextField
+        name="amountByn"
+        label={t.admin.refundAmountByn}
+        required
+        inputMode="decimal"
+      />
+      <Button type="submit" variant="primary" disabled={pending}>
+        {t.admin.refundSubmit}
       </Button>
       {state ? <FormStatus state={state} /> : null}
     </form>

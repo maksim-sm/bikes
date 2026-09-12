@@ -1,4 +1,4 @@
-# ADR-0030: Admin inventory operations
+# ADR-0031: Admin inventory operations
 
 - Status: Accepted
 - Date: 2026-09-12

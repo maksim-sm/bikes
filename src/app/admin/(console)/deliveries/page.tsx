@@ -8,8 +8,11 @@ import { requireAdminOrderManagement } from "../../_lib/staff";
 import styles from "../../admin.module.css";
 import {
   AssignShipmentForm,
+  CancelOrderForm,
+  CompleteOrderForm,
   MarkDeliveredForm,
   MarkShippedForm,
+  RefundPaymentForm,
   UpdateTrackingForm,
 } from "./delivery-forms";
 
@@ -187,6 +190,9 @@ export default async function AdminDeliveriesPage({
       />
       <MarkShippedForm />
       <MarkDeliveredForm />
+      <CompleteOrderForm />
+      <CancelOrderForm />
+      <RefundPaymentForm />
     </div>
   );
 }
