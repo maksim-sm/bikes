@@ -72,3 +72,37 @@ export function addToLine(
 export function removeLine(items: readonly CartLine[], variantId: string): CartLine[] {
   return items.filter((item) => item.variantId !== variantId);
 }
+
+export function mergeCartItems(
+  target: readonly CartLine[],
+  incoming: readonly CartLine[],
+): CartLine[] {
+  let items = [...target];
+  for (const line of incoming) {
+    const existing = items.find((item) => item.variantId === line.variantId);
+    const quantity = Math.min(
+      MAX_LINE_QUANTITY,
+      (existing?.quantity ?? 0) + line.quantity,
+    );
+    items = upsertLine(items, line.variantId, quantity);
+  }
+  return items;
+}
+
+export function replaceLineVariant(
+  items: readonly CartLine[],
+  fromVariantId: string,
+  toVariantId: string,
+): CartLine[] {
+  const from = items.find((item) => item.variantId === fromVariantId);
+  if (!from) {
+    throw new Error("line_not_found");
+  }
+  if (fromVariantId === toVariantId) {
+    return [...items];
+  }
+  const remaining = removeLine(items, fromVariantId);
+  const existing = remaining.find((item) => item.variantId === toVariantId);
+  const quantity = Math.min(MAX_LINE_QUANTITY, from.quantity + (existing?.quantity ?? 0));
+  return upsertLine(remaining, toVariantId, quantity);
+}

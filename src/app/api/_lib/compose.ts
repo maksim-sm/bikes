@@ -16,9 +16,14 @@ import {
 import {
   createCartServices,
   createMemoryCartRepository,
+  createPrismaCartRepository,
   type CartCatalog,
+  type CartRepository,
   type CartServices,
+  type CartVariantSnapshot,
 } from "@/modules/cart";
+import { isListedOnStorefront, isSellableVariant } from "@/modules/catalog";
+import { createPricingServices } from "@/modules/pricing";
 import {
   createDemoDeliveryRepository,
   createDeliveryServices,
@@ -133,7 +138,22 @@ let catalogOverride: CatalogRepository | null = null;
 let catalogPromise: Promise<CatalogRepository> | null = null;
 let inventoryOverride: CatalogInventory | null = null;
 let inventoryPromise: Promise<CatalogInventory> | null = null;
+let cartOverride: CartRepository | null = null;
 let cartRepo = createMemoryCartRepository();
+let cartPromise: Promise<CartRepository> | null = null;
+
+const composeGlobals = globalThis as unknown as {
+  bikesMemoryCart?: CartRepository;
+  bikesAuthPromise?: Promise<AuthServices>;
+};
+
+function sharedMemoryCart(): CartRepository {
+  if (process.env.VITEST === "true") {
+    return cartRepo;
+  }
+  composeGlobals.bikesMemoryCart ??= createMemoryCartRepository();
+  return composeGlobals.bikesMemoryCart;
+}
 const demoCatalog = createDemoCatalogRepository();
 const demoInventory = createDemoCatalogInventory();
 let orderRepo: OrderRepository = emptyOrders;
@@ -201,18 +221,92 @@ export async function getCatalogInventory(): Promise<CatalogInventory> {
 function storefrontCatalog(): CartCatalog {
   return {
     async variantIsPurchasable(variantId) {
+      const [snapshot] = await this.getVariantSnapshots([variantId]);
+      return snapshot?.purchasable === true;
+    },
+    async getVariantSnapshots(variantIds) {
+      if (variantIds.length === 0) {
+        return [];
+      }
+      const wanted = new Set(variantIds);
+      const catalog = await getCatalogRepository();
       const inventory = await getCatalogInventory();
-      const stock = await inventory.listAvailabilityByVariantIds([variantId]);
-      return (stock[0]?.available ?? 0) > 0;
+      const products = await catalog.listAll();
+      const now = new Date();
+      const relatedIds = products.flatMap((product) =>
+        product.variants.some((variant) => wanted.has(variant.id))
+          ? product.variants.map((variant) => variant.id)
+          : [],
+      );
+      const stockRows = await inventory.listAvailabilityByVariantIds(relatedIds);
+      const availableById = new Map(
+        stockRows.map((row) => [row.variantId, row.available]),
+      );
+      const snapshots: CartVariantSnapshot[] = [];
+      for (const product of products) {
+        const listed = isListedOnStorefront(product, now);
+        for (const variant of product.variants) {
+          if (!wanted.has(variant.id)) {
+            continue;
+          }
+          const available = availableById.get(variant.id) ?? 0;
+          snapshots.push({
+            variantId: variant.id,
+            productId: product.id,
+            productSlug: product.slug,
+            productName: product.name,
+            brandName: product.brandName,
+            frameSize: variant.frameSize,
+            color: variant.color,
+            wheelSize: variant.wheelSize,
+            listPriceMinor: variant.listPriceMinor,
+            available,
+            purchasable: listed && isSellableVariant(variant) && available > 0,
+            siblings: product.variants
+              .filter((other) => other.id !== variant.id)
+              .map((other) => {
+                const otherAvailable = availableById.get(other.id) ?? 0;
+                return {
+                  variantId: other.id,
+                  frameSize: other.frameSize,
+                  color: other.color,
+                  wheelSize: other.wheelSize,
+                  listPriceMinor: other.listPriceMinor,
+                  available: otherAvailable,
+                  purchasable: listed && isSellableVariant(other) && otherAvailable > 0,
+                };
+              }),
+          });
+        }
+      }
+      return snapshots;
     },
   };
 }
 
-export function getCartServices(): CartServices {
+async function getCartRepository(): Promise<CartRepository> {
+  if (cartOverride) {
+    return cartOverride;
+  }
+  if (process.env.VITEST === "true" || process.env.NODE_ENV !== "production") {
+    return sharedMemoryCart();
+  }
+  if (!cartPromise) {
+    cartPromise = createPrismaCartRepository();
+  }
+  return cartPromise;
+}
+
+export async function getCartServices(): Promise<CartServices> {
   return createCartServices({
-    carts: cartRepo,
+    carts: await getCartRepository(),
     catalog: storefrontCatalog(),
+    pricing: createPricingServices(),
   });
+}
+
+export function setCartRepository(repository: CartRepository): void {
+  cartOverride = repository;
 }
 
 export function getDeliveryServices(): DeliveryServices {
@@ -258,7 +352,11 @@ export function resetRepositories(): void {
   mediaPromise = null;
   stockOverride = null;
   stockPromise = null;
+  cartOverride = null;
+  cartPromise = null;
   cartRepo = createMemoryCartRepository();
+  composeGlobals.bikesMemoryCart = cartRepo;
+  delete composeGlobals.bikesAuthPromise;
 }
 
 export function setInventoryServices(services: InventoryServices): void {
@@ -345,15 +443,19 @@ export async function getAuthServices(): Promise<AuthServices> {
   if (authOverride) {
     return authOverride;
   }
-  if (!authPromise) {
-    authPromise =
-      process.env.VITEST === "true"
-        ? createMemoryAuthServices()
-        : process.env.NODE_ENV !== "production"
-          ? createDemoAuthServices()
-          : import("@/modules/identity").then((mod) => mod.createPrismaAuthServices());
+  if (process.env.VITEST === "true") {
+    if (!authPromise) {
+      authPromise = createMemoryAuthServices();
+    }
+    return authPromise;
   }
-  return authPromise;
+  if (!composeGlobals.bikesAuthPromise) {
+    composeGlobals.bikesAuthPromise =
+      process.env.NODE_ENV !== "production"
+        ? createDemoAuthServices()
+        : import("@/modules/identity").then((mod) => mod.createPrismaAuthServices());
+  }
+  return composeGlobals.bikesAuthPromise;
 }
 
 export function getPaymentServices() {

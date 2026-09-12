@@ -1,7 +1,13 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuthServices } from "@/app/api/_lib/compose";
+import { mergeGuestCartForPrincipal } from "@/app/_lib/complete-login";
+import {
+  GUEST_CART_COOKIE,
+  clearGuestCartCookie,
+} from "@/app/(storefront)/_lib/guest-cart";
 import { isAppError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { DEMO_STAFF_EMAIL, DEMO_STAFF_PASSWORD, hasCapability } from "@/modules/identity";
@@ -29,6 +35,10 @@ async function signIn(email: string, password: string): Promise<LoginState> {
       return { ok: false, message: t.admin.loginForbidden };
     }
     await writeSessionCookie(result.cookie);
+    const guestToken = (await cookies()).get(GUEST_CART_COOKIE)?.value ?? null;
+    if (await mergeGuestCartForPrincipal(result.principal, guestToken)) {
+      await clearGuestCartCookie();
+    }
   } catch (error) {
     if (isAppError(error)) {
       return { ok: false, message: t.admin.loginFailed };

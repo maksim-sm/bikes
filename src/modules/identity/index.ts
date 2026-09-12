@@ -83,6 +83,7 @@ export {
   readCookieValue,
   serializeCookie,
   sessionCookie,
+  type HttpOnlyCookie,
   type SessionCookie,
 } from "./domain/cookie";
 export { createAuthServices, type AuthServices } from "./application/auth-services";

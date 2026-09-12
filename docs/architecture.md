@@ -23,10 +23,12 @@ TypeScript, the `src/` layout below, configuration validation, the ESLint
 boundary rules, the design system, the Prisma schema through the inventory
 ledger, application services, and versioned Route Handlers under `/api/v1`.
 Cookie sessions and customer auth live in `identity`. Prisma repositories
-exist for auth tables and catalog listing; other modules still use in-memory
-ports. Integration and end-to-end test tiers are still targets. Storefront
-product, catalog, and guest-cart pages exist; staff can manage the catalogue
-under `/admin`. There is no customer account UI yet.
+exist for auth tables, catalog listing, inventory, media, and production
+carts. Local demo catalogue and cart stay in-memory. Integration and
+end-to-end test tiers are still targets. Storefront product, catalog, and
+cart pages exist; staff can manage the catalogue under `/admin`. There is
+no customer account UI yet. Cart totals are recalculated server-side
+(`docs/cart.md`).
 
 ## 1. Why a modular monolith
 
@@ -446,9 +448,10 @@ Rules:
 - **Secrets come only from validated environment variables** through
   `lib/config.ts`, which fails fast at startup if a required variable is missing.
   No secret is committed, and `.env.example` lists names with empty values.
-- **Prices and stock are recomputed server-side at checkout.** A cart submitted
-  from the browser is a list of product ids and quantities, never prices. This
-  is the most commonly exploited weakness in small ecommerce builds.
+- **Prices and stock are recomputed server-side on every cart read and at
+  checkout.** A cart submitted from the browser is a list of product ids and
+  quantities, never prices. This is the most commonly exploited weakness in
+  small ecommerce builds.
 - **Webhooks verify provider signatures** before any processing, and are
   idempotent.
 - **Mutations are CSRF-protected**, cookies are httpOnly/Secure/SameSite, and

@@ -39,3 +39,4 @@ Rules:
 | [0017](0017-staff-authorization-roles.md)     | Staff job titles and ownership checks          | Accepted                                                    |
 | [0018](0018-postgres-catalog-listing.md)      | Catalogue listing in PostgreSQL, no ES         | Accepted                                                    |
 | [0019](0019-postgres-catalog-search.md)       | Indexed Postgres FTS for catalogue search      | Accepted                                                    |
+| [0020](0020-persistent-cart.md)               | Persistent carts; server-side price/stock      | Accepted                                                    |

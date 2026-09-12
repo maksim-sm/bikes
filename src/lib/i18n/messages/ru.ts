@@ -130,6 +130,18 @@ export const ru = {
     continueShopping: "Вернуться в каталог",
     quantity: "Количество",
     added: "Товар добавлен",
+    update: "Обновить",
+    remove: "Удалить",
+    variant: "Комплектация",
+    unitPrice: "Цена",
+    lineTotal: "Сумма",
+    subtotal: "Итого",
+    updated: "Корзина обновлена",
+    removed: "Товар удалён",
+    updateFailed: "Не удалось обновить корзину",
+    unavailable: "Этой комплектации нет в продаже",
+    insufficient: "Доступно только",
+    missing: "Товар недоступен",
   },
 
   admin: {
