@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { Product } from "@/modules/catalog";
+import { createMemoryCatalogRepository, type Product } from "@/modules/catalog";
 import { GET as getHealth } from "@/app/api/health/route";
 import { GET as getSession } from "@/app/api/v1/session/route";
 import { GET as getProducts } from "@/app/api/v1/products/route";
@@ -14,7 +14,12 @@ const published: Product = {
   status: "PUBLISHED",
   publishedAt: new Date("2026-01-01T00:00:00.000Z"),
   brandName: "Trek",
+  brandSlug: "trek",
   categorySlug: "road",
+  bicycleType: "ROAD",
+  frameMaterial: null,
+  groupset: null,
+  brakeType: null,
   variants: [],
 };
 
@@ -48,24 +53,19 @@ describe("route handler conventions", () => {
   });
 
   it("lists products through DTOs", async () => {
-    setCatalogRepository({
-      async findBySlug() {
-        return published;
-      },
-      async listPublished() {
-        return [published];
-      },
-    });
+    setCatalogRepository(createMemoryCatalogRepository({ products: [published] }));
     const response = await getProducts(new Request("http://localhost/api/v1/products"));
     const body = (await response.json()) as {
       data: Array<Record<string, unknown>>;
       meta: { total: number };
     };
-    expect(body.data[0]).toEqual({
+    expect(body.data[0]).toMatchObject({
       slug: "emonda",
       name: "Émonda",
       brandName: "Trek",
+      brandSlug: "trek",
       categorySlug: "road",
+      bicycleType: "ROAD",
     });
     expect(body.meta.total).toBe(1);
   });

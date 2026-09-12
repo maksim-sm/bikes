@@ -37,3 +37,4 @@ Rules:
 | [0015](0015-http-route-handler-contract.md)   | Route Handler envelope, auth, and DTOs         | Accepted                                                    |
 | [0016](0016-customer-authentication.md)       | Argon2id + hashed httpOnly sessions            | Accepted                                                    |
 | [0017](0017-staff-authorization-roles.md)     | Staff job titles and ownership checks          | Accepted                                                    |
+| [0018](0018-postgres-catalog-listing.md)      | Catalogue listing in PostgreSQL, no ES         | Accepted                                                    |

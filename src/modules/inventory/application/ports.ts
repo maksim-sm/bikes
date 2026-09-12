@@ -18,4 +18,5 @@ export interface InventoryRepository {
   getReservation(id: string): Promise<Reservation | null>;
   saveReservation(reservation: Reservation): Promise<Reservation>;
   listDueActive(now: Date): Promise<Reservation[]>;
+  listInStockVariantIds(): Promise<string[]>;
 }

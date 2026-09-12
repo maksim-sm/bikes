@@ -6,5 +6,7 @@ export const dynamic = "force-dynamic";
 
 export const GET = withRoute("public", async (ctx) => {
   const slug = ctx.url.pathname.split("/").pop() ?? "";
-  return { data: await getProductHttp(getCatalogRepository(), new Date(), slug) };
+  return {
+    data: await getProductHttp(await getCatalogRepository(), new Date(), slug),
+  };
 });

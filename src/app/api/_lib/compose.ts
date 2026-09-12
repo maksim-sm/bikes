@@ -1,4 +1,10 @@
-import type { CatalogRepository } from "@/modules/catalog";
+import type {
+  CatalogInventory,
+  CatalogListQuery,
+  CatalogRepository,
+} from "@/modules/catalog";
+import { createPrismaCatalogRepository } from "@/modules/catalog";
+import { createPrismaCatalogInventory } from "@/modules/inventory";
 import {
   createCustomerServices,
   createMemoryAuthServices,
@@ -20,7 +26,19 @@ export const emptyCatalog: CatalogRepository = {
   async findBySlug() {
     return null;
   },
-  async listPublished() {
+  async listPublished(_query: CatalogListQuery) {
+    return { items: [], total: 0 };
+  },
+  async listCategories() {
+    return [];
+  },
+  async listBrands() {
+    return [];
+  },
+};
+
+const emptyInventory: CatalogInventory = {
+  async listInStockVariantIds() {
     return [];
   },
 };
@@ -62,7 +80,10 @@ const emptyPaymentOrders: PaymentOrder = {
   async applyEvent() {},
 };
 
-let catalogRepo: CatalogRepository = emptyCatalog;
+let catalogOverride: CatalogRepository | null = null;
+let catalogPromise: Promise<CatalogRepository> | null = null;
+let inventoryOverride: CatalogInventory | null = null;
+let inventoryPromise: Promise<CatalogInventory> | null = null;
 let orderRepo: OrderRepository = emptyOrders;
 let customerRepo: CustomerRepository = createMemoryCustomerRepository();
 let wishlistRepo: WishlistRepository = createMemoryWishlistRepository();
@@ -74,8 +95,30 @@ let wishlistCatalog: WishlistCatalog = {
 let authOverride: AuthServices | null = null;
 let authPromise: Promise<AuthServices> | null = null;
 
-export function getCatalogRepository(): CatalogRepository {
-  return catalogRepo;
+export async function getCatalogRepository(): Promise<CatalogRepository> {
+  if (catalogOverride) {
+    return catalogOverride;
+  }
+  if (process.env.VITEST === "true") {
+    return emptyCatalog;
+  }
+  if (!catalogPromise) {
+    catalogPromise = createPrismaCatalogRepository();
+  }
+  return catalogPromise;
+}
+
+export async function getCatalogInventory(): Promise<CatalogInventory> {
+  if (inventoryOverride) {
+    return inventoryOverride;
+  }
+  if (process.env.VITEST === "true") {
+    return emptyInventory;
+  }
+  if (!inventoryPromise) {
+    inventoryPromise = createPrismaCatalogInventory();
+  }
+  return inventoryPromise;
 }
 
 export function getOrderRepository(): OrderRepository {
@@ -84,7 +127,11 @@ export function getOrderRepository(): OrderRepository {
 
 /** Test-only substitution. Production will pass Prisma repositories. */
 export function setCatalogRepository(repository: CatalogRepository): void {
-  catalogRepo = repository;
+  catalogOverride = repository;
+}
+
+export function setCatalogInventory(inventory: CatalogInventory): void {
+  inventoryOverride = inventory;
 }
 
 export function setOrderRepository(repository: OrderRepository): void {
@@ -92,7 +139,10 @@ export function setOrderRepository(repository: OrderRepository): void {
 }
 
 export function resetRepositories(): void {
-  catalogRepo = emptyCatalog;
+  catalogOverride = null;
+  catalogPromise = null;
+  inventoryOverride = null;
+  inventoryPromise = null;
   orderRepo = emptyOrders;
   customerRepo = createMemoryCustomerRepository();
   wishlistRepo = createMemoryWishlistRepository();

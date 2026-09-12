@@ -15,15 +15,17 @@ decisions behind it — when an ADR and this document disagree, the most recent
 accepted ADR is correct and this document needs updating.
 `docs/inventory.md` defines on-hand, reserved, available, expiration, release,
 and commit. `docs/api.md` is the external HTTP contract. `docs/auth.md`
-defines principals, staff titles, and customer isolation.
+defines principals, staff titles, and customer isolation. `docs/catalog.md`
+defines storefront listing filters (PostgreSQL, not Elasticsearch).
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
 boundary rules, the design system, the Prisma schema through the inventory
 ledger, application services, and versioned Route Handlers under `/api/v1`.
 Cookie sessions and customer auth live in `identity`. Prisma repositories
-exist for auth tables; other modules still use in-memory ports. Integration
-and end-to-end test tiers are still targets. No storefront account UI yet.
+exist for auth tables and catalog listing; other modules still use in-memory
+ports. Integration and end-to-end test tiers are still targets. No storefront
+account UI yet.
 
 ## 1. Why a modular monolith
 

@@ -109,13 +109,17 @@ Query: `page` (default 1), `pageSize` (default 20, max 100).
 
 ## Filtering
 
-Each list declares the filter keys it accepts (`category`, `q` on products).
-Any other key except `page`, `pageSize`, `sort`, and `order` is rejected.
+Each list declares the filter keys it accepts. Products accept `category`,
+`brand`, `bicycleType`, `frameSize`, `wheelSize`, `minPrice`, `maxPrice`,
+`available`, `q`, `frameMaterial`, `groupset`, and `brakeType`. Filtering
+runs in PostgreSQL (`docs/catalog.md`). Any other key except `page`,
+`pageSize`, `sort`, and `order` is rejected.
 
 ## Sorting
 
 `sort=<allowedField>&order=asc|desc`. Unknown fields are `validation_failed`.
-Each list names its default (products: `publishedAt desc`).
+Each list names its default (products: `publishedAt desc`; also `name`,
+`price`).
 
 ## Request IDs
 
@@ -146,8 +150,10 @@ webhook bodies.
 | POST   | `/api/v1/auth/email/resend`           | public   | Resend verification (opaque)         |
 | POST   | `/api/v1/auth/password/forgot`        | public   | Request reset (opaque)               |
 | POST   | `/api/v1/auth/password/reset`         | public   | Set new password; revoke sessions    |
-| GET    | `/api/v1/products`                    | public   | Published catalogue, paginated       |
+| GET    | `/api/v1/products`                    | public   | Published catalogue, DB-filtered     |
 | GET    | `/api/v1/products/:slug`              | public   | Published product detail             |
+| GET    | `/api/v1/categories`                  | public   | Category tree for discovery          |
+| GET    | `/api/v1/brands`                      | public   | Brands for discovery                 |
 | GET    | `/api/v1/orders/:id`                  | customer | Order DTO (ownership in service)     |
 | GET    | `/api/v1/customers/:userId/profile`   | customer | Profile DTO (self or manager/admin)  |
 | GET    | `/api/v1/customers/:userId/addresses` | customer | Address DTOs (self or manager/admin) |

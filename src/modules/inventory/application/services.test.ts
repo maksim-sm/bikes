@@ -74,6 +74,11 @@ function memoryInventory(initial: InventoryItem): InventoryRepository {
       reservations.set(reservation.id, reservation);
       return reservation;
     },
+    async listInStockVariantIds() {
+      return [...items.values()]
+        .filter((item) => item.onHand - item.reserved > 0)
+        .map((item) => item.variantId);
+    },
     async listDueActive(at) {
       return [...reservations.values()].filter(
         (row) => row.status === "ACTIVE" && row.expiresAt.getTime() <= at.getTime(),

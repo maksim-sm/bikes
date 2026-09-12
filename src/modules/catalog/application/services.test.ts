@@ -15,13 +15,19 @@ function product(overrides: Partial<Product> = {}): Product {
     status: "PUBLISHED",
     publishedAt: new Date("2026-09-01T00:00:00.000Z"),
     brandName: "Trek",
+    brandSlug: "trek",
     categorySlug: "road",
+    bicycleType: "ROAD",
+    frameMaterial: "карбон",
+    groupset: "Shimano 105",
+    brakeType: "ободной",
     variants: [
       {
         id: "v1",
         productId: "p1",
         sku: "EM-M-BLK",
         frameSize: "M",
+        wheelSize: "28",
         color: "чёрный",
         listPriceMinor: 349900,
         currency: "BYN",
@@ -37,8 +43,15 @@ function memoryCatalog(products: Product[]): CatalogRepository {
     async findBySlug(slug) {
       return products.find((item) => item.slug === slug) ?? null;
     },
-    async listPublished(at) {
-      return products.filter((item) => isListedOnStorefront(item, at));
+    async listPublished(query) {
+      const items = products.filter((item) => isListedOnStorefront(item, query.now));
+      return { items, total: items.length };
+    },
+    async listCategories() {
+      return [];
+    },
+    async listBrands() {
+      return [];
     },
   };
 }
@@ -74,8 +87,13 @@ describe("catalog services", () => {
       catalog: memoryCatalog([product(), product({ slug: "draft", status: "DRAFT" })]),
       clock: { now: () => now },
     });
-    const listed = await catalog.listPublishedProducts();
-    expect(listed.map((item) => item.slug)).toEqual(["emonda"]);
+    const listed = await catalog.listPublishedProducts({
+      page: 1,
+      pageSize: 20,
+      sort: { field: "publishedAt", direction: "desc" },
+      filters: {},
+    });
+    expect(listed.items.map((item) => item.slug)).toEqual(["emonda"]);
   });
 
   it("does not leak unpublished products by slug", async () => {

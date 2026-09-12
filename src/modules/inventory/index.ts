@@ -21,3 +21,4 @@ export {
 } from "./domain/inventory";
 export type { Clock, InventoryRepository } from "./application/ports";
 export { createInventoryServices, type InventoryServices } from "./application/services";
+export { createPrismaCatalogInventory } from "./application/create-inventory";

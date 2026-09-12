@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NotFoundError, ValidationError } from "@/lib/errors";
-import type { CatalogRepository, Product } from "@/modules/catalog";
+import { createMemoryCatalogRepository, type Product } from "@/modules/catalog";
 import { toProductDetailDto, toProductListDto } from "./dto";
 import { getProductHttp, listProductsHttp } from "./query";
 
@@ -15,13 +15,19 @@ function product(overrides: Partial<Product> = {}): Product {
     status: "PUBLISHED",
     publishedAt: new Date("2026-01-01T00:00:00.000Z"),
     brandName: "Trek",
+    brandSlug: "trek",
     categorySlug: "road",
+    bicycleType: "ROAD",
+    frameMaterial: "карбон",
+    groupset: "Shimano 105",
+    brakeType: "ободной",
     variants: [
       {
         id: "v1",
         productId: "p1",
         sku: "EM-M",
         frameSize: "M",
+        wheelSize: "28",
         color: "чёрный",
         listPriceMinor: 349900,
         currency: "BYN",
@@ -32,25 +38,29 @@ function product(overrides: Partial<Product> = {}): Product {
   };
 }
 
-function repo(products: Product[]): CatalogRepository {
-  return {
-    async findBySlug(slug) {
-      return products.find((item) => item.slug === slug) ?? null;
-    },
-    async listPublished() {
-      return products.filter((item) => item.status === "PUBLISHED");
-    },
-  };
+function catalog(products: Product[]) {
+  return createMemoryCatalogRepository({
+    products,
+    categories: [
+      { slug: "bikes", name: "Велосипеды", parentSlug: null, sortOrder: 0 },
+      { slug: "road", name: "Шоссе", parentSlug: "bikes", sortOrder: 1 },
+      { slug: "mtb", name: "MTB", parentSlug: "bikes", sortOrder: 2 },
+    ],
+    brands: [{ slug: "trek", name: "Trek" }],
+  });
 }
 
 describe("product HTTP mapping", () => {
   it("does not expose internal product fields on the list DTO", () => {
     const dto = toProductListDto(product());
-    expect(dto).toEqual({
+    expect(dto).toMatchObject({
       slug: "emonda",
       name: "Émonda",
       brandName: "Trek",
+      brandSlug: "trek",
       categorySlug: "road",
+      bicycleType: "ROAD",
+      priceFromMinor: 349900,
     });
     expect(dto).not.toHaveProperty("status");
     expect(dto).not.toHaveProperty("variants");
@@ -60,28 +70,73 @@ describe("product HTTP mapping", () => {
 
 describe("product HTTP query", () => {
   it("filters, sorts, and paginates without returning the service object", async () => {
-    const catalog = repo([
-      product({ slug: "a", name: "Alpha", categorySlug: "road" }),
-      product({ slug: "b", name: "Bravo", categorySlug: "mtb" }),
-      product({ slug: "c", name: "Charlie", categorySlug: "road" }),
-    ]);
     const result = await listProductsHttp(
-      catalog,
+      catalog([
+        product({ slug: "a", name: "Alpha", categorySlug: "road" }),
+        product({ slug: "b", name: "Bravo", categorySlug: "mtb", bicycleType: "MTB" }),
+        product({ slug: "c", name: "Charlie", categorySlug: "road" }),
+      ]),
       now,
       new URL(
         "http://localhost/api/v1/products?category=road&sort=name&order=asc&page=1&pageSize=1",
       ),
     );
     expect(result.meta).toEqual({ page: 1, pageSize: 1, total: 2 });
-    expect(result.data).toEqual([
-      { slug: "a", name: "Alpha", brandName: "Trek", categorySlug: "road" },
-    ]);
+    expect(result.data[0]?.slug).toBe("a");
+  });
+
+  it("applies brand, type, size, price, specs, and availability filters", async () => {
+    const cheap = product({
+      id: "p-cheap",
+      slug: "fx",
+      name: "FX",
+      bicycleType: "CITY",
+      frameMaterial: "алюминий",
+      groupset: "Shimano Acera",
+      variants: [
+        {
+          id: "v-cheap",
+          productId: "p-cheap",
+          sku: "FX-S",
+          frameSize: "S",
+          wheelSize: "28",
+          color: "синий",
+          listPriceMinor: 120000,
+          currency: "BYN",
+          isActive: true,
+        },
+      ],
+    });
+    const listed = await listProductsHttp(
+      catalog([product(), cheap]),
+      now,
+      new URL(
+        "http://localhost/api/v1/products?brand=trek&bicycleType=road&frameSize=M&wheelSize=28&minPrice=200000&maxPrice=400000&frameMaterial=%D0%BA%D0%B0%D1%80%D0%B1%D0%BE%D0%BD&groupset=Shimano%20105&available=true",
+      ),
+      {
+        async listInStockVariantIds() {
+          return ["v1"];
+        },
+      },
+    );
+    expect(listed.data.map((row) => row.slug)).toEqual(["emonda"]);
+    const oos = await listProductsHttp(
+      catalog([product()]),
+      now,
+      new URL("http://localhost/api/v1/products?available=true"),
+      {
+        async listInStockVariantIds() {
+          return [];
+        },
+      },
+    );
+    expect(oos.data).toEqual([]);
   });
 
   it("rejects unknown filters", async () => {
     await expect(
       listProductsHttp(
-        repo([]),
+        catalog([]),
         now,
         new URL("http://localhost/api/v1/products?secret=1"),
       ),
@@ -90,7 +145,7 @@ describe("product HTTP query", () => {
 
   it("hides unpublished slugs", async () => {
     await expect(
-      getProductHttp(repo([product({ status: "DRAFT" })]), now, "emonda"),
+      getProductHttp(catalog([product({ status: "DRAFT" })]), now, "emonda"),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 });
