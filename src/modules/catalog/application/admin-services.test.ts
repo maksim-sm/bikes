@@ -149,6 +149,54 @@ describe("catalog admin services", () => {
     });
   });
 
+  it("persists product and variant images with alt text and order", async () => {
+    const { admin } = repos();
+    const created = await admin.createProduct(
+      manager,
+      writeInput({
+        images: [
+          {
+            key: "2026/09/fx-front.png",
+            alt: "FX 3 Disc, вид спереди",
+            role: "PRIMARY",
+            sortOrder: 0,
+          },
+        ],
+        variants: [
+          {
+            sku: "FX-M",
+            frameSize: "M",
+            wheelSize: "28",
+            color: "синий",
+            listPriceMinor: 219900,
+            images: [
+              {
+                key: "2026/09/fx-m.png",
+                alt: "FX 3 Disc, синий",
+                role: "PRIMARY",
+                sortOrder: 0,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(created.images[0]?.key).toBe("2026/09/fx-front.png");
+    expect(created.variants[0]?.images[0]?.alt).toBe("FX 3 Disc, синий");
+    await expect(
+      admin.createProduct(
+        manager,
+        writeInput({
+          slug: "fx-no-alt",
+          images: [{ key: "2026/09/x.png", alt: "  ", role: "PRIMARY", sortOrder: 0 }],
+        }),
+      ),
+    ).rejects.toMatchObject({
+      code: "validation_failed",
+      context: { reason: "product_image_alt_required" },
+    });
+  });
+
   it("rejects incomplete writes and unauthorized callers", async () => {
     const { admin } = repos();
     await expect(

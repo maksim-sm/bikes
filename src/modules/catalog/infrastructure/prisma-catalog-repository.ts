@@ -311,6 +311,20 @@ function variantUpdateData(variant: ProductVariant) {
   };
 }
 
+async function resolveMediaId(
+  tx: Prisma.TransactionClient,
+  key: string,
+): Promise<string> {
+  const existing = await tx.mediaAsset.findUnique({ where: { key } });
+  if (existing) {
+    return existing.id;
+  }
+  const created = await tx.mediaAsset.create({
+    data: { key, contentType: "application/octet-stream", byteSize: 0 },
+  });
+  return created.id;
+}
+
 async function syncVariantMedia(
   tx: Prisma.TransactionClient,
   variantId: string,
@@ -318,19 +332,31 @@ async function syncVariantMedia(
 ): Promise<void> {
   await tx.variantMedia.deleteMany({ where: { variantId } });
   for (const image of images) {
-    const media = await tx.mediaAsset.upsert({
-      where: { key: image.key },
-      create: {
-        key: image.key,
-        contentType: "image/svg+xml",
-        byteSize: 0,
-      },
-      update: {},
-    });
+    const mediaId = await resolveMediaId(tx, image.key);
     await tx.variantMedia.create({
       data: {
         variantId,
-        mediaId: media.id,
+        mediaId,
+        role: image.role,
+        sortOrder: image.sortOrder,
+        alt: image.alt,
+      },
+    });
+  }
+}
+
+async function syncProductMedia(
+  tx: Prisma.TransactionClient,
+  productId: string,
+  images: readonly ProductImage[],
+): Promise<void> {
+  await tx.productMedia.deleteMany({ where: { productId } });
+  for (const image of images) {
+    const mediaId = await resolveMediaId(tx, image.key);
+    await tx.productMedia.create({
+      data: {
+        productId,
+        mediaId,
         role: image.role,
         sortOrder: image.sortOrder,
         alt: image.alt,
@@ -479,6 +505,7 @@ export function createPrismaCatalogRepository(): CatalogRepository {
               });
               await syncVariantMedia(tx, variant.id, variant.images);
             }
+            await syncProductMedia(tx, product.id, product.images);
           } else {
             await tx.product.create({
               data: {
@@ -494,6 +521,7 @@ export function createPrismaCatalogRepository(): CatalogRepository {
             for (const variant of product.variants) {
               await syncVariantMedia(tx, variant.id, variant.images);
             }
+            await syncProductMedia(tx, product.id, product.images);
           }
         });
       } catch (error) {

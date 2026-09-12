@@ -10,7 +10,7 @@ function form(entries: Record<string, string>): FormData {
 }
 
 describe("parseProductForm", () => {
-  it("maps variant status, barcode, and media", () => {
+  it("maps variant status, barcode, and ordered media", () => {
     const parsed = parseProductForm(
       form({
         name: "FX 3 Disc",
@@ -19,6 +19,9 @@ describe("parseProductForm", () => {
         brandSlug: "trek",
         categorySlug: "city",
         bicycleType: "CITY",
+        imageCount: "1",
+        "image-0-key": "2026/09/product.png",
+        "image-0-alt": "FX 3 Disc, общий вид",
         variantCount: "1",
         "variant-0-sku": "FX-M-BLU",
         "variant-0-barcode": "4810001",
@@ -27,24 +30,29 @@ describe("parseProductForm", () => {
         "variant-0-color": "синий",
         "variant-0-price": "2199.00",
         "variant-0-status": "inactive",
-        "variant-0-mediaKey": "demo/fx-m-blue",
-        "variant-0-mediaAlt": "FX 3 Disc, синий",
+        "variant-0-imageCount": "1",
+        "variant-0-image-0-key": "2026/09/fx-m-blue.png",
+        "variant-0-image-0-alt": "FX 3 Disc, синий",
       }),
     );
     expect(parsed).toMatchObject({
+      images: [
+        {
+          key: "2026/09/product.png",
+          alt: "FX 3 Disc, общий вид",
+          role: "PRIMARY",
+          sortOrder: 0,
+        },
+      ],
       variants: [
         {
           sku: "FX-M-BLU",
           barcode: "4810001",
-          frameSize: "M",
-          wheelSize: "28",
-          color: "синий",
-          listPriceMinor: 219900,
           status: "inactive",
           isActive: false,
           images: [
             {
-              key: "demo/fx-m-blue",
+              key: "2026/09/fx-m-blue.png",
               alt: "FX 3 Disc, синий",
               role: "PRIMARY",
               sortOrder: 0,

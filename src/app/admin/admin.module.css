@@ -86,3 +86,36 @@
 .hint {
   color: var(--color-text-muted);
 }
+
+.images {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.imageRow {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.imageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.thumb {
+  width: 8rem;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.upload {
+  display: grid;
+  gap: var(--space-2);
+  font-weight: var(--weight-medium);
+}

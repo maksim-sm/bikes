@@ -4,6 +4,7 @@ import type {
   CatalogRepository,
 } from "@/modules/catalog";
 import {
+  catalogMediaReferences,
   createCatalogAdminServices,
   createCatalogServices,
   createDemoCatalogInventory,
@@ -42,6 +43,15 @@ import {
 import type { OrderRepository } from "@/modules/orders";
 import type { PaymentOrder, PaymentRepository } from "@/modules/payments";
 import { createPaymentServices, MockPaymentProvider } from "@/modules/payments";
+import {
+  createFilesystemMediaStore,
+  createMediaServices,
+  createMemoryMediaReferences,
+  createMemoryMediaRepository,
+  createMemoryMediaStore,
+  createPrismaMediaRepository,
+  type MediaServices,
+} from "@/modules/media";
 
 export const emptyCatalog: CatalogRepository = {
   async findBySlug() {
@@ -130,6 +140,8 @@ let wishlistCatalog: WishlistCatalog = {
 };
 let authOverride: AuthServices | null = null;
 let authPromise: Promise<AuthServices> | null = null;
+let mediaOverride: MediaServices | null = null;
+let mediaPromise: Promise<MediaServices> | null = null;
 
 export async function getCatalogRepository(): Promise<CatalogRepository> {
   if (catalogOverride) {
@@ -234,7 +246,43 @@ export function resetRepositories(): void {
   };
   authOverride = null;
   authPromise = null;
+  mediaOverride = null;
+  mediaPromise = null;
   cartRepo = createMemoryCartRepository();
+}
+
+export function setMediaServices(services: MediaServices): void {
+  mediaOverride = services;
+}
+
+export async function getMediaServices(): Promise<MediaServices> {
+  if (mediaOverride) {
+    return mediaOverride;
+  }
+  if (mediaPromise) {
+    return mediaPromise;
+  }
+  mediaPromise = (async () => {
+    if (process.env.VITEST === "true") {
+      return createMediaServices({
+        store: createMemoryMediaStore(),
+        assets: createMemoryMediaRepository(),
+        references: createMemoryMediaReferences(),
+        clock: { now: () => new Date() },
+      });
+    }
+    const catalog = await getCatalogRepository();
+    return createMediaServices({
+      store: await createFilesystemMediaStore(),
+      assets:
+        process.env.NODE_ENV === "production"
+          ? await createPrismaMediaRepository()
+          : createMemoryMediaRepository(),
+      references: catalogMediaReferences(catalog),
+      clock: { now: () => new Date() },
+    });
+  })();
+  return mediaPromise;
 }
 
 export function setCustomerRepository(repository: CustomerRepository): void {

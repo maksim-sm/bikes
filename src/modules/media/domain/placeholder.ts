@@ -1,11 +1,11 @@
-const KEY = /^[a-zA-Z0-9][a-zA-Z0-9/_-]{0,127}$/;
+const KEY = /^[a-zA-Z0-9][a-zA-Z0-9/_.-]{0,127}$/;
 
 export function mediaSrc(key: string): string {
   return `/api/media/${key.split("/").map(encodeURIComponent).join("/")}`;
 }
 
 export function isMediaKey(key: string): boolean {
-  return KEY.test(key);
+  return !key.includes("..") && KEY.test(key);
 }
 
 function hashHue(key: string): number {

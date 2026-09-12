@@ -47,8 +47,8 @@ off the query string (no EAV).
 Storefront pages under `/products/[slug]` are Server Components. They load a
 published product through catalog services, then ask **inventory** for
 per-variant availability by id (no catalog→inventory SQL join). Delivery quotes
-for Минск come from the delivery module. Images are opaque media keys rendered
-as `/api/media/…` placeholders until the object store is wired.
+for Минск come from the delivery module. Images are opaque media keys. Uploaded files are stored by the `media` module
+and served from `/api/media/…`; unknown demo keys still render placeholders.
 
 Variant size and color are real radio groups. The selected option is marked
 with a thicker border **and** the visible word «выбрано»; color is never the
@@ -74,7 +74,7 @@ A sellable bicycle is a product plus one or more variants. Each variant has:
 | frame size, color, wheel size | Unique together on the same product               |
 | list price                    | Integer kopeks, currency `BYN`                    |
 | status                        | `active` (sellable) or `inactive` (hidden)        |
-| media                         | Opaque media keys via `variant_media`, never URLs |
+| media                         | Opaque keys via `product_media` / `variant_media` |
 
 Inactive variants stay off the storefront and public API. Duplicate SKUs and
 invalid size × color × wheel combinations are rejected in domain validation

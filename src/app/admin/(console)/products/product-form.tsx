@@ -10,6 +10,7 @@ import {
   updateProductAction,
   type ProductFormState,
 } from "./actions";
+import { ImageFields, type ImageDraft } from "./image-fields";
 
 const BICYCLE_TYPES = Object.keys(t.bicycleType) as Array<keyof typeof t.bicycleType>;
 const VARIANT_STATUSES = Object.keys(t.variantStatus) as Array<
@@ -30,6 +31,7 @@ export interface ProductFormModel {
   modelYear: number | null;
   warrantyMonths: number | null;
   warrantyText: string | null;
+  images: Array<{ key: string; alt: string }>;
   variants: Array<{
     id: string;
     sku: string;
@@ -58,8 +60,7 @@ interface VariantDraft {
   color: string;
   price: string;
   status: keyof typeof t.variantStatus;
-  mediaKey: string;
-  mediaAlt: string;
+  images: ImageDraft[];
 }
 
 function emptyDraft(): VariantDraft {
@@ -71,8 +72,7 @@ function emptyDraft(): VariantDraft {
     color: "",
     price: "",
     status: "active",
-    mediaKey: "",
-    mediaAlt: "",
+    images: [],
   };
 }
 
@@ -89,8 +89,7 @@ function toDrafts(product: ProductFormModel | null): VariantDraft[] {
     color: variant.color,
     price: minorToBynInput(variant.listPriceMinor),
     status: variant.status,
-    mediaKey: variant.images[0]?.key ?? "",
-    mediaAlt: variant.images[0]?.alt ?? "",
+    images: variant.images.map((image) => ({ key: image.key, alt: image.alt })),
   }));
 }
 
@@ -109,6 +108,9 @@ export function ProductForm({
     null,
   );
   const [variants, setVariants] = useState<VariantDraft[]>(() => toDrafts(product));
+  const [images, setImages] = useState<ImageDraft[]>(() =>
+    (product?.images ?? []).map((image) => ({ key: image.key, alt: image.alt })),
+  );
 
   return (
     <form action={formAction} className={styles.form}>
@@ -203,6 +205,11 @@ export function ProductForm({
       />
 
       <fieldset className={styles.variant}>
+        <legend>{t.admin.productImages}</legend>
+        <ImageFields namePrefix="image" images={images} onChange={setImages} />
+      </fieldset>
+
+      <fieldset className={styles.variant}>
         <legend>{t.admin.variants}</legend>
         {variants.map((variant, index) => (
           <div key={variant.id ?? `new-${index}`} className={styles.variant}>
@@ -256,15 +263,16 @@ export function ProductForm({
                 </option>
               ))}
             </SelectField>
-            <TextField
-              name={`variant-${index}-mediaKey`}
-              label={t.admin.variantMediaKey}
-              defaultValue={variant.mediaKey}
-            />
-            <TextField
-              name={`variant-${index}-mediaAlt`}
-              label={t.admin.variantMediaAlt}
-              defaultValue={variant.mediaAlt}
+            <ImageFields
+              namePrefix={`variant-${index}-image`}
+              images={variant.images}
+              onChange={(next) =>
+                setVariants((current) =>
+                  current.map((item, itemIndex) =>
+                    itemIndex === index ? { ...item, images: next } : item,
+                  ),
+                )
+              }
             />
           </div>
         ))}

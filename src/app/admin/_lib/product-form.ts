@@ -26,8 +26,6 @@ export function parseProductForm(
     }
     const status = statusRaw;
     const id = String(formData.get(`variant-${index}-id`) ?? "").trim();
-    const mediaKey = String(formData.get(`variant-${index}-mediaKey`) ?? "").trim();
-    const mediaAlt = String(formData.get(`variant-${index}-mediaAlt`) ?? "").trim();
     variants.push({
       ...(id.length > 0 ? { id } : {}),
       sku: String(formData.get(`variant-${index}-sku`) ?? ""),
@@ -38,17 +36,7 @@ export function parseProductForm(
       listPriceMinor: price,
       status,
       isActive: status === "active",
-      images:
-        mediaKey.length > 0
-          ? [
-              {
-                key: mediaKey,
-                alt: mediaAlt,
-                role: "PRIMARY",
-                sortOrder: 0,
-              },
-            ]
-          : [],
+      images: parseImages(formData, `variant-${index}-image`),
     });
   }
   const modelYearRaw = String(formData.get("modelYear") ?? "").trim();
@@ -66,8 +54,30 @@ export function parseProductForm(
     modelYear: modelYearRaw.length > 0 ? Number(modelYearRaw) : null,
     warrantyMonths: warrantyRaw.length > 0 ? Number(warrantyRaw) : null,
     warrantyText: emptyToNull(String(formData.get("warrantyText") ?? "")),
+    images: parseImages(formData, "image"),
     variants,
   };
+}
+
+function parseImages(formData: FormData, prefix: string) {
+  const count = Number(formData.get(`${prefix}Count`) ?? "0");
+  if (!Number.isInteger(count) || count < 0 || count > 12) {
+    return [];
+  }
+  const images: NonNullable<ProductWriteInput["images"]>[number][] = [];
+  for (let index = 0; index < count; index += 1) {
+    const key = String(formData.get(`${prefix}-${index}-key`) ?? "").trim();
+    if (key.length === 0) {
+      continue;
+    }
+    images.push({
+      key,
+      alt: String(formData.get(`${prefix}-${index}-alt`) ?? ""),
+      role: index === 0 ? "PRIMARY" : "GALLERY",
+      sortOrder: index,
+    });
+  }
+  return images;
 }
 
 function emptyToNull(value: string): string | null {

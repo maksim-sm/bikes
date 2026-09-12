@@ -1,7 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getCatalogAdminServices } from "@/app/api/_lib/compose";
+import { getCatalogAdminServices, getMediaServices } from "@/app/api/_lib/compose";
+import { imageKeysOf } from "@/modules/catalog";
 import { isAppError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { adminHref } from "../../_lib/paths";
@@ -14,6 +15,7 @@ const WRITE_ERRORS: Record<string, string> = {
   variant_sku_duplicate: t.admin.skuDuplicate,
   variant_combination_duplicate: t.admin.combinationDuplicate,
   variant_barcode_duplicate: t.admin.barcodeDuplicate,
+  product_image_alt_required: t.admin.imageAltRequired,
 };
 
 function fail(error: unknown): ProductFormState {
@@ -59,9 +61,18 @@ export async function updateProductAction(
     return { ok: false, message: WRITE_ERRORS[parsed.error] ?? t.admin.saveFailed };
   }
   try {
-    await getCatalogAdminServices().then((admin) =>
-      admin.updateProduct(principal, id, parsed),
+    const admin = await getCatalogAdminServices();
+    const before = await admin.getProduct(principal, id);
+    const after = await admin.updateProduct(principal, id, parsed);
+    const removed = [...imageKeysOf(before)].filter(
+      (key) => !imageKeysOf(after).has(key),
     );
+    if (removed.length > 0) {
+      const media = await getMediaServices();
+      await Promise.all(
+        removed.map((key) => media.delete(principal, key).catch(() => undefined)),
+      );
+    }
     return { ok: true, message: t.admin.saved };
   } catch (error) {
     return fail(error);

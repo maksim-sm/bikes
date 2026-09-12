@@ -433,14 +433,15 @@ model VariantMedia {
 // ===========================================================================
 
 model MediaAsset {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  key         String   @unique @db.VarChar(255)
-  contentType String   @map("content_type") @db.VarChar(100)
-  byteSize    Int      @map("byte_size")
-  width       Int?
-  height      Int?
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key          String   @unique @db.VarChar(255)
+  contentType  String   @map("content_type") @db.VarChar(100)
+  byteSize     Int      @map("byte_size")
+  width        Int?
+  height       Int?
+  originalName String?  @map("original_name") @db.VarChar(80)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   products ProductMedia[]
   variants VariantMedia[]

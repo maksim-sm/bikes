@@ -5,6 +5,7 @@ import {
   assertRequiredProduct,
   normalizeProductSlug,
   publishProduct,
+  normalizeImages,
   toWrittenVariant,
   unpublishProduct,
   type Product,
@@ -46,6 +47,8 @@ function mapWriteError(error: unknown): never {
       variant_barcode_duplicate: "barcode must be unique",
       variant_status_invalid: "variant status is invalid",
       variant_media_key_invalid: "variant media key is required",
+      product_media_key_invalid: "product media key is required",
+      product_image_alt_required: "image alt text is required",
     };
     const mapped = messages[error.message];
     if (mapped) {
@@ -120,7 +123,7 @@ export function createCatalogAdminServices(deps: {
       modelYear: input.modelYear,
       warrantyMonths: input.warrantyMonths,
       warrantyText: input.warrantyText,
-      images: existing?.images ?? [],
+      images: normalizeImages(input.images ?? existing?.images ?? []),
       variants: input.variants.map((variant, index) =>
         toWrittenVariant(
           productId,
