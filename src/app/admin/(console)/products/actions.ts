@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getCatalogAdminServices } from "@/app/api/_lib/compose";
 import { isAppError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
+import { adminHref } from "../../_lib/paths";
 import { parseProductForm } from "../../_lib/product-form";
 import { requireAdminCatalog } from "../../_lib/staff";
 
@@ -37,7 +38,7 @@ export async function createProductAction(
   } catch (error) {
     return fail(error);
   }
-  redirect(`/admin/products/${createdId}`);
+  redirect(adminHref(`/admin/products/${createdId}`));
 }
 
 export async function updateProductAction(
@@ -64,12 +65,12 @@ export async function publishProductAction(formData: FormData): Promise<void> {
   const principal = await requireAdminCatalog();
   const id = String(formData.get("id") ?? "");
   await getCatalogAdminServices().then((admin) => admin.publish(principal, id));
-  redirect(`/admin/products/${id}`);
+  redirect(adminHref(`/admin/products/${id}`));
 }
 
 export async function unpublishProductAction(formData: FormData): Promise<void> {
   const principal = await requireAdminCatalog();
   const id = String(formData.get("id") ?? "");
   await getCatalogAdminServices().then((admin) => admin.unpublish(principal, id));
-  redirect(`/admin/products/${id}`);
+  redirect(adminHref(`/admin/products/${id}`));
 }

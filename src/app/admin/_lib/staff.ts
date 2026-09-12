@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { adminHref } from "./paths";
 import { getAuthServices } from "@/app/api/_lib/compose";
 import { usesSecureCookies } from "@/app/api/_lib/csrf";
 import { isAppError } from "@/lib/errors";
@@ -25,9 +26,9 @@ export async function requireAdminCatalog(): Promise<
     return requireCatalogRole(principal);
   } catch (error) {
     if (isAppError(error) && error.code === "unauthenticated") {
-      redirect("/admin/login");
+      redirect(adminHref("/admin/login"));
     }
-    redirect("/admin/login?forbidden=1");
+    redirect(adminHref("/admin/login?forbidden=1"));
   }
 }
 

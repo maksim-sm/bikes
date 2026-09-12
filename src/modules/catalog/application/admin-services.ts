@@ -41,8 +41,9 @@ function mapWriteError(error: unknown): never {
       product_price_invalid: "list price must be a positive integer in kopeks",
       product_not_published: "product is not published",
     };
-    if (messages[error.message]) {
-      throw new ValidationError(messages[error.message], { reason: error.message });
+    const mapped = messages[error.message];
+    if (mapped) {
+      throw new ValidationError(mapped, { reason: error.message });
     }
   }
   throw error;

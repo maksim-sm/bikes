@@ -5,6 +5,7 @@ import { getAuthServices } from "@/app/api/_lib/compose";
 import { isAppError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { DEMO_STAFF_EMAIL, DEMO_STAFF_PASSWORD, hasCapability } from "@/modules/identity";
+import { adminHref } from "../_lib/paths";
 import { cookieSecurity, writeSessionCookie } from "../_lib/staff";
 
 export type LoginState = { ok: false; message: string } | null;
@@ -34,7 +35,7 @@ async function signIn(email: string, password: string): Promise<LoginState> {
     }
     return { ok: false, message: t.admin.loginFailed };
   }
-  redirect("/admin/products");
+  redirect(adminHref("/admin/products"));
 }
 
 export async function staffLoginAction(
@@ -66,5 +67,5 @@ export async function staffLogoutAction(): Promise<void> {
     secureCookie: cookieSecurity(),
   });
   await writeSessionCookie(result.cookie);
-  redirect("/admin/login");
+  redirect(adminHref("/admin/login"));
 }

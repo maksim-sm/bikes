@@ -12,7 +12,7 @@ export function parseProductForm(
   if (!Number.isInteger(count) || count < 1 || count > 12) {
     return { error: "product_variant_required" };
   }
-  const variants: ProductWriteInput["variants"] = [];
+  const variants: ProductWriteInput["variants"][number][] = [];
   for (let index = 0; index < count; index += 1) {
     const price = parsePriceBynToMinor(
       String(formData.get(`variant-${index}-price`) ?? ""),

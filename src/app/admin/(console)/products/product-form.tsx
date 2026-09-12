@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { BICYCLE_TYPES, type Product } from "@/modules/catalog";
 import { t } from "@/lib/i18n";
 import { Button, Checkbox, SelectField, TextAreaField, TextField } from "@/ui";
 import { minorToBynInput } from "../../_lib/money";
@@ -11,6 +10,33 @@ import {
   updateProductAction,
   type ProductFormState,
 } from "./actions";
+
+const BICYCLE_TYPES = Object.keys(t.bicycleType) as Array<keyof typeof t.bicycleType>;
+
+export interface ProductFormModel {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  brandSlug: string;
+  categorySlug: string;
+  bicycleType: keyof typeof t.bicycleType;
+  frameMaterial: string | null;
+  groupset: string | null;
+  brakeType: string | null;
+  modelYear: number | null;
+  warrantyMonths: number | null;
+  warrantyText: string | null;
+  variants: Array<{
+    id: string;
+    sku: string;
+    frameSize: string;
+    wheelSize: string;
+    color: string;
+    listPriceMinor: number;
+    isActive: boolean;
+  }>;
+}
 
 interface CatalogOption {
   slug: string;
@@ -27,7 +53,7 @@ interface VariantDraft {
   active: boolean;
 }
 
-function toDrafts(product: Product | null): VariantDraft[] {
+function toDrafts(product: ProductFormModel | null): VariantDraft[] {
   if (!product || product.variants.length === 0) {
     return [
       { sku: "", frameSize: "", wheelSize: "28", color: "", price: "", active: true },
@@ -49,7 +75,7 @@ export function ProductForm({
   brands,
   categories,
 }: {
-  product: Product | null;
+  product: ProductFormModel | null;
   brands: CatalogOption[];
   categories: CatalogOption[];
 }) {
