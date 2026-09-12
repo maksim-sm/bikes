@@ -156,3 +156,19 @@
   gap: var(--space-2);
   font-weight: var(--weight-medium);
 }
+
+.stockForms {
+  display: grid;
+  gap: var(--space-6);
+}
+
+@media (min-width: 1024px) {
+  .stockForms {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .stockForms .form {
+    max-width: none;
+  }
+}

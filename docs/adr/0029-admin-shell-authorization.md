@@ -1,6 +1,6 @@
 # ADR-0029: Admin shell and staff session policy
 
-- Status: Accepted
+- Status: Accepted (amended by [ADR-0030](0030-admin-inventory-operations.md))
 - Date: 2026-09-12
 - Amends: [ADR-0016](0016-customer-authentication.md),
   [ADR-0017](0017-staff-authorization-roles.md)

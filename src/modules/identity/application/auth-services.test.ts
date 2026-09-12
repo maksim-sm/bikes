@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ConflictError, UnauthenticatedError, ValidationError } from "@/lib/errors";
+import {
+  ConflictError,
+  ForbiddenError,
+  UnauthenticatedError,
+  ValidationError,
+} from "@/lib/errors";
+import { customerPrincipal, staffPrincipal } from "../domain/principal";
 import { STAFF_SESSION_IDLE_MS, STAFF_SESSION_MAX_MS } from "../domain/auth";
 import { createArgon2PasswordHasher } from "../infrastructure/argon2-hasher";
 import { createCapturingMailer } from "../infrastructure/logging-mailer";
@@ -272,6 +278,34 @@ describe("customer authentication", () => {
     expect(await auth.resolve(loggedIn.cookie.value)).toEqual(loggedIn.principal);
     now.value = new Date(now.value.getTime() + STAFF_SESSION_IDLE_MS + 1);
     expect(await auth.resolve(loggedIn.cookie.value)).toEqual({ type: "anonymous" });
+  });
+
+  it("lets staff look up emails by user id and keeps customers out", async () => {
+    const users = createMemoryUserAccounts();
+    const passwords = createArgon2PasswordHasher({ cheap: true });
+    const created = await users.create({
+      email: "stock@bikes.local",
+      passwordHash: await passwords.hash("correct-horse"),
+      role: "STAFF",
+    });
+    const auth = createAuthServices({
+      users,
+      sessions: createMemorySessions(),
+      tokens: createMemoryAuthTokens(),
+      passwords,
+      tokensDigest: createSha256TokenDigest(),
+      mailer: createCapturingMailer(),
+      limiter: createMemoryRateLimiter({ limit: 20, windowMs: 60_000 }),
+      log: createSecurityLog(),
+      clock: { now: () => new Date() },
+      dummyPasswordHash: await passwords.hash("timing-pad"),
+    });
+    expect(
+      await auth.lookupEmails(staffPrincipal("s1", ["inventory"]), [created.id]),
+    ).toEqual([{ userId: created.id, email: "stock@bikes.local" }]);
+    await expect(
+      auth.lookupEmails(customerPrincipal("c1"), [created.id]),
+    ).rejects.toBeInstanceOf(ForbiddenError);
   });
 
   it("rejects short passwords", async () => {

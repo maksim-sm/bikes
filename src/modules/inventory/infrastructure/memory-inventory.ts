@@ -38,6 +38,7 @@ export function createMemoryInventoryRepository(
       quantity: number;
       reservationId: string | null;
       note: string | null;
+      actorUserId?: string | null;
       now: Date;
     },
   ): Movement {
@@ -51,6 +52,7 @@ export function createMemoryInventoryRepository(
       onHandAfter: item.onHand,
       reservedAfter: item.reserved,
       note: input.note,
+      actorUserId: input.actorUserId ?? null,
       createdAt: input.now,
     };
     movements.push(movement);
@@ -138,11 +140,20 @@ export function createMemoryInventoryRepository(
         quantity: input.quantity,
         reservationId: null,
         note: input.note,
+        actorUserId: input.actorUserId,
         now: input.now,
       });
     },
+    async listItems() {
+      return [...items.values()].map((item) => ({ ...item }));
+    },
     async listMovements(inventoryItemId) {
       return movements.filter((row) => row.inventoryItemId === inventoryItemId);
+    },
+    async listRecentMovements(limit) {
+      return [...movements]
+        .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+        .slice(0, limit);
     },
     async listInStockVariantIds() {
       return [...items.values()]

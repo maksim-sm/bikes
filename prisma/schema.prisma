@@ -180,10 +180,11 @@ model User {
   carts      Cart[]
   wishlist   Wishlist?
   orders     Order[]
-  auditLogs  AuditLog[]
-  sessions   AuthSession[]
-  authTokens AuthToken[]
-  staffRoles UserStaffRole[]
+  auditLogs            AuditLog[]
+  sessions             AuthSession[]
+  authTokens           AuthToken[]
+  staffRoles           UserStaffRole[]
+  inventoryMovements   InventoryMovement[]
 
   @@index([role], map: "users_role_idx")
   @@map("users")
@@ -840,12 +841,15 @@ model InventoryMovement {
   onHandAfter     Int                    @map("on_hand_after")
   reservedAfter   Int                    @map("reserved_after")
   note            String?                @db.VarChar(240)
+  actorUserId     String?                @map("actor_user_id") @db.Uuid
   createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
 
   item        InventoryItem         @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   reservation InventoryReservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  actor       User?                 @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([inventoryItemId, createdAt], map: "inventory_movements_item_created_at_idx")
   @@index([reservationId], map: "inventory_movements_reservation_id_idx")
+  @@index([actorUserId, createdAt], map: "inventory_movements_actor_created_at_idx")
   @@map("inventory_movements")
 }
