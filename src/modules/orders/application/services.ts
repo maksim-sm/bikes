@@ -149,6 +149,7 @@ export function createOrderServices(deps: {
       } catch {
         throw new ConflictError("order cannot be cancelled", { orderId: id });
       }
+      await deps.inventory.cancelForOrder(order.id);
       return deps.orders.save(order);
     },
 
@@ -160,6 +161,7 @@ export function createOrderServices(deps: {
       } catch {
         throw new ConflictError("order cannot be completed", { orderId: id });
       }
+      await deps.inventory.commitForOrder(order.id);
       return deps.orders.save(order);
     },
 

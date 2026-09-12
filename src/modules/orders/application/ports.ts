@@ -27,6 +27,8 @@ export interface OrderInventory {
     quantity: number;
     orderId: string;
   }): Promise<void>;
+  cancelForOrder(orderId: string): Promise<void>;
+  commitForOrder(orderId: string): Promise<void>;
 }
 
 export interface OrderDelivery {

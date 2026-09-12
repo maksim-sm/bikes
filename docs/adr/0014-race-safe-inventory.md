@@ -35,7 +35,8 @@ the serialisation point.
    (and the matching release/expire/commit statements). If the WHERE misses,
    the statement fails. Concurrent reservations lock the same item row.
 5. **An AFTER INSERT/UPDATE trigger** appends the movement. Movements are
-   append-only; application code may insert RECEIPT and ADJUSTMENT only.
+   append-only; application code may insert RECEIPT, ADJUSTMENT, and RETURN
+   only.
 6. **`expire_inventory_reservations(timestamptz)`** bulk-expires due ACTIVE
    rows. Partial unique indexes keep one ACTIVE hold per cart item and per
    order item; a partial index on `expires_at WHERE status = 'ACTIVE'` serves

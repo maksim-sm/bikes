@@ -25,7 +25,13 @@ import {
   createMemoryShipments,
   type DeliveryServices,
 } from "@/modules/delivery";
-import { createPrismaCatalogInventory } from "@/modules/inventory";
+import {
+  createInventoryServices,
+  createMemoryInventoryRepository,
+  createPrismaCatalogInventory,
+  createPrismaInventoryRepository,
+  type InventoryServices,
+} from "@/modules/inventory";
 import {
   createCustomerServices,
   createDemoAuthServices,
@@ -142,6 +148,8 @@ let authOverride: AuthServices | null = null;
 let authPromise: Promise<AuthServices> | null = null;
 let mediaOverride: MediaServices | null = null;
 let mediaPromise: Promise<MediaServices> | null = null;
+let stockOverride: InventoryServices | null = null;
+let stockPromise: Promise<InventoryServices> | null = null;
 
 export async function getCatalogRepository(): Promise<CatalogRepository> {
   if (catalogOverride) {
@@ -248,7 +256,35 @@ export function resetRepositories(): void {
   authPromise = null;
   mediaOverride = null;
   mediaPromise = null;
+  stockOverride = null;
+  stockPromise = null;
   cartRepo = createMemoryCartRepository();
+}
+
+export function setInventoryServices(services: InventoryServices): void {
+  stockOverride = services;
+}
+
+export async function getInventoryServices(): Promise<InventoryServices> {
+  if (stockOverride) {
+    return stockOverride;
+  }
+  if (stockPromise) {
+    return stockPromise;
+  }
+  stockPromise = (async () => {
+    if (process.env.VITEST === "true" || process.env.NODE_ENV !== "production") {
+      return createInventoryServices({
+        inventory: createMemoryInventoryRepository(),
+        clock: { now: () => new Date() },
+      });
+    }
+    return createInventoryServices({
+      inventory: await createPrismaInventoryRepository(),
+      clock: { now: () => new Date() },
+    });
+  })();
+  return stockPromise;
 }
 
 export function setMediaServices(services: MediaServices): void {

@@ -1,15 +1,143 @@
 import { prisma } from "@/lib/db";
 import type { InventoryRepository } from "../application/ports";
+import type {
+  ExternalMovementType,
+  InventoryItem,
+  Movement,
+  MovementType,
+  Reservation,
+  ReservationStatus,
+} from "../domain/inventory";
+
+function toItem(row: {
+  id: string;
+  variantId: string;
+  onHand: number;
+  reserved: number;
+}): InventoryItem {
+  return {
+    id: row.id,
+    variantId: row.variantId,
+    onHand: row.onHand,
+    reserved: row.reserved,
+  };
+}
+
+function toReservation(row: {
+  id: string;
+  inventoryItemId: string;
+  quantity: number;
+  status: ReservationStatus;
+  expiresAt: Date;
+  cartId: string | null;
+  orderId: string | null;
+}): Reservation {
+  return {
+    id: row.id,
+    inventoryItemId: row.inventoryItemId,
+    quantity: row.quantity,
+    status: row.status,
+    expiresAt: row.expiresAt,
+    ...(row.cartId ? { cartId: row.cartId } : {}),
+    ...(row.orderId ? { orderId: row.orderId } : {}),
+  };
+}
+
+function toMovement(row: {
+  id: string;
+  inventoryItemId: string;
+  reservationId: string | null;
+  type: MovementType;
+  quantity: number;
+  onHandAfter: number;
+  reservedAfter: number;
+  note: string | null;
+  createdAt: Date;
+}): Movement {
+  return {
+    id: row.id,
+    inventoryItemId: row.inventoryItemId,
+    reservationId: row.reservationId,
+    type: row.type,
+    quantity: row.quantity,
+    onHandAfter: row.onHandAfter,
+    reservedAfter: row.reservedAfter,
+    note: row.note,
+    createdAt: row.createdAt,
+  };
+}
 
 /**
- * Inventory-owned queries only. Catalog listing asks for in-stock variant ids
- * instead of joining `inventory_items` from the catalog repository.
+ * Inventory-owned queries and writes. Catalog listing asks for in-stock
+ * variant ids instead of joining `inventory_items` from the catalog repository.
+ * Reservation and movement inserts rely on PostgreSQL triggers for counters.
  */
-export function createPrismaInventoryAvailability(): Pick<
-  InventoryRepository,
-  "listInStockVariantIds" | "listAvailabilityByVariantIds"
-> {
+export function createPrismaInventoryRepository(): InventoryRepository {
   return {
+    async getByVariantId(variantId) {
+      const row = await prisma.inventoryItem.findUnique({ where: { variantId } });
+      return row ? toItem(row) : null;
+    },
+    async getByItemId(id) {
+      const row = await prisma.inventoryItem.findUnique({ where: { id } });
+      return row ? toItem(row) : null;
+    },
+    async insertActive(input) {
+      const row = await prisma.inventoryReservation.create({
+        data: {
+          inventoryItemId: input.inventoryItemId,
+          quantity: input.quantity,
+          expiresAt: input.expiresAt,
+          status: "ACTIVE",
+          ...(input.cartId !== undefined ? { cartId: input.cartId } : {}),
+          ...(input.orderId !== undefined ? { orderId: input.orderId } : {}),
+        },
+      });
+      return toReservation(row);
+    },
+    async getReservation(id) {
+      const row = await prisma.inventoryReservation.findUnique({ where: { id } });
+      return row ? toReservation(row) : null;
+    },
+    async saveReservation(reservation) {
+      const row = await prisma.inventoryReservation.update({
+        where: { id: reservation.id },
+        data: { status: reservation.status },
+      });
+      return toReservation(row);
+    },
+    async listDueActive(now) {
+      const rows = await prisma.inventoryReservation.findMany({
+        where: { status: "ACTIVE", expiresAt: { lte: now } },
+      });
+      return rows.map(toReservation);
+    },
+    async listActiveByOrder(orderId) {
+      const rows = await prisma.inventoryReservation.findMany({
+        where: { status: "ACTIVE", orderId },
+      });
+      return rows.map(toReservation);
+    },
+    async insertExternalMovement(input) {
+      const row = await prisma.inventoryMovement.create({
+        data: {
+          inventoryItemId: input.inventoryItemId,
+          type: input.type as ExternalMovementType,
+          quantity: input.quantity,
+          onHandAfter: 0,
+          reservedAfter: 0,
+          note: input.note,
+        },
+      });
+      return toMovement(row);
+    },
+    async listMovements(inventoryItemId) {
+      const rows = await prisma.inventoryMovement.findMany({
+        where: { inventoryItemId },
+        orderBy: { createdAt: "asc" },
+      });
+      return rows.map(toMovement);
+    },
     async listInStockVariantIds() {
       const rows = await prisma.inventoryItem.findMany({
         where: { available: { gt: 0 } },
@@ -27,5 +155,23 @@ export function createPrismaInventoryAvailability(): Pick<
       });
       return rows.map((row) => ({ variantId: row.variantId, available: row.available }));
     },
+    async expireDue(now) {
+      const rows = await prisma.$queryRaw<Array<{ expired: bigint | number }>>`
+        SELECT expire_inventory_reservations(${now}) AS expired
+      `;
+      return Number(rows[0]?.expired ?? 0);
+    },
+  };
+}
+
+export function createPrismaInventoryAvailability(): Pick<
+  InventoryRepository,
+  "listInStockVariantIds" | "listAvailabilityByVariantIds"
+> {
+  const repo = createPrismaInventoryRepository();
+  return {
+    listInStockVariantIds: () => repo.listInStockVariantIds(),
+    listAvailabilityByVariantIds: (variantIds) =>
+      repo.listAvailabilityByVariantIds(variantIds),
   };
 }

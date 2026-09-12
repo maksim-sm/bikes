@@ -139,6 +139,7 @@ enum InventoryReservationStatus {
 enum InventoryMovementType {
   RECEIPT
   ADJUSTMENT
+  RETURN
   RESERVE
   RELEASE
   EXPIRE
