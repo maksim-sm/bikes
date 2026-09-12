@@ -18,7 +18,8 @@ export function createMemoryPaymentRepository(): PaymentRepository {
     async findByProviderPaymentId(provider, providerPaymentId) {
       return (
         [...payments.values()].find(
-          (row) => row.provider === provider && row.providerPaymentId === providerPaymentId,
+          (row) =>
+            row.provider === provider && row.providerPaymentId === providerPaymentId,
         ) ?? null
       );
     },

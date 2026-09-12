@@ -14,27 +14,27 @@ this module. Compose wires `MockPaymentProvider` until a real adapter exists.
 
 Every adapter implements the same six methods:
 
-| Method              | Role                                                                 |
-| ------------------- | -------------------------------------------------------------------- |
-| `createPayment`     | Start a charge. Retries pass the same idempotency key.               |
-| `getPaymentStatus`  | Read the provider's current normalized status.                       |
-| `cancelPayment`     | Void a pending attempt.                                              |
-| `refundPayment`     | Return money; retries pass a refund idempotency key.                 |
-| `verifyWebhook`     | Check the signature, then return a provider event.                   |
-| `normalizeStatus`   | Map a provider-specific string onto `NormalizedPaymentStatus`.       |
+| Method             | Role                                                           |
+| ------------------ | -------------------------------------------------------------- |
+| `createPayment`    | Start a charge. Retries pass the same idempotency key.         |
+| `getPaymentStatus` | Read the provider's current normalized status.                 |
+| `cancelPayment`    | Void a pending attempt.                                        |
+| `refundPayment`    | Return money; retries pass a refund idempotency key.           |
+| `verifyWebhook`    | Check the signature, then return a provider event.             |
+| `normalizeStatus`  | Map a provider-specific string onto `NormalizedPaymentStatus`. |
 
 `verifyWebhook` must include `providerPaymentId`. Services must not parse
 provider JSON to find the attempt.
 
 ## Defined types
 
-| Concept              | Meaning                                                                 |
-| -------------------- | ----------------------------------------------------------------------- |
-| Provider reference   | `{ name }` stored on the attempt (`"mock"` today).                      |
-| Payment attempt      | One try to collect an order's amount (`Payment` in Prisma).             |
-| Provider event       | A verified notification, unique on `(provider, providerEventId)`.       |
-| Idempotency key      | `pay:<orderId>:<attempt>` or `refund:<paymentId>:<amountMinor>`.        |
-| Normalized status    | `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `REFUNDED`, `PARTIALLY_REFUNDED`. |
+| Concept            | Meaning                                                                          |
+| ------------------ | -------------------------------------------------------------------------------- |
+| Provider reference | `{ name }` stored on the attempt (`"mock"` today).                               |
+| Payment attempt    | One try to collect an order's amount (`Payment` in Prisma).                      |
+| Provider event     | A verified notification, unique on `(provider, providerEventId)`.                |
+| Idempotency key    | `pay:<orderId>:<attempt>` or `refund:<paymentId>:<amountMinor>`.                 |
+| Normalized status  | `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `REFUNDED`, `PARTIALLY_REFUNDED`. |
 
 Money is integer kopeks. A browser return URL is a hint, never confirmation.
 Webhook handlers stay public and authenticate the provider signature.

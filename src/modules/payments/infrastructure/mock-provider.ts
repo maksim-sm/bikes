@@ -7,10 +7,7 @@ import type {
   VerifiedProviderEvent,
 } from "../application/ports";
 import type { PaymentProviderName } from "../domain/provider";
-import {
-  normalizePaymentStatus,
-  type NormalizedPaymentStatus,
-} from "../domain/status";
+import { normalizePaymentStatus, type NormalizedPaymentStatus } from "../domain/status";
 
 interface MockCharge {
   paymentId: string;
@@ -82,7 +79,10 @@ export class MockPaymentProvider implements PaymentProvider {
     if (charge.status !== "SUCCEEDED" && charge.status !== "PARTIALLY_REFUNDED") {
       throw new Error("payment_not_refundable");
     }
-    if (input.amountMinor <= 0 || charge.refundedMinor + input.amountMinor > charge.amountMinor) {
+    if (
+      input.amountMinor <= 0 ||
+      charge.refundedMinor + input.amountMinor > charge.amountMinor
+    ) {
       throw new Error("refund_out_of_range");
     }
     charge.refundedMinor += input.amountMinor;
@@ -101,7 +101,11 @@ export class MockPaymentProvider implements PaymentProvider {
     }
     let body: { paymentId?: string; eventId?: string; type?: string };
     try {
-      body = JSON.parse(rawBody) as { paymentId?: string; eventId?: string; type?: string };
+      body = JSON.parse(rawBody) as {
+        paymentId?: string;
+        eventId?: string;
+        type?: string;
+      };
     } catch {
       throw new Error("invalid_payload");
     }

@@ -55,7 +55,11 @@ export function applyProviderEvent(
     return payment.status;
   }
   if (status === "REFUNDED" || status === "PARTIALLY_REFUNDED") {
-    if (payment.status !== "SUCCEEDED" && payment.status !== "PARTIALLY_REFUNDED") {
+    if (
+      payment.status !== "SUCCEEDED" &&
+      payment.status !== "PARTIALLY_REFUNDED" &&
+      payment.status !== "REFUNDED"
+    ) {
       throw new Error("payment_not_refundable");
     }
     if (payment.status === "REFUNDED") {
@@ -69,7 +73,10 @@ export function applyProviderEvent(
   return status;
 }
 
-export function refundStatus(payment: PaymentAttempt, refundMinor: number): PaymentStatus {
+export function refundStatus(
+  payment: PaymentAttempt,
+  refundMinor: number,
+): PaymentStatus {
   if (payment.status !== "SUCCEEDED" && payment.status !== "PARTIALLY_REFUNDED") {
     throw new Error("payment_not_refundable");
   }

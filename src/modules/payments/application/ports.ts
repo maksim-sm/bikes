@@ -68,6 +68,8 @@ export interface PaymentOrder {
   amountDueMinor(orderId: string): Promise<{ amountMinor: number; currency: "BYN" }>;
   applyEvent(
     orderId: string,
-    event: { type: "succeeded" | "failed" | "cancelled" | "refunded" | "partially_refunded" },
+    event: {
+      type: "succeeded" | "failed" | "cancelled" | "refunded" | "partially_refunded";
+    },
   ): Promise<void>;
 }

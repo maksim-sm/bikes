@@ -288,7 +288,9 @@ Every adapter implements the same port (`docs/payments.md`, ADR-0022):
 export interface PaymentProvider {
   readonly name: string;
   createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult>;
-  getPaymentStatus(input: { providerPaymentId: string }): Promise<NormalizedPaymentStatus>;
+  getPaymentStatus(input: {
+    providerPaymentId: string;
+  }): Promise<NormalizedPaymentStatus>;
   cancelPayment(input: { providerPaymentId: string }): Promise<NormalizedPaymentStatus>;
   refundPayment(input: RefundPaymentInput): Promise<NormalizedPaymentStatus>;
   verifyWebhook(rawBody: string, headers: Headers): Promise<VerifiedProviderEvent>;

@@ -1,10 +1,15 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
-import { applyProviderEvent, canStartPayment, refundStatus, type Payment } from "../domain/payment";
 import {
-  paymentAttemptIdempotencyKey,
-  refundIdempotencyKey,
-} from "../domain/provider";
-import { paymentStatusToOrderEvent, type NormalizedPaymentStatus } from "../domain/status";
+  applyProviderEvent,
+  canStartPayment,
+  refundStatus,
+  type Payment,
+} from "../domain/payment";
+import { paymentAttemptIdempotencyKey, refundIdempotencyKey } from "../domain/provider";
+import {
+  paymentStatusToOrderEvent,
+  type NormalizedPaymentStatus,
+} from "../domain/status";
 import type { PaymentOrder, PaymentProvider, PaymentRepository } from "./ports";
 
 export interface PaymentServices {
@@ -39,7 +44,9 @@ export function createPaymentServices(deps: {
 
   function requireProviderPaymentId(payment: Payment): string {
     if (!payment.providerPaymentId) {
-      throw new ConflictError("payment has no provider reference", { paymentId: payment.id });
+      throw new ConflictError("payment has no provider reference", {
+        paymentId: payment.id,
+      });
     }
     return payment.providerPaymentId;
   }

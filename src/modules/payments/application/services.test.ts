@@ -18,10 +18,7 @@ import type {
   VerifiedProviderEvent,
 } from "./ports";
 import { createPaymentServices } from "./services";
-import {
-  normalizePaymentStatus,
-  type NormalizedPaymentStatus,
-} from "../domain/status";
+import { normalizePaymentStatus, type NormalizedPaymentStatus } from "../domain/status";
 
 function attempt(overrides: Partial<PaymentAttempt> = {}): PaymentAttempt {
   return {
@@ -123,8 +120,15 @@ describe("payment rules", () => {
 
   it("applies refund statuses only after a succeeded attempt", () => {
     const pending = attempt();
-    expect(() => applyProviderEvent(pending, "REFUNDED")).toThrow("payment_not_refundable");
-    expect(applyProviderEvent(attempt({ status: "SUCCEEDED" }), "REFUNDED")).toBe("REFUNDED");
+    expect(() => applyProviderEvent(pending, "REFUNDED")).toThrow(
+      "payment_not_refundable",
+    );
+    expect(applyProviderEvent(attempt({ status: "SUCCEEDED" }), "REFUNDED")).toBe(
+      "REFUNDED",
+    );
+    expect(
+      applyProviderEvent(attempt({ status: "REFUNDED" }), "PARTIALLY_REFUNDED"),
+    ).toBe("REFUNDED");
   });
 });
 

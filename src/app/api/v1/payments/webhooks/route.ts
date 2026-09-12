@@ -28,7 +28,8 @@ export const POST = withRoute(
       }
       if (
         error instanceof Error &&
-        (error.message === "invalid_payload" || error.message === "unknown_provider_status")
+        (error.message === "invalid_payload" ||
+          error.message === "unknown_provider_status")
       ) {
         throw new ValidationError("webhook payload is invalid");
       }
