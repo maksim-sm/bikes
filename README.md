@@ -53,6 +53,7 @@ the database role (Prisma's shadow database).
 | `pnpm lint`              | ESLint, including the architecture boundary rules           |
 | `pnpm lint:fix`          | ESLint with autofix                                         |
 | `pnpm typecheck`         | `tsc --noEmit`                                              |
+| `pnpm test`              | Unit tests for domain and application services (Vitest)     |
 | `pnpm format`            | Rewrite files with Prettier                                 |
 | `pnpm format:check`      | Fail if anything is unformatted                             |
 | `pnpm env:check`         | Validate environment configuration without starting the app |
@@ -60,7 +61,7 @@ the database role (Prisma's shadow database).
 | `pnpm db:migrate`        | Create and apply a development migration                    |
 | `pnpm db:migrate:deploy` | Apply committed migrations (safe on an empty database)      |
 | `pnpm db:status`         | Show whether the database is up to date                     |
-| `pnpm check`             | Lint, format check, generate client, build, typecheck       |
+| `pnpm check`             | Lint, format check, generate client, build, typecheck, test |
 
 Before pushing, `pnpm check` is the one command worth remembering.
 
@@ -178,6 +179,6 @@ decide it. See `src/modules/README.md` for the internal layering rules.
 
 ## Status
 
-Foundation, visual system, and the database schema through inventory. No
-catalogue UI, cart, checkout, or authentication yet. The module folders exist so
-that the first feature has an unambiguous home.
+Foundation, visual system, database schema, and application services for
+catalog, cart, inventory, orders, payments, delivery, customers, and wishlist.
+No catalogue UI, cart page, checkout, or authentication yet.

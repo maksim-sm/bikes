@@ -1,13 +1,22 @@
 /**
  * payments module — public entry point.
  *
- * Owns the provider-neutral payment abstraction and transaction records.
- *
- * Everything this module offers to the rest of the application is re-exported
- * here. Its `domain/`, `application/`, and `infrastructure/` layers are
- * internal and may not be imported from outside this folder.
- *
- * No business logic yet; see `src/modules/README.md`.
+ * Owns payment attempts, webhook events, and refunds. Does not write order
+ * rows; it reports events through a port `orders` implements.
  */
 
-export {};
+export {
+  applyProviderEvent,
+  canStartPayment,
+  refundStatus,
+  type Payment,
+  type PaymentEvent,
+  type PaymentStatus,
+} from "./domain/payment";
+export type {
+  PaymentOrder,
+  PaymentProvider,
+  PaymentRepository,
+} from "./application/ports";
+export { createPaymentServices, type PaymentServices } from "./application/services";
+export { MockPaymentProvider } from "./infrastructure/mock-provider";

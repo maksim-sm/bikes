@@ -2,13 +2,15 @@
  * catalog module — public entry point.
  *
  * Owns products, variants, categories, and specifications.
- * Stock lives in `inventory` (one inventory item per variant).
- *
- * Everything this module offers to the rest of the application is re-exported
- * here. Its `domain/`, `application/`, and `infrastructure/` layers are
- * internal and may not be imported from outside this folder.
- *
- * No business logic yet; see `src/modules/README.md`.
+ * Stock lives in `inventory`. Displayed price lives in `pricing`.
  */
 
-export {};
+export {
+  findActiveVariant,
+  isListedOnStorefront,
+  type Product,
+  type ProductStatus,
+  type ProductVariant,
+} from "./domain/product";
+export type { CatalogRepository, Clock } from "./application/ports";
+export { createCatalogServices, type CatalogServices } from "./application/services";

@@ -18,10 +18,11 @@ and commit.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
-boundary rules, the design system, and the Prisma schema through commerce
-entities and the inventory ledger. No storefront features, authentication, or
-repositories have been built yet. `tests/` and most module layers are still
-targets rather than existing files.
+boundary rules, the design system, the Prisma schema through the inventory
+ledger, and application services for catalog, cart, inventory, orders,
+payments, delivery, customers, and wishlist. No storefront features,
+authentication, or Prisma repositories have been built yet. Integration and
+end-to-end test tiers are still targets.
 
 ## 1. Why a modular monolith
 
@@ -56,7 +57,6 @@ src/
     payments/
     delivery/
     identity/
-    media/
     media/
     pricing/
     inventory/
@@ -112,6 +112,9 @@ Each module owns a slice of the business and the tables backing it.
 `catalog` and `pricing` are deliberately separate: promotions, VAT display, and
 currency rules change on a different schedule from the product catalogue, and
 merging them tends to scatter price logic across product queries.
+
+Customer profile, address book, and wishlist operations are application
+services on `identity`. There is no `customers` or `wishlist` module folder.
 
 ### Module anatomy
 

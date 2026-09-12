@@ -1,13 +1,33 @@
 /**
  * identity module — public entry point.
  *
- * Owns users, sessions, roles, and addresses.
- *
- * Everything this module offers to the rest of the application is re-exported
- * here. Its `domain/`, `application/`, and `infrastructure/` layers are
- * internal and may not be imported from outside this folder.
- *
- * No business logic yet; see `src/modules/README.md`.
+ * Owns users, profiles, addresses, and wishlists. Customer and wishlist
+ * operations are the public application services for those aggregates.
  */
 
-export {};
+export {
+  assertProfileNames,
+  prepareNewAddress,
+  withSingleDefault,
+  type Address,
+  type CustomerProfile,
+} from "./domain/customer";
+export {
+  addProduct,
+  canAddProduct,
+  removeProduct,
+  type Wishlist,
+} from "./domain/wishlist";
+export type {
+  CustomerRepository,
+  WishlistCatalog,
+  WishlistRepository,
+} from "./application/ports";
+export {
+  createCustomerServices,
+  type CustomerServices,
+} from "./application/customer-services";
+export {
+  createWishlistServices,
+  type WishlistServices,
+} from "./application/wishlist-services";
