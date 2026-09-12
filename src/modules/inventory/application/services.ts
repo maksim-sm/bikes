@@ -3,13 +3,13 @@ import { requireInventoryRole, type Principal } from "@/modules/identity";
 import {
   assertPositiveQuantity,
   available,
-  canReserve,
   nextReservationStatus,
   sanitizeMovementNote,
   type ExternalMovementType,
   type Movement,
   type Reservation,
 } from "../domain/inventory";
+import { mapInventoryWriteError } from "./inventory-errors";
 import type { Clock, InventoryRepository } from "./ports";
 
 const DEFAULT_HOLD_MS = 15 * 60 * 1000;
@@ -132,19 +132,18 @@ export function createInventoryServices(deps: {
         throw new ValidationError("quantity must be a positive integer");
       }
       const item = await requireItem(deps.inventory, input.variantId);
-      if (!canReserve(item, input.quantity)) {
-        throw new ConflictError("insufficient available inventory", {
-          variantId: input.variantId,
-        });
-      }
       const holdMs = input.holdMs ?? DEFAULT_HOLD_MS;
-      return deps.inventory.insertActive({
-        inventoryItemId: item.id,
-        quantity: input.quantity,
-        expiresAt: new Date(deps.clock.now().getTime() + holdMs),
-        ...(input.cartId !== undefined ? { cartId: input.cartId } : {}),
-        ...(input.orderId !== undefined ? { orderId: input.orderId } : {}),
-      });
+      try {
+        return await deps.inventory.insertActive({
+          inventoryItemId: item.id,
+          quantity: input.quantity,
+          expiresAt: new Date(deps.clock.now().getTime() + holdMs),
+          ...(input.cartId !== undefined ? { cartId: input.cartId } : {}),
+          ...(input.orderId !== undefined ? { orderId: input.orderId } : {}),
+        });
+      } catch (error) {
+        mapInventoryWriteError(error);
+      }
     },
 
     async release(reservationId) {

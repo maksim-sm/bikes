@@ -11,6 +11,7 @@ import {
   nextReservationStatus,
 } from "../domain/inventory";
 import { createMemoryInventoryRepository } from "../infrastructure/memory-inventory";
+import { isInsufficientAvailable, mapInventoryWriteError } from "./inventory-errors";
 import { createInventoryServices } from "./services";
 
 const now = new Date("2026-09-12T12:00:00.000Z");
@@ -25,6 +26,14 @@ function services(onHand = 2, reserved = 0) {
     clock: { now: () => now },
   });
 }
+
+describe("inventory write errors", () => {
+  it("maps the PostgreSQL oversell exception to a conflict", () => {
+    const error = new Error("insufficient available inventory");
+    expect(isInsufficientAvailable(error)).toBe(true);
+    expect(() => mapInventoryWriteError(error)).toThrow(ConflictError);
+  });
+});
 
 describe("inventory counters", () => {
   const item = { id: "i1", variantId: "v1", onHand: 2, reserved: 1 };

@@ -47,6 +47,11 @@ returns a row. Two concurrent checkouts lock that row; the second sees the
 updated `reserved` and fails with `insufficient available inventory` rather
 than both computing `1 - 0` in the application and both succeeding.
 
+`src/modules/inventory/application/reservation-concurrency.integration.test.ts`
+proves that against real PostgreSQL: two buyers, many buyers, expiry, payment
+failure, cancellation, and a successful payment. Available never goes negative
+and the number of successful reservations never exceeds `on_hand`.
+
 ## Reservation lifecycle
 
 A reservation starts **ACTIVE** and is terminal after one of the three
