@@ -25,12 +25,15 @@ const product: Product = {
       id: "v1",
       productId: "p1",
       sku: "EM-M",
+      barcode: "4810123450001",
       frameSize: "M",
       wheelSize: "28",
       color: "чёрный",
       listPriceMinor: 349900,
       currency: "BYN",
+      status: "active",
       isActive: true,
+      images: [],
     },
   ],
 };
@@ -41,6 +44,7 @@ describe("catalog search document", () => {
     expect(document).toContain("Trek");
     expect(document).toContain("Émonda");
     expect(document).toContain("EM-M");
+    expect(document).toContain("4810123450001");
     expect(document).toContain("Shimano 105");
     expect(document).toContain("карбон");
     expect(productMatchesSearch(product, "trek")).toBe(true);

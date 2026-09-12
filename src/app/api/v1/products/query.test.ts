@@ -30,12 +30,15 @@ function product(overrides: Partial<Product> = {}): Product {
         id: "v1",
         productId: "p1",
         sku: "EM-M",
+        barcode: null,
         frameSize: "M",
         wheelSize: "28",
         color: "чёрный",
         listPriceMinor: 349900,
         currency: "BYN",
+        status: "active",
         isActive: true,
+        images: [],
       },
     ],
     ...overrides,
@@ -69,6 +72,37 @@ describe("product HTTP mapping", () => {
     expect(dto).not.toHaveProperty("status");
     expect(dto).not.toHaveProperty("variants");
     expect(toProductDetailDto(product())).not.toHaveProperty("publishedAt");
+    const detail = toProductDetailDto(
+      product({
+        variants: [
+          {
+            ...product().variants[0]!,
+            barcode: "4810001",
+            images: [
+              {
+                key: "demo/emonda-m-black",
+                alt: "чёрный M",
+                role: "PRIMARY",
+                sortOrder: 0,
+              },
+            ],
+          },
+          {
+            ...product().variants[0]!,
+            id: "v-hidden",
+            sku: "EM-HIDDEN",
+            status: "inactive",
+            isActive: false,
+          },
+        ],
+      }),
+    );
+    expect(detail.variants).toHaveLength(1);
+    expect(detail.variants[0]).toMatchObject({
+      sku: "EM-M",
+      barcode: "4810001",
+      images: [{ src: "/api/media/demo/emonda-m-black", alt: "чёрный M" }],
+    });
   });
 });
 
@@ -102,12 +136,15 @@ describe("product HTTP query", () => {
           id: "v-cheap",
           productId: "p-cheap",
           sku: "FX-S",
+          barcode: null,
           frameSize: "S",
           wheelSize: "28",
           color: "синий",
           listPriceMinor: 120000,
           currency: "BYN",
+          status: "active",
           isActive: true,
+          images: [],
         },
       ],
     });
@@ -169,12 +206,15 @@ describe("product HTTP query", () => {
           id: "v2",
           productId: "p2",
           sku: "SL-L",
+          barcode: null,
           frameSize: "L",
           wheelSize: "29",
           color: "зелёный",
           listPriceMinor: 499900,
           currency: "BYN",
+          status: "active",
           isActive: true,
+          images: [],
         },
       ],
     });

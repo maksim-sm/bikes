@@ -9,15 +9,23 @@ import type {
   Brand,
   Category,
   Product,
+  ProductImage,
   ProductVariant,
+  VariantStatus,
 } from "../domain/product";
 import { escapeIlike } from "../domain/search";
+
+const variantInclude = {
+  media: { include: { media: true }, orderBy: { sortOrder: "asc" as const } },
+} as const;
+
+type VariantRow = Prisma.ProductVariantGetPayload<{ include: typeof variantInclude }>;
 
 type ProductRow = Prisma.ProductGetPayload<{
   include: {
     brand: true;
     category: true;
-    variants: true;
+    variants: { include: typeof variantInclude };
     media: { include: { media: true } };
   };
 }>;
@@ -25,29 +33,77 @@ type ProductRow = Prisma.ProductGetPayload<{
 const productInclude = {
   brand: true,
   category: true,
-  variants: { where: { isActive: true } },
+  variants: { where: { isActive: true }, include: variantInclude },
   media: { include: { media: true }, orderBy: { sortOrder: "asc" as const } },
 } as const;
 
 const adminProductInclude = {
   brand: true,
   category: true,
-  variants: true,
+  variants: { include: variantInclude },
   media: { include: { media: true }, orderBy: { sortOrder: "asc" as const } },
 } as const;
 
-function toVariant(row: ProductRow["variants"][number]): ProductVariant {
+function toDomainStatus(status: VariantRow["status"]): VariantStatus {
+  return status === "ACTIVE" ? "active" : "inactive";
+}
+
+function toPrismaStatus(status: VariantStatus): "ACTIVE" | "INACTIVE" {
+  return status === "active" ? "ACTIVE" : "INACTIVE";
+}
+
+function toImages(rows: VariantRow["media"] | ProductRow["media"]): ProductImage[] {
+  return rows.map((item) => ({
+    key: item.media.key,
+    alt: item.alt,
+    role: item.role,
+    sortOrder: item.sortOrder,
+  }));
+}
+
+function toVariant(row: VariantRow): ProductVariant {
   return {
     id: row.id,
     productId: row.productId,
     sku: row.sku,
+    barcode: row.barcode,
     frameSize: row.frameSize,
     wheelSize: row.wheelSize,
     color: row.color,
     listPriceMinor: row.listPriceMinor,
     currency: "BYN",
+    status: toDomainStatus(row.status),
     isActive: row.isActive,
+    images: toImages(row.media),
   };
+}
+
+function mapUniqueViolation(error: unknown): never {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    const target = Array.isArray(error.meta?.target)
+      ? error.meta.target.map(String).join(",")
+      : String(error.meta?.target ?? "");
+    if (target.includes("sku")) {
+      throw new ConflictError("sku already exists", { reason: "variant_sku_duplicate" });
+    }
+    if (target.includes("barcode")) {
+      throw new ConflictError("barcode already exists", {
+        reason: "variant_barcode_duplicate",
+      });
+    }
+    if (
+      target.includes("frame_size") ||
+      target.includes("color") ||
+      target.includes("wheel_size") ||
+      target.includes("size_color")
+    ) {
+      throw new ConflictError("variant combination already exists", {
+        reason: "variant_combination_duplicate",
+      });
+    }
+    throw new ConflictError("unique constraint failed", { target });
+  }
+  throw error;
 }
 
 function toProduct(row: ProductRow): Product {
@@ -68,12 +124,7 @@ function toProduct(row: ProductRow): Product {
     modelYear: row.modelYear,
     warrantyMonths: row.warrantyMonths,
     warrantyText: row.warrantyText,
-    images: row.media.map((item) => ({
-      key: item.media.key,
-      alt: item.alt,
-      role: item.role,
-      sortOrder: item.sortOrder,
-    })),
+    images: toImages(row.media),
     variants: row.variants.map(toVariant),
   };
 }
@@ -231,6 +282,63 @@ async function listIdsByMinPrice(
   return rows.map((row) => row.id);
 }
 
+function variantWriteData(productId: string, variant: ProductVariant) {
+  return {
+    id: variant.id,
+    productId,
+    sku: variant.sku,
+    barcode: variant.barcode,
+    frameSize: variant.frameSize,
+    wheelSize: variant.wheelSize,
+    color: variant.color,
+    listPriceMinor: variant.listPriceMinor,
+    currency: variant.currency,
+    status: toPrismaStatus(variant.status),
+    isActive: variant.isActive,
+  };
+}
+
+function variantUpdateData(variant: ProductVariant) {
+  return {
+    sku: variant.sku,
+    barcode: variant.barcode,
+    frameSize: variant.frameSize,
+    wheelSize: variant.wheelSize,
+    color: variant.color,
+    listPriceMinor: variant.listPriceMinor,
+    status: toPrismaStatus(variant.status),
+    isActive: variant.isActive,
+  };
+}
+
+async function syncVariantMedia(
+  tx: Prisma.TransactionClient,
+  variantId: string,
+  images: readonly ProductImage[],
+): Promise<void> {
+  await tx.variantMedia.deleteMany({ where: { variantId } });
+  for (const image of images) {
+    const media = await tx.mediaAsset.upsert({
+      where: { key: image.key },
+      create: {
+        key: image.key,
+        contentType: "image/svg+xml",
+        byteSize: 0,
+      },
+      update: {},
+    });
+    await tx.variantMedia.create({
+      data: {
+        variantId,
+        mediaId: media.id,
+        role: image.role,
+        sortOrder: image.sortOrder,
+        alt: image.alt,
+      },
+    });
+  }
+}
+
 export function createPrismaCatalogRepository(): CatalogRepository {
   return {
     async findBySlug(slug) {
@@ -352,61 +460,45 @@ export function createPrismaCatalogRepository(): CatalogRepository {
         warrantyMonths: product.warrantyMonths,
         warrantyText: product.warrantyText,
       };
-      await prisma.$transaction(async (tx) => {
-        if (existing) {
-          await tx.product.update({ where: { id: product.id }, data });
-          const keep = new Set(product.variants.map((variant) => variant.id));
-          const removed = existing.variants.filter((row) => !keep.has(row.id));
-          if (removed.length > 0) {
-            await tx.productVariant.deleteMany({
-              where: { id: { in: removed.map((row) => row.id) } },
-            });
-          }
-          for (const variant of product.variants) {
-            await tx.productVariant.upsert({
-              where: { id: variant.id },
-              create: {
-                id: variant.id,
-                productId: product.id,
-                sku: variant.sku,
-                frameSize: variant.frameSize,
-                wheelSize: variant.wheelSize,
-                color: variant.color,
-                listPriceMinor: variant.listPriceMinor,
-                currency: variant.currency,
-                isActive: variant.isActive,
-              },
-              update: {
-                sku: variant.sku,
-                frameSize: variant.frameSize,
-                wheelSize: variant.wheelSize,
-                color: variant.color,
-                listPriceMinor: variant.listPriceMinor,
-                isActive: variant.isActive,
+      try {
+        await prisma.$transaction(async (tx) => {
+          if (existing) {
+            await tx.product.update({ where: { id: product.id }, data });
+            const keep = new Set(product.variants.map((variant) => variant.id));
+            const removed = existing.variants.filter((row) => !keep.has(row.id));
+            if (removed.length > 0) {
+              await tx.productVariant.deleteMany({
+                where: { id: { in: removed.map((row) => row.id) } },
+              });
+            }
+            for (const variant of product.variants) {
+              await tx.productVariant.upsert({
+                where: { id: variant.id },
+                create: variantWriteData(product.id, variant),
+                update: variantUpdateData(variant),
+              });
+              await syncVariantMedia(tx, variant.id, variant.images);
+            }
+          } else {
+            await tx.product.create({
+              data: {
+                id: product.id,
+                ...data,
+                variants: {
+                  create: product.variants.map((variant) => ({
+                    ...variantWriteData(product.id, variant),
+                  })),
+                },
               },
             });
+            for (const variant of product.variants) {
+              await syncVariantMedia(tx, variant.id, variant.images);
+            }
           }
-        } else {
-          await tx.product.create({
-            data: {
-              id: product.id,
-              ...data,
-              variants: {
-                create: product.variants.map((variant) => ({
-                  id: variant.id,
-                  sku: variant.sku,
-                  frameSize: variant.frameSize,
-                  wheelSize: variant.wheelSize,
-                  color: variant.color,
-                  listPriceMinor: variant.listPriceMinor,
-                  currency: variant.currency,
-                  isActive: variant.isActive,
-                })),
-              },
-            },
-          });
-        }
-      });
+        });
+      } catch (error) {
+        mapUniqueViolation(error);
+      }
       const saved = await prisma.product.findUnique({
         where: { id: product.id },
         include: adminProductInclude,

@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { t } from "@/lib/i18n";
-import { Button, Checkbox, SelectField, TextAreaField, TextField } from "@/ui";
+import { Button, SelectField, TextAreaField, TextField } from "@/ui";
 import { minorToBynInput } from "../../_lib/money";
 import styles from "../../admin.module.css";
 import {
@@ -12,6 +12,9 @@ import {
 } from "./actions";
 
 const BICYCLE_TYPES = Object.keys(t.bicycleType) as Array<keyof typeof t.bicycleType>;
+const VARIANT_STATUSES = Object.keys(t.variantStatus) as Array<
+  keyof typeof t.variantStatus
+>;
 
 export interface ProductFormModel {
   id: string;
@@ -30,11 +33,14 @@ export interface ProductFormModel {
   variants: Array<{
     id: string;
     sku: string;
+    barcode: string | null;
     frameSize: string;
     wheelSize: string;
     color: string;
     listPriceMinor: number;
+    status: keyof typeof t.variantStatus;
     isActive: boolean;
+    images: Array<{ key: string; alt: string }>;
   }>;
 }
 
@@ -46,27 +52,45 @@ interface CatalogOption {
 interface VariantDraft {
   id?: string;
   sku: string;
+  barcode: string;
   frameSize: string;
   wheelSize: string;
   color: string;
   price: string;
-  active: boolean;
+  status: keyof typeof t.variantStatus;
+  mediaKey: string;
+  mediaAlt: string;
+}
+
+function emptyDraft(): VariantDraft {
+  return {
+    sku: "",
+    barcode: "",
+    frameSize: "",
+    wheelSize: "28",
+    color: "",
+    price: "",
+    status: "active",
+    mediaKey: "",
+    mediaAlt: "",
+  };
 }
 
 function toDrafts(product: ProductFormModel | null): VariantDraft[] {
   if (!product || product.variants.length === 0) {
-    return [
-      { sku: "", frameSize: "", wheelSize: "28", color: "", price: "", active: true },
-    ];
+    return [emptyDraft()];
   }
   return product.variants.map((variant) => ({
     id: variant.id,
     sku: variant.sku,
+    barcode: variant.barcode ?? "",
     frameSize: variant.frameSize,
     wheelSize: variant.wheelSize,
     color: variant.color,
     price: minorToBynInput(variant.listPriceMinor),
-    active: variant.isActive,
+    status: variant.status,
+    mediaKey: variant.images[0]?.key ?? "",
+    mediaAlt: variant.images[0]?.alt ?? "",
   }));
 }
 
@@ -192,6 +216,11 @@ export function ProductForm({
               defaultValue={variant.sku}
             />
             <TextField
+              name={`variant-${index}-barcode`}
+              label={t.product.barcode}
+              defaultValue={variant.barcode}
+            />
+            <TextField
               name={`variant-${index}-frameSize`}
               label={t.product.frameSize}
               required
@@ -215,28 +244,33 @@ export function ProductForm({
               required
               defaultValue={variant.price}
             />
-            <Checkbox
-              name={`variant-${index}-active`}
-              label={t.admin.activeVariant}
-              defaultChecked={variant.active}
+            <SelectField
+              name={`variant-${index}-status`}
+              label={t.admin.variantStatus}
+              required
+              defaultValue={variant.status}
+            >
+              {VARIANT_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {t.variantStatus[status]}
+                </option>
+              ))}
+            </SelectField>
+            <TextField
+              name={`variant-${index}-mediaKey`}
+              label={t.admin.variantMediaKey}
+              defaultValue={variant.mediaKey}
+            />
+            <TextField
+              name={`variant-${index}-mediaAlt`}
+              label={t.admin.variantMediaAlt}
+              defaultValue={variant.mediaAlt}
             />
           </div>
         ))}
         <Button
           type="button"
-          onClick={() =>
-            setVariants((current) => [
-              ...current,
-              {
-                sku: "",
-                frameSize: "",
-                wheelSize: "28",
-                color: "",
-                price: "",
-                active: true,
-              },
-            ])
-          }
+          onClick={() => setVariants((current) => [...current, emptyDraft()])}
         >
           {t.admin.addVariant}
         </Button>

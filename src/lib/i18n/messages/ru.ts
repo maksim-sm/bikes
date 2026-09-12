@@ -102,6 +102,7 @@ export const ru = {
     unavailable: "Этой комплектации нет в наличии",
     pickVariant: "Выберите размер и цвет",
     sku: "Артикул",
+    barcode: "Штрихкод",
     frameMaterial: "Материал рамы",
     groupset: "Групсет",
     brakeType: "Тормоза",
@@ -116,6 +117,11 @@ export const ru = {
     GRAVEL: "Гравел",
     CITY: "Городской",
     KIDS: "Детский",
+  },
+
+  variantStatus: {
+    active: "В продаже",
+    inactive: "Скрыта",
   },
 
   cart: {
@@ -152,6 +158,12 @@ export const ru = {
     addVariant: "Добавить комплектацию",
     priceByn: "Цена, BYN",
     activeVariant: "Продаётся",
+    variantStatus: "Статус комплектации",
+    variantMediaKey: "Ключ фото комплектации",
+    variantMediaAlt: "Подпись фото комплектации",
+    skuDuplicate: "Такой артикул уже есть",
+    combinationDuplicate: "Такая комбинация размера, цвета и колёс уже есть",
+    barcodeDuplicate: "Такой штрихкод уже есть",
     status: "Статус",
     statusDraft: "Черновик",
     statusPublished: "Опубликован",

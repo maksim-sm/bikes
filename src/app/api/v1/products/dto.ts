@@ -1,4 +1,5 @@
 import {
+  isSellableVariant,
   lowestListPriceMinor,
   type Product,
   type ProductVariant,
@@ -43,15 +44,17 @@ export interface ProductDetailDto extends ProductListDto {
 export interface ProductVariantDto {
   id: string;
   sku: string;
+  barcode: string | null;
   frameSize: string;
   wheelSize: string;
   color: string;
   listPriceMinor: number;
   currency: "BYN";
+  images: ProductImageDto[];
 }
 
 export function toProductListDto(product: Product): ProductListDto {
-  const active = product.variants.filter((variant) => variant.isActive);
+  const active = product.variants.filter(isSellableVariant);
   const prices = active.map((variant) => variant.listPriceMinor);
   return {
     slug: product.slug,
@@ -74,11 +77,19 @@ export function toProductVariantDto(variant: ProductVariant): ProductVariantDto 
   return {
     id: variant.id,
     sku: variant.sku,
+    barcode: variant.barcode,
     frameSize: variant.frameSize,
     wheelSize: variant.wheelSize,
     color: variant.color,
     listPriceMinor: variant.listPriceMinor,
     currency: variant.currency,
+    images: [...variant.images]
+      .sort((left, right) => left.sortOrder - right.sortOrder)
+      .map((image) => ({
+        src: mediaSrc(image.key),
+        alt: image.alt,
+        role: image.role,
+      })),
   };
 }
 
@@ -96,8 +107,6 @@ export function toProductDetailDto(product: Product): ProductDetailDto {
         alt: image.alt,
         role: image.role,
       })),
-    variants: product.variants
-      .filter((variant) => variant.isActive)
-      .map(toProductVariantDto),
+    variants: product.variants.filter(isSellableVariant).map(toProductVariantDto),
   };
 }

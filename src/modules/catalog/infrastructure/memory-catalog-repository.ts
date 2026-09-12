@@ -7,7 +7,53 @@ import {
 } from "../application/list-match";
 import type { CatalogListQuery } from "../application/list-query";
 import type { CatalogRepository } from "../application/ports";
-import type { Brand, Category, Product } from "../domain/product";
+import {
+  variantCombinationKey,
+  type Brand,
+  type Category,
+  type Product,
+} from "../domain/product";
+
+function assertUniqueSellableIdentity(
+  products: readonly Product[],
+  product: Product,
+): void {
+  const otherSkus = new Set<string>();
+  const otherBarcodes = new Set<string>();
+  for (const other of products) {
+    if (other.id === product.id) {
+      continue;
+    }
+    for (const variant of other.variants) {
+      otherSkus.add(variant.sku.toLowerCase());
+      if (variant.barcode) {
+        otherBarcodes.add(variant.barcode.toLowerCase());
+      }
+    }
+  }
+  const combinations = new Set<string>();
+  for (const variant of product.variants) {
+    if (otherSkus.has(variant.sku.toLowerCase())) {
+      throw new ConflictError("sku already exists", {
+        reason: "variant_sku_duplicate",
+        sku: variant.sku,
+      });
+    }
+    if (variant.barcode && otherBarcodes.has(variant.barcode.toLowerCase())) {
+      throw new ConflictError("barcode already exists", {
+        reason: "variant_barcode_duplicate",
+        barcode: variant.barcode,
+      });
+    }
+    const combination = variantCombinationKey(variant);
+    if (combinations.has(combination)) {
+      throw new ConflictError("variant combination already exists", {
+        reason: "variant_combination_duplicate",
+      });
+    }
+    combinations.add(combination);
+  }
+}
 
 export function createMemoryCatalogRepository(input?: {
   products?: Product[];
@@ -53,6 +99,7 @@ export function createMemoryCatalogRepository(input?: {
       if (taken) {
         throw new ConflictError("slug already exists", { slug: product.slug });
       }
+      assertUniqueSellableIdentity(products, product);
       const index = products.findIndex((item) => item.id === product.id);
       if (index === -1) {
         products.push(product);

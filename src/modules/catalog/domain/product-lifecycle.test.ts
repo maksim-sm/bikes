@@ -63,12 +63,15 @@ function product(): Product {
         id: "v1",
         productId: "p1",
         sku: "EM-M",
+        barcode: null,
         frameSize: "M",
         wheelSize: "28",
         color: "чёрный",
         listPriceMinor: 349900,
         currency: "BYN",
+        status: "active",
         isActive: true,
+        images: [],
       },
     ],
   };
@@ -102,6 +105,77 @@ describe("product write validation", () => {
     ).toThrow("product_price_invalid");
     expect(() => assertRequiredProduct(input())).not.toThrow();
   });
+
+  it("rejects duplicate SKUs and size/color/wheel combinations", () => {
+    expect(() =>
+      assertRequiredProduct(
+        input({
+          variants: [
+            {
+              sku: "EM-M",
+              frameSize: "M",
+              wheelSize: "28",
+              color: "чёрный",
+              listPriceMinor: 349900,
+            },
+            {
+              sku: "em-m",
+              frameSize: "L",
+              wheelSize: "28",
+              color: "красный",
+              listPriceMinor: 349900,
+            },
+          ],
+        }),
+      ),
+    ).toThrow("variant_sku_duplicate");
+    expect(() =>
+      assertRequiredProduct(
+        input({
+          variants: [
+            {
+              sku: "EM-M",
+              frameSize: "M",
+              wheelSize: "28",
+              color: "чёрный",
+              listPriceMinor: 349900,
+            },
+            {
+              sku: "EM-M-2",
+              frameSize: "m",
+              wheelSize: "28",
+              color: "Чёрный",
+              listPriceMinor: 359900,
+            },
+          ],
+        }),
+      ),
+    ).toThrow("variant_combination_duplicate");
+    expect(() =>
+      assertRequiredProduct(
+        input({
+          variants: [
+            {
+              sku: "EM-M",
+              barcode: "4810001",
+              frameSize: "M",
+              wheelSize: "28",
+              color: "чёрный",
+              listPriceMinor: 349900,
+            },
+            {
+              sku: "EM-L",
+              barcode: "4810001",
+              frameSize: "L",
+              wheelSize: "28",
+              color: "чёрный",
+              listPriceMinor: 349900,
+            },
+          ],
+        }),
+      ),
+    ).toThrow("variant_barcode_duplicate");
+  });
 });
 
 describe("publish and unpublish", () => {
@@ -118,7 +192,11 @@ describe("publish and unpublish", () => {
 
   it("does not publish a product without an active variant", () => {
     const incomplete = product();
-    incomplete.variants[0] = { ...incomplete.variants[0]!, isActive: false };
+    incomplete.variants[0] = {
+      ...incomplete.variants[0]!,
+      status: "inactive",
+      isActive: false,
+    };
     expect(() => publishProduct(incomplete, now)).toThrow("product_variant_required");
   });
 });

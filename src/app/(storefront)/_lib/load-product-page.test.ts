@@ -28,9 +28,10 @@ describe("loadProductPage", () => {
     expect(page.warrantyMonths).toBe(24);
     expect(page.images).toHaveLength(2);
     expect(page.images[0]?.src).toBe("/api/media/demo/emonda-front");
-    expect(
-      page.variants.find((variant) => variant.id === "v-emonda-m-black")?.available,
-    ).toBe(4);
+    const black = page.variants.find((variant) => variant.id === "v-emonda-m-black");
+    expect(black?.available).toBe(4);
+    expect(black?.barcode).toBe("4810123450001");
+    expect(black?.images[0]?.src).toBe("/api/media/demo/emonda-m-black");
     expect(
       page.variants.find((variant) => variant.id === "v-emonda-m-red")?.available,
     ).toBe(0);

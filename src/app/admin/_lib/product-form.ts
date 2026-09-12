@@ -20,15 +20,35 @@ export function parseProductForm(
     if (price === null) {
       return { error: "product_price_invalid" };
     }
+    const statusRaw = String(formData.get(`variant-${index}-status`) ?? "active");
+    if (statusRaw !== "active" && statusRaw !== "inactive") {
+      return { error: "variant_status_invalid" };
+    }
+    const status = statusRaw;
     const id = String(formData.get(`variant-${index}-id`) ?? "").trim();
+    const mediaKey = String(formData.get(`variant-${index}-mediaKey`) ?? "").trim();
+    const mediaAlt = String(formData.get(`variant-${index}-mediaAlt`) ?? "").trim();
     variants.push({
       ...(id.length > 0 ? { id } : {}),
       sku: String(formData.get(`variant-${index}-sku`) ?? ""),
+      barcode: emptyToNull(String(formData.get(`variant-${index}-barcode`) ?? "")),
       frameSize: String(formData.get(`variant-${index}-frameSize`) ?? ""),
       wheelSize: String(formData.get(`variant-${index}-wheelSize`) ?? ""),
       color: String(formData.get(`variant-${index}-color`) ?? ""),
       listPriceMinor: price,
-      isActive: formData.get(`variant-${index}-active`) === "on",
+      status,
+      isActive: status === "active",
+      images:
+        mediaKey.length > 0
+          ? [
+              {
+                key: mediaKey,
+                alt: mediaAlt,
+                role: "PRIMARY",
+                sortOrder: 0,
+              },
+            ]
+          : [],
     });
   }
   const modelYearRaw = String(formData.get("modelYear") ?? "").trim();

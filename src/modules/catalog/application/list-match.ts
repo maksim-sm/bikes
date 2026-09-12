@@ -1,5 +1,6 @@
 import {
   isListedOnStorefront,
+  isSellableVariant,
   lowestListPriceMinor,
   type Category,
   type Product,
@@ -64,7 +65,7 @@ export function productMatchesListQuery(
   if (filters.q && !productMatchesSearch(product, filters.q)) {
     return false;
   }
-  const active = product.variants.filter((variant) => variant.isActive);
+  const active = product.variants.filter(isSellableVariant);
   if (active.length === 0) {
     return false;
   }

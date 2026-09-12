@@ -5,6 +5,7 @@ import {
   assertRequiredProduct,
   normalizeProductSlug,
   publishProduct,
+  toWrittenVariant,
   unpublishProduct,
   type Product,
   type ProductWriteInput,
@@ -40,6 +41,11 @@ function mapWriteError(error: unknown): never {
       product_color_required: "color is required",
       product_price_invalid: "list price must be a positive integer in kopeks",
       product_not_published: "product is not published",
+      variant_sku_duplicate: "sku must be unique",
+      variant_combination_duplicate: "size, color, and wheel size must be unique",
+      variant_barcode_duplicate: "barcode must be unique",
+      variant_status_invalid: "variant status is invalid",
+      variant_media_key_invalid: "variant media key is required",
     };
     const mapped = messages[error.message];
     if (mapped) {
@@ -115,17 +121,13 @@ export function createCatalogAdminServices(deps: {
       warrantyMonths: input.warrantyMonths,
       warrantyText: input.warrantyText,
       images: existing?.images ?? [],
-      variants: input.variants.map((variant, index) => ({
-        id: variant.id ?? existing?.variants[index]?.id ?? crypto.randomUUID(),
-        productId,
-        sku: variant.sku.trim(),
-        frameSize: variant.frameSize.trim(),
-        wheelSize: variant.wheelSize.trim(),
-        color: variant.color.trim(),
-        listPriceMinor: variant.listPriceMinor,
-        currency: "BYN",
-        isActive: variant.isActive ?? true,
-      })),
+      variants: input.variants.map((variant, index) =>
+        toWrittenVariant(
+          productId,
+          variant,
+          variant.id ?? existing?.variants[index]?.id ?? crypto.randomUUID(),
+        ),
+      ),
     };
     return deps.catalog.save(product);
   }
