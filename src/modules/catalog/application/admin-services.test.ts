@@ -96,6 +96,59 @@ describe("catalog admin services", () => {
     expect((await admin.getProduct(manager, created.id)).status).toBe("DRAFT");
   });
 
+  it("rejects duplicate SKUs and size/color/wheel combinations", async () => {
+    const { admin } = repos();
+    await admin.createProduct(manager, writeInput());
+    await expect(
+      admin.createProduct(
+        manager,
+        writeInput({
+          slug: "fx-3-disc-2",
+          variants: [
+            {
+              sku: "FX-M",
+              frameSize: "S",
+              wheelSize: "28",
+              color: "чёрный",
+              listPriceMinor: 219900,
+            },
+          ],
+        }),
+      ),
+    ).rejects.toMatchObject({
+      code: "conflict",
+      context: { reason: "variant_sku_duplicate" },
+    });
+
+    await expect(
+      admin.createProduct(
+        manager,
+        writeInput({
+          slug: "fx-combo",
+          variants: [
+            {
+              sku: "FX-A",
+              frameSize: "M",
+              wheelSize: "28",
+              color: "синий",
+              listPriceMinor: 219900,
+            },
+            {
+              sku: "FX-B",
+              frameSize: "M",
+              wheelSize: "28",
+              color: "синий",
+              listPriceMinor: 229900,
+            },
+          ],
+        }),
+      ),
+    ).rejects.toMatchObject({
+      code: "validation_failed",
+      context: { reason: "variant_combination_duplicate" },
+    });
+  });
+
   it("rejects incomplete writes and unauthorized callers", async () => {
     const { admin } = repos();
     await expect(

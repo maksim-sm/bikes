@@ -8,9 +8,12 @@
 export { escapeIlike, productMatchesSearch, searchDocument } from "./domain/search";
 export {
   BICYCLE_TYPES,
+  VARIANT_STATUSES,
   findActiveVariant,
   isBicycleType,
   isListedOnStorefront,
+  isSellableVariant,
+  isVariantStatus,
   lowestListPriceMinor,
   normalizeProductSlug,
   publishProduct,
@@ -23,6 +26,7 @@ export {
   type ProductStatus,
   type ProductVariant,
   type ProductWriteInput,
+  type VariantStatus,
 } from "./domain/product";
 export {
   CATALOG_SORT_FIELDS,

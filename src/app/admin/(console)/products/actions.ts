@@ -10,12 +10,19 @@ import { requireAdminCatalog } from "../../_lib/staff";
 
 export type ProductFormState = { ok: boolean; message: string } | null;
 
+const WRITE_ERRORS: Record<string, string> = {
+  variant_sku_duplicate: t.admin.skuDuplicate,
+  variant_combination_duplicate: t.admin.combinationDuplicate,
+  variant_barcode_duplicate: t.admin.barcodeDuplicate,
+};
+
 function fail(error: unknown): ProductFormState {
-  if (isAppError(error) && error.code === "validation_failed") {
-    return { ok: false, message: t.admin.saveFailed };
-  }
-  if (isAppError(error) && error.code === "conflict") {
-    return { ok: false, message: t.admin.saveFailed };
+  if (isAppError(error)) {
+    const reason = String(error.context.reason ?? "");
+    const mapped = WRITE_ERRORS[reason];
+    if (mapped) {
+      return { ok: false, message: mapped };
+    }
   }
   return { ok: false, message: t.admin.saveFailed };
 }
@@ -27,7 +34,7 @@ export async function createProductAction(
   const principal = await requireAdminCatalog();
   const parsed = parseProductForm(formData);
   if ("error" in parsed) {
-    return { ok: false, message: t.admin.saveFailed };
+    return { ok: false, message: WRITE_ERRORS[parsed.error] ?? t.admin.saveFailed };
   }
   let createdId: string;
   try {
@@ -49,7 +56,7 @@ export async function updateProductAction(
   const id = String(formData.get("id") ?? "");
   const parsed = parseProductForm(formData);
   if ("error" in parsed) {
-    return { ok: false, message: t.admin.saveFailed };
+    return { ok: false, message: WRITE_ERRORS[parsed.error] ?? t.admin.saveFailed };
   }
   try {
     await getCatalogAdminServices().then((admin) =>

@@ -3,23 +3,29 @@ export type ProductStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 export const BICYCLE_TYPES = ["ROAD", "MTB", "GRAVEL", "CITY", "KIDS"] as const;
 export type BicycleType = (typeof BICYCLE_TYPES)[number];
 
-export interface ProductVariant {
-  id: string;
-  productId: string;
-  sku: string;
-  frameSize: string;
-  wheelSize: string;
-  color: string;
-  listPriceMinor: number;
-  currency: "BYN";
-  isActive: boolean;
-}
+export const VARIANT_STATUSES = ["active", "inactive"] as const;
+export type VariantStatus = (typeof VARIANT_STATUSES)[number];
 
 export interface ProductImage {
   key: string;
   alt: string;
   role: "PRIMARY" | "GALLERY";
   sortOrder: number;
+}
+
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  sku: string;
+  barcode: string | null;
+  frameSize: string;
+  wheelSize: string;
+  color: string;
+  listPriceMinor: number;
+  currency: "BYN";
+  status: VariantStatus;
+  isActive: boolean;
+  images: ProductImage[];
 }
 
 export interface Product {
@@ -65,12 +71,33 @@ export function isListedOnStorefront(product: Product, now: Date): boolean {
   return product.publishedAt.getTime() <= now.getTime();
 }
 
+export function isVariantStatus(value: string): value is VariantStatus {
+  return (VARIANT_STATUSES as readonly string[]).includes(value);
+}
+
+export function resolveVariantStatus(input: {
+  status?: string;
+  isActive?: boolean;
+}): VariantStatus {
+  if (input.status !== undefined) {
+    if (!isVariantStatus(input.status)) {
+      throw new Error("variant_status_invalid");
+    }
+    return input.status;
+  }
+  return input.isActive === false ? "inactive" : "active";
+}
+
+export function isSellableVariant(variant: ProductVariant): boolean {
+  return variant.status === "active";
+}
+
 export function findActiveVariant(
   product: Product,
   variantId: string,
 ): ProductVariant | null {
   const variant = product.variants.find((item) => item.id === variantId);
-  if (!variant || !variant.isActive) {
+  if (!variant || !isSellableVariant(variant)) {
     return null;
   }
   return variant;
@@ -82,7 +109,7 @@ export function isBicycleType(value: string): value is BicycleType {
 
 export function lowestListPriceMinor(product: Product): number | null {
   const prices = product.variants
-    .filter((variant) => variant.isActive)
+    .filter(isSellableVariant)
     .map((variant) => variant.listPriceMinor);
   if (prices.length === 0) {
     return null;
@@ -95,11 +122,14 @@ export const PRODUCT_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export interface ProductWriteVariant {
   id?: string;
   sku: string;
+  barcode?: string | null;
   frameSize: string;
   wheelSize: string;
   color: string;
   listPriceMinor: number;
+  status?: VariantStatus;
   isActive?: boolean;
+  images?: readonly ProductImage[];
 }
 
 export interface ProductWriteInput {
@@ -130,6 +160,58 @@ export function normalizeProductSlug(slug: string): string {
   return slug.trim().toLowerCase();
 }
 
+export function normalizeVariantSku(sku: string): string {
+  return sku.trim();
+}
+
+export function normalizeVariantBarcode(
+  barcode: string | null | undefined,
+): string | null {
+  if (barcode === undefined || barcode === null) {
+    return null;
+  }
+  const trimmed = barcode.trim();
+  return trimmed.length === 0 ? null : trimmed;
+}
+
+export function variantCombinationKey(variant: {
+  frameSize: string;
+  color: string;
+  wheelSize: string;
+}): string {
+  return [
+    variant.frameSize.trim().toLowerCase(),
+    variant.color.trim().toLowerCase(),
+    variant.wheelSize.trim().toLowerCase(),
+  ].join("\0");
+}
+
+function assertUniqueVariants(variants: readonly ProductWriteVariant[]): void {
+  const skus = new Set<string>();
+  const combinations = new Set<string>();
+  const barcodes = new Set<string>();
+  for (const variant of variants) {
+    const sku = normalizeVariantSku(variant.sku).toLowerCase();
+    if (skus.has(sku)) {
+      throw new Error("variant_sku_duplicate");
+    }
+    skus.add(sku);
+    const combination = variantCombinationKey(variant);
+    if (combinations.has(combination)) {
+      throw new Error("variant_combination_duplicate");
+    }
+    combinations.add(combination);
+    const barcode = normalizeVariantBarcode(variant.barcode);
+    if (barcode !== null) {
+      const key = barcode.toLowerCase();
+      if (barcodes.has(key)) {
+        throw new Error("variant_barcode_duplicate");
+      }
+      barcodes.add(key);
+    }
+  }
+}
+
 export function assertRequiredProduct(input: ProductWriteInput): void {
   requireText(input.name, "product_name_required");
   requireText(input.description, "product_description_required");
@@ -153,13 +235,50 @@ export function assertRequiredProduct(input: ProductWriteInput): void {
     if (!Number.isInteger(variant.listPriceMinor) || variant.listPriceMinor <= 0) {
       throw new Error("product_price_invalid");
     }
+    if (variant.status !== undefined) {
+      resolveVariantStatus({ status: variant.status });
+    }
+    for (const image of variant.images ?? []) {
+      if (image.key.trim().length === 0) {
+        throw new Error("variant_media_key_invalid");
+      }
+    }
   }
+  assertUniqueVariants(input.variants);
+}
+
+export function toWrittenVariant(
+  productId: string,
+  input: ProductWriteVariant,
+  id: string,
+): ProductVariant {
+  const status = resolveVariantStatus(input);
+  const images = (input.images ?? []).map((image, index) => ({
+    key: image.key.trim(),
+    alt: image.alt.trim(),
+    role: image.role,
+    sortOrder: image.sortOrder ?? index,
+  }));
+  return {
+    id,
+    productId,
+    sku: normalizeVariantSku(input.sku),
+    barcode: normalizeVariantBarcode(input.barcode),
+    frameSize: input.frameSize.trim(),
+    wheelSize: input.wheelSize.trim(),
+    color: input.color.trim(),
+    listPriceMinor: input.listPriceMinor,
+    currency: "BYN",
+    status,
+    isActive: status === "active",
+    images,
+  };
 }
 
 export function hasActiveVariant(product: {
   variants: readonly ProductVariant[];
 }): boolean {
-  return product.variants.some((variant) => variant.isActive);
+  return product.variants.some(isSellableVariant);
 }
 
 export function publishProduct(product: Product, now: Date): Product {

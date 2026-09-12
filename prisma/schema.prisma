@@ -70,6 +70,13 @@ enum ProductMediaRole {
   @@map("product_media_role")
 }
 
+enum VariantStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("variant_status")
+}
+
 enum OrderStatus {
   PLACED
   CANCELLED
@@ -357,25 +364,29 @@ model Product {
 }
 
 model ProductVariant {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId      String   @map("product_id") @db.Uuid
-  sku            String   @unique @db.VarChar(64)
-  frameSize      String   @map("frame_size") @db.VarChar(16)
-  wheelSize      String   @map("wheel_size") @db.VarChar(16)
-  color          String   @db.VarChar(80)
-  listPriceMinor Int      @map("list_price_minor")
-  currency       String   @default("BYN") @db.Char(3)
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId      String        @map("product_id") @db.Uuid
+  sku            String        @unique @db.VarChar(64)
+  barcode        String?       @unique @db.VarChar(64)
+  frameSize      String        @map("frame_size") @db.VarChar(16)
+  wheelSize      String        @map("wheel_size") @db.VarChar(16)
+  color          String        @db.VarChar(80)
+  listPriceMinor Int           @map("list_price_minor")
+  currency       String        @default("BYN") @db.Char(3)
+  status         VariantStatus @default(ACTIVE)
+  isActive       Boolean       @default(true) @map("is_active")
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   cartItems  CartItem[]
   orderItems OrderItem[]
   inventory  InventoryItem?
+  media      VariantMedia[]
 
   @@unique([productId, frameSize, color, wheelSize], map: "product_variants_product_id_size_color_key")
   @@index([productId, isActive], map: "product_variants_product_id_is_active_idx")
+  @@index([productId, status], map: "product_variants_product_id_status_idx")
   @@index([frameSize], map: "product_variants_frame_size_idx")
   @@index([wheelSize], map: "product_variants_wheel_size_idx")
   @@index([listPriceMinor], map: "product_variants_list_price_minor_idx")
@@ -399,6 +410,23 @@ model ProductMedia {
   @@map("product_media")
 }
 
+model VariantMedia {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variantId String           @map("variant_id") @db.Uuid
+  mediaId   String           @map("media_id") @db.Uuid
+  role      ProductMediaRole @default(GALLERY)
+  sortOrder Int              @default(0) @map("sort_order")
+  alt       String           @db.VarChar(200)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  media   MediaAsset     @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@unique([variantId, mediaId], map: "variant_media_variant_id_media_id_key")
+  @@index([variantId, sortOrder], map: "variant_media_variant_id_sort_order_idx")
+  @@map("variant_media")
+}
+
 // ===========================================================================
 // media
 // Owns: stored objects. Other modules keep opaque keys / mediaId, never URLs.
@@ -415,6 +443,7 @@ model MediaAsset {
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   products ProductMedia[]
+  variants VariantMedia[]
 
   @@map("media")
 }

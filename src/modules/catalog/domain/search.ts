@@ -12,7 +12,13 @@ export function searchDocument(product: Product): string {
     product.description,
   ];
   for (const variant of product.variants) {
-    parts.push(variant.sku, variant.color, variant.frameSize, variant.wheelSize);
+    parts.push(
+      variant.sku,
+      variant.barcode ?? "",
+      variant.color,
+      variant.frameSize,
+      variant.wheelSize,
+    );
   }
   return parts
     .filter((part): part is string => part !== null && part.length > 0)

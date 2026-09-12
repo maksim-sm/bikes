@@ -30,12 +30,15 @@ function product(overrides: Partial<Product> = {}): Product {
         id: "v1",
         productId: "p1",
         sku: "EM-M-BLK",
+        barcode: null,
         frameSize: "M",
         wheelSize: "28",
         color: "чёрный",
         listPriceMinor: 349900,
         currency: "BYN",
+        status: "active",
         isActive: true,
+        images: [],
       },
     ],
     ...overrides,
@@ -85,7 +88,12 @@ describe("catalog visibility", () => {
   it("finds only active variants", () => {
     const listed = product({
       variants: [
-        { ...product().variants[0]!, id: "inactive", isActive: false },
+        {
+          ...product().variants[0]!,
+          id: "inactive",
+          status: "inactive",
+          isActive: false,
+        },
         product().variants[0]!,
       ],
     });

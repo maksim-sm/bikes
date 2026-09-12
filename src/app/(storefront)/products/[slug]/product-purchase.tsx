@@ -9,6 +9,7 @@ import {
   uniqueFrameSizes,
 } from "../../_lib/variant-selection";
 import type { ProductPageVariant } from "../../_lib/load-product-page";
+import { MediaImage } from "../../_lib/media-image";
 import { addToCartAction, type AddToCartState } from "./actions";
 import styles from "./product-detail.module.css";
 
@@ -125,28 +126,41 @@ export function ProductPurchase({ variants }: { variants: ProductPageVariant[] }
       </fieldset>
 
       {detail ? (
-        <dl className={styles.meta}>
-          <div>
-            <dt>{t.product.price}</dt>
-            <dd className={styles.price}>{formatPrice(detail.listPriceMinor)}</dd>
-          </div>
-          <div>
-            <dt>{t.product.availability}</dt>
-            <dd>
-              {inStock
-                ? `${t.product.inStock} · ${detail.available} ${t.product.unitsLeft}`
-                : t.product.outOfStock}
-            </dd>
-          </div>
-          <div>
-            <dt>{t.product.wheelSize}</dt>
-            <dd>{detail.wheelSize}</dd>
-          </div>
-          <div>
-            <dt>{t.product.sku}</dt>
-            <dd>{detail.sku}</dd>
-          </div>
-        </dl>
+        <>
+          <dl className={styles.meta}>
+            <div>
+              <dt>{t.product.price}</dt>
+              <dd className={styles.price}>{formatPrice(detail.listPriceMinor)}</dd>
+            </div>
+            <div>
+              <dt>{t.product.availability}</dt>
+              <dd>
+                {inStock
+                  ? `${t.product.inStock} · ${detail.available} ${t.product.unitsLeft}`
+                  : t.product.outOfStock}
+              </dd>
+            </div>
+            <div>
+              <dt>{t.product.wheelSize}</dt>
+              <dd>{detail.wheelSize}</dd>
+            </div>
+            <div>
+              <dt>{t.product.sku}</dt>
+              <dd>{detail.sku}</dd>
+            </div>
+            {detail.barcode ? (
+              <div>
+                <dt>{t.product.barcode}</dt>
+                <dd>{detail.barcode}</dd>
+              </div>
+            ) : null}
+          </dl>
+          {detail.images[0] ? (
+            <figure className={styles.hero}>
+              <MediaImage src={detail.images[0].src} alt={detail.images[0].alt} />
+            </figure>
+          ) : null}
+        </>
       ) : (
         <p>{t.product.pickVariant}</p>
       )}

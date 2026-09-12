@@ -3,6 +3,7 @@ import {
   getCatalogServices,
   getDeliveryServices,
 } from "@/app/api/_lib/compose";
+import { isSellableVariant } from "@/modules/catalog";
 import { mediaSrc } from "@/modules/media";
 import type { DeliveryQuote } from "@/modules/delivery";
 import type { BicycleType, Product } from "@/modules/catalog";
@@ -10,11 +11,13 @@ import type { BicycleType, Product } from "@/modules/catalog";
 export interface ProductPageVariant {
   id: string;
   sku: string;
+  barcode: string | null;
   frameSize: string;
   wheelSize: string;
   color: string;
   listPriceMinor: number;
   available: number;
+  images: ProductPageImage[];
 }
 
 export interface ProductPageImage {
@@ -64,17 +67,23 @@ function toPageModel(
         alt: image.alt,
         role: image.role,
       })),
-    variants: product.variants
-      .filter((variant) => variant.isActive)
-      .map((variant) => ({
-        id: variant.id,
-        sku: variant.sku,
-        frameSize: variant.frameSize,
-        wheelSize: variant.wheelSize,
-        color: variant.color,
-        listPriceMinor: variant.listPriceMinor,
-        available: stock.get(variant.id) ?? 0,
-      })),
+    variants: product.variants.filter(isSellableVariant).map((variant) => ({
+      id: variant.id,
+      sku: variant.sku,
+      barcode: variant.barcode,
+      frameSize: variant.frameSize,
+      wheelSize: variant.wheelSize,
+      color: variant.color,
+      listPriceMinor: variant.listPriceMinor,
+      available: stock.get(variant.id) ?? 0,
+      images: [...variant.images]
+        .sort((left, right) => left.sortOrder - right.sortOrder)
+        .map((image) => ({
+          src: mediaSrc(image.key),
+          alt: image.alt,
+          role: image.role,
+        })),
+    })),
     quotes,
   };
 }
@@ -83,9 +92,7 @@ export async function loadProductPage(slug: string): Promise<ProductPageModel> {
   const catalog = await getCatalogServices();
   const product = await catalog.getProductBySlug(slug);
   const inventory = await getCatalogInventory();
-  const variantIds = product.variants
-    .filter((variant) => variant.isActive)
-    .map((item) => item.id);
+  const variantIds = product.variants.filter(isSellableVariant).map((item) => item.id);
   const stockRows = await inventory.listAvailabilityByVariantIds(variantIds);
   const stock = new Map(stockRows.map((row) => [row.variantId, row.available]));
   const quotes = await getDeliveryServices().listQuotes({

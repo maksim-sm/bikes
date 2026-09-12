@@ -62,3 +62,20 @@ Creates start as `DRAFT`. Publish sets `PUBLISHED` and `publishedAt`;
 unpublish returns the row to `DRAFT`. Storefront `listPublishedProducts` and
 `getProductBySlug` still use `isListedOnStorefront` — drafts never appear on
 `/catalog`, `/products/[slug]`, or `GET /api/v1/products`.
+
+## Variants
+
+A sellable bicycle is a product plus one or more variants. Each variant has:
+
+| Field                         | Notes                                             |
+| ----------------------------- | ------------------------------------------------- |
+| SKU                           | Unique across the catalogue                       |
+| barcode / product code        | Optional, unique when present                     |
+| frame size, color, wheel size | Unique together on the same product               |
+| list price                    | Integer kopeks, currency `BYN`                    |
+| status                        | `active` (sellable) or `inactive` (hidden)        |
+| media                         | Opaque media keys via `variant_media`, never URLs |
+
+Inactive variants stay off the storefront and public API. Duplicate SKUs and
+invalid size × color × wheel combinations are rejected in domain validation
+before persistence; PostgreSQL unique indexes remain the last line of defence.
