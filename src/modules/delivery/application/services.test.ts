@@ -254,5 +254,16 @@ describe("delivery services", () => {
       status: "DELIVERED",
       carrierName: "Европочта",
     });
+    const forOwner = await delivery.getShipmentForOrder(ops, {
+      id: "o1",
+      userId: "user-1",
+    });
+    expect(forOwner?.trackingNumber).toBe("BY123");
+    await expect(
+      delivery.getShipmentForOrder(customerPrincipal("user-2"), {
+        id: "o1",
+        userId: "user-1",
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenError);
   });
 });

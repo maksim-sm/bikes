@@ -46,6 +46,7 @@ import {
   createMemoryAuthServices,
   createMemoryCustomerRepository,
   createMemoryWishlistRepository,
+  createPrismaCustomerRepository,
   createWishlistServices,
   type AuthServices,
   type CustomerRepository,
@@ -54,6 +55,12 @@ import {
   type WishlistRepository,
   type WishlistServices,
 } from "@/modules/identity";
+import {
+  demoCustomerAddress,
+  demoCustomerOrder,
+  demoCustomerProfile,
+  demoCustomerShipment,
+} from "./demo-account";
 import { isAppError } from "@/lib/errors";
 import {
   createCheckoutHoldReconciler,
@@ -127,6 +134,9 @@ export const emptyOrders: OrderRepository = {
   async findById() {
     return null;
   },
+  async listByUser() {
+    return [];
+  },
 };
 
 let paymentRepo = createMemoryPaymentRepository();
@@ -148,6 +158,7 @@ const composeGlobals = globalThis as unknown as {
   bikesInventory?: InventoryServices;
   bikesAuthPromise?: Promise<AuthServices>;
   bikesMemoryShipments?: ShipmentRepository;
+  bikesMemoryCustomers?: CustomerRepository;
 };
 
 const DEMO_STOCK: InventoryItem[] = [
@@ -338,7 +349,7 @@ function getShipmentRepository(): ShipmentRepository {
     return composeGlobals.bikesMemoryShipments;
   }
   if (process.env.NODE_ENV !== "production") {
-    composeGlobals.bikesMemoryShipments ??= createMemoryShipments();
+    composeGlobals.bikesMemoryShipments ??= createMemoryShipments([demoCustomerShipment]);
     return composeGlobals.bikesMemoryShipments;
   }
   return createPrismaShipmentRepository();
@@ -356,7 +367,7 @@ export function getOrderRepository(): OrderRepository {
     return orderRepo;
   }
   if (process.env.NODE_ENV !== "production") {
-    composeGlobals.bikesMemoryOrders ??= createMemoryOrderRepository();
+    composeGlobals.bikesMemoryOrders ??= createMemoryOrderRepository([demoCustomerOrder]);
     return composeGlobals.bikesMemoryOrders;
   }
   return orderRepo;
@@ -419,6 +430,7 @@ export function resetRepositories(): void {
   cartRepo = createMemoryCartRepository();
   composeGlobals.bikesMemoryCart = cartRepo;
   composeGlobals.bikesMemoryOrders = createMemoryOrderRepository();
+  composeGlobals.bikesMemoryCustomers = createMemoryCustomerRepository();
   paymentRepo = createMemoryPaymentRepository();
   paymentProvider = new MockPaymentProvider();
   composeGlobals.bikesMemoryPayments = paymentRepo;
@@ -500,8 +512,22 @@ export function setWishlistRepository(repository: WishlistRepository): void {
   wishlistRepo = repository;
 }
 
+function getCustomerRepository(): CustomerRepository {
+  if (process.env.VITEST === "true") {
+    return customerRepo;
+  }
+  if (process.env.NODE_ENV !== "production") {
+    composeGlobals.bikesMemoryCustomers ??= createMemoryCustomerRepository({
+      profiles: [demoCustomerProfile],
+      addresses: [demoCustomerAddress],
+    });
+    return composeGlobals.bikesMemoryCustomers;
+  }
+  return createPrismaCustomerRepository();
+}
+
 export function getCustomerServices(): CustomerServices {
-  return createCustomerServices({ customers: customerRepo });
+  return createCustomerServices({ customers: getCustomerRepository() });
 }
 
 export function getWishlistServices(): WishlistServices {

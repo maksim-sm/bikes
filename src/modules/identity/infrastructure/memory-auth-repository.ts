@@ -18,7 +18,7 @@ export function createMemoryUserAccounts(): UserAccountRepository {
     },
     async create(input) {
       const user: AuthUser = {
-        id: crypto.randomUUID(),
+        id: input.id ?? crypto.randomUUID(),
         email: input.email,
         passwordHash: input.passwordHash,
         role: input.role,

@@ -40,8 +40,11 @@ export async function createMemoryAuthServices(options?: {
 
 export const DEMO_STAFF_EMAIL = "staff@bikes.local";
 export const DEMO_STAFF_PASSWORD = "StaffPass12";
+export const DEMO_CUSTOMER_ID = "11111111-1111-1111-1111-111111111111";
+export const DEMO_CUSTOMER_EMAIL = "customer@bikes.local";
+export const DEMO_CUSTOMER_PASSWORD = "CustomerPass12";
 
-/** Development staff account: verified admin, no Prisma required. */
+/** Development staff and customer accounts: verified, no Prisma required. */
 export async function createDemoAuthServices(): Promise<AuthServices> {
   const passwords = createArgon2PasswordHasher({ cheap: true });
   const users = createMemoryUserAccounts();
@@ -54,6 +57,16 @@ export async function createDemoAuthServices(): Promise<AuthServices> {
   await users.save({
     ...created,
     staffRoles: ["admin"],
+    emailVerifiedAt: new Date("2026-01-01T00:00:00.000Z"),
+  });
+  const customer = await users.create({
+    id: DEMO_CUSTOMER_ID,
+    email: DEMO_CUSTOMER_EMAIL,
+    passwordHash: await passwords.hash(DEMO_CUSTOMER_PASSWORD),
+    role: "CUSTOMER",
+  });
+  await users.save({
+    ...customer,
     emailVerifiedAt: new Date("2026-01-01T00:00:00.000Z"),
   });
   return createAuthServices({

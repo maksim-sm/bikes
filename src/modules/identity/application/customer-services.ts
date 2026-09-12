@@ -71,7 +71,7 @@ export function createCustomerServices(deps: {
       const current = await deps.customers.listAddresses(userId);
       const created: Address = {
         ...input,
-        id: `addr-${current.length + 1}`,
+        id: crypto.randomUUID(),
         userId,
       };
       return deps.customers.saveAddresses(userId, prepareNewAddress(current, created));

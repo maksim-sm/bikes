@@ -2,9 +2,19 @@ import type { Address, CustomerProfile } from "../domain/customer";
 import type { Wishlist } from "../domain/wishlist";
 import type { CustomerRepository, WishlistRepository } from "../application/ports";
 
-export function createMemoryCustomerRepository(): CustomerRepository {
-  const profiles = new Map<string, CustomerProfile>();
+export function createMemoryCustomerRepository(seed?: {
+  profiles?: readonly CustomerProfile[];
+  addresses?: readonly Address[];
+}): CustomerRepository {
+  const profiles = new Map<string, CustomerProfile>(
+    (seed?.profiles ?? []).map((profile) => [profile.userId, profile]),
+  );
   const addresses = new Map<string, Address[]>();
+  for (const address of seed?.addresses ?? []) {
+    const current = addresses.get(address.userId) ?? [];
+    current.push(address);
+    addresses.set(address.userId, current);
+  }
   return {
     async getProfile(userId) {
       return profiles.get(userId) ?? null;

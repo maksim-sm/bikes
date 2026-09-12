@@ -1,9 +1,11 @@
 import {
   ConflictError,
+  NotFoundError,
   RateLimitedError,
   UnauthenticatedError,
   ValidationError,
 } from "@/lib/errors";
+import { requireAuthenticated, requireCustomer } from "./authorization";
 import {
   EMAIL_VERIFY_TTL_MS,
   PASSWORD_RESET_TTL_MS,
@@ -76,6 +78,20 @@ export interface AuthServices {
     rateKey: string;
   }): Promise<{ accepted: true }>;
   resolve(rawToken: string | null): Promise<Principal>;
+  getAccount(principal: Principal): Promise<{ userId: string; email: string }>;
+  changePassword(input: {
+    principal: Principal;
+    currentPassword: string;
+    password: string;
+    requestId: string;
+    rateKey: string;
+    secureCookie: boolean;
+  }): Promise<{ cookie: SessionCookie }>;
+  logoutAllSessions(input: {
+    principal: Principal;
+    requestId: string;
+    secureCookie: boolean;
+  }): Promise<{ cookie: SessionCookie }>;
 }
 
 export function createAuthServices(deps: {
@@ -316,6 +332,59 @@ export function createAuthServices(deps: {
         return { type: "anonymous" };
       }
       return principalForUser(user);
+    },
+
+    async getAccount(principal) {
+      const authenticated = requireAuthenticated(principal);
+      const user = await deps.users.findById(authenticated.userId);
+      if (!user) {
+        throw new NotFoundError("account not found", { userId: authenticated.userId });
+      }
+      return { userId: user.id, email: user.email };
+    },
+
+    async changePassword(input) {
+      await gate(input.rateKey);
+      const customer = requireCustomer(input.principal);
+      try {
+        assertPasswordPolicy(input.password);
+      } catch {
+        throw new ValidationError("password does not meet the policy");
+      }
+      const user = await deps.users.findById(customer.userId);
+      if (!user) {
+        throw new UnauthenticatedError(INVALID_CREDENTIALS);
+      }
+      const matches = await deps.passwords.verify(
+        user.passwordHash,
+        input.currentPassword,
+      );
+      if (!matches) {
+        throw new ValidationError("current password is incorrect");
+      }
+      user.passwordHash = await deps.passwords.hash(input.password);
+      await deps.users.save(user);
+      await deps.sessions.revokeAllForUser(user.id, deps.clock.now());
+      const cookie = await issueSession(user, input.secureCookie);
+      deps.log.record("auth.password_change", {
+        requestId: input.requestId,
+        userId: user.id,
+      });
+      deps.log.record("auth.session_revoked", {
+        requestId: input.requestId,
+        userId: user.id,
+      });
+      return { cookie };
+    },
+
+    async logoutAllSessions(input) {
+      const authenticated = requireAuthenticated(input.principal);
+      await deps.sessions.revokeAllForUser(authenticated.userId, deps.clock.now());
+      deps.log.record("auth.session_revoked", {
+        requestId: input.requestId,
+        userId: authenticated.userId,
+      });
+      return { cookie: clearedSessionCookie(input.secureCookie) };
     },
   };
 }

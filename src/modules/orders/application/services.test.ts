@@ -98,6 +98,9 @@ function setup(options?: {
     async findById(id) {
       return orders.get(id) ?? null;
     },
+    async listByUser(userId) {
+      return [...orders.values()].filter((order) => order.userId === userId);
+    },
   };
   const cart: Cart = {
     id: "c1",
@@ -307,6 +310,12 @@ describe("order services", () => {
       staffPrincipal("ops", ["order_management"]),
     );
     expect(asOps.userId).toBe("user-1");
+    const listed = await services.listOrders(customerPrincipal("user-1"));
+    expect(listed.map((order) => order.id)).toEqual([placed.id]);
+    await expect(services.listOrders(customerPrincipal("user-2"))).resolves.toEqual([]);
+    await expect(
+      services.listOrders(staffPrincipal("ops", ["order_management"])),
+    ).rejects.toBeInstanceOf(ForbiddenError);
   });
 
   it("refuses a second cancel", async () => {

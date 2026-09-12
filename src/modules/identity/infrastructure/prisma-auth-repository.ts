@@ -56,6 +56,7 @@ export function createPrismaUserAccounts(): UserAccountRepository {
     async create(input) {
       const row = await prisma.user.create({
         data: {
+          ...(input.id ? { id: input.id } : {}),
           email: input.email,
           passwordHash: input.passwordHash,
           role: input.role,

@@ -88,12 +88,16 @@ export {
 } from "./domain/cookie";
 export { createAuthServices, type AuthServices } from "./application/auth-services";
 export {
+  DEMO_CUSTOMER_EMAIL,
+  DEMO_CUSTOMER_ID,
+  DEMO_CUSTOMER_PASSWORD,
   DEMO_STAFF_EMAIL,
   DEMO_STAFF_PASSWORD,
   createDemoAuthServices,
   createMemoryAuthServices,
   createPrismaAuthServices,
 } from "./application/create-auth";
+export { createPrismaCustomerRepository } from "./infrastructure/prisma-customer-repository";
 export type {
   AuthMailer,
   PasswordHasher,

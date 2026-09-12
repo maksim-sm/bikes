@@ -8,6 +8,7 @@ export interface UserAccountRepository {
   findByEmail(email: string): Promise<AuthUser | null>;
   findById(id: string): Promise<AuthUser | null>;
   create(input: {
+    id?: string;
     email: string;
     passwordHash: string;
     role: AuthUser["role"];
