@@ -8,7 +8,8 @@ search engine. Do not add Elasticsearch.
 `GET /api/v1/products` filters in the catalog repository (`WHERE` on
 `products` / `product_variants`). Pagination is `skip`/`take` plus a
 filtered `count`. Sort fields: `publishedAt` (default desc), `name`, `price`
-(minimum active variant `list_price_minor`).
+(minimum active variant `list_price_minor`), `relevance` (default when `q` is
+set).
 
 Allow-listed filters:
 
@@ -21,11 +22,19 @@ Allow-listed filters:
 | `wheelSize`                                | `product_variants.wheel_size`                                 |
 | `minPrice` / `maxPrice`                    | integer kopeks on `list_price_minor`                          |
 | `available`                                | variant ids from **inventory** (`available > 0`)              |
-| `q`                                        | `ILIKE` on product and brand name                             |
+| `q`                                        | Indexed search: brand, model, SKU, spec text (ADR-0019)       |
 | `frameMaterial` / `groupset` / `brakeType` | typed product columns                                         |
 
 Availability is a second query owned by `inventory`. Catalog never joins
 `inventory_items`.
+
+## Search
+
+`q` is one PostgreSQL query against `products.search_vector` (GIN `tsvector`)
+and `products.search_text` (GIN trigram). The document is brand + model +
+SKU + specification text, maintained by triggers. Matching ids are hydrated
+with a single `findMany` that includes brand, category, and variants — not
+one query per product. With `q`, the default sort is `relevance`.
 
 ## Facets
 

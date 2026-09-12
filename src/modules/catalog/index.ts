@@ -5,6 +5,7 @@
  * Stock lives in `inventory`. Displayed price lives in `pricing`.
  */
 
+export { escapeIlike, productMatchesSearch, searchDocument } from "./domain/search";
 export {
   BICYCLE_TYPES,
   findActiveVariant,

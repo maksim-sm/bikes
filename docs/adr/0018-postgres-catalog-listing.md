@@ -23,11 +23,10 @@ system to operate.
 4. **New product facts are columns** (`bicycle_type`, `wheel_size`,
    `frame_material`, `groupset`, `brake_type`), not an EAV table.
 
-`q` is `ILIKE` on name (and brand name). Full-text search can be added later
-as a Postgres `tsvector` without leaving the database.
+`q` was initially `ILIKE` on name. **Superseded by ADR-0019:** search is an
+indexed `tsvector` / trigram document.
 
 ## When to revisit
 
-If listing latency on a realistic catalogue is dominated by `ILIKE` or by
-very wide OR-filters, add Postgres FTS or a materialized facet table first.
-A separate search engine is only in play after that is proven insufficient.
+Search indexing is settled in ADR-0019. A separate search engine is only in
+play after GIN + trigram are proven insufficient on a realistic catalogue.

@@ -10,6 +10,7 @@ import type {
   Product,
   ProductVariant,
 } from "../domain/product";
+import { escapeIlike } from "../domain/search";
 
 type ProductRow = Prisma.ProductGetPayload<{
   include: { brand: true; category: true; variants: true };
@@ -143,13 +144,25 @@ async function buildWhere(
   if (filters.brakeType) {
     where.brakeType = filters.brakeType;
   }
-  if (filters.q) {
-    where.OR = [
-      { name: { contains: filters.q, mode: "insensitive" } },
-      { brand: { name: { contains: filters.q, mode: "insensitive" } } },
-    ];
-  }
   return where;
+}
+
+/**
+ * One indexed query: GIN tsvector + trigram on the stored search document.
+ * Callers hydrate a page with a single `findMany` + `include` (no N+1).
+ */
+async function searchProductIds(rawQuery: string): Promise<string[]> {
+  const like = `%${escapeIlike(rawQuery)}%`;
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT p.id
+    FROM products p
+    WHERE p.search_vector @@ websearch_to_tsquery('simple', ${rawQuery})
+       OR p.search_text ILIKE ${like} ESCAPE '\\'
+    ORDER BY
+      ts_rank_cd(p.search_vector, websearch_to_tsquery('simple', ${rawQuery})) DESC,
+      p.slug ASC
+  `;
+  return rows.map((row) => row.id);
 }
 
 function orderBy(query: CatalogListQuery): Prisma.ProductOrderByWithRelationInput[] {
@@ -209,6 +222,35 @@ export function createPrismaCatalogRepository(): CatalogRepository {
       const where = await buildWhere(query);
       if (!where) {
         return { items: [], total: 0 };
+      }
+      let rankedSearchIds: string[] | null = null;
+      if (query.filters.q) {
+        rankedSearchIds = await searchProductIds(query.filters.q);
+        if (rankedSearchIds.length === 0) {
+          return { items: [], total: 0 };
+        }
+        where.id = { in: rankedSearchIds };
+      }
+      if (query.sort.field === "relevance") {
+        const matched = await prisma.product.findMany({
+          where,
+          select: { id: true },
+        });
+        const allowed = new Set(matched.map((row) => row.id));
+        const ordered = (rankedSearchIds ?? matched.map((row) => row.id)).filter((id) =>
+          allowed.has(id),
+        );
+        const total = ordered.length;
+        const start = (query.page - 1) * query.pageSize;
+        const pageIds = ordered.slice(start, start + query.pageSize);
+        if (pageIds.length === 0) {
+          return { items: [], total };
+        }
+        const rows = await prisma.product.findMany({
+          where: { id: { in: pageIds } },
+          include: productInclude,
+        });
+        return { items: orderProductsByIds(rows.map(toProduct), pageIds), total };
       }
       const total = await prisma.product.count({ where });
       if (total === 0) {

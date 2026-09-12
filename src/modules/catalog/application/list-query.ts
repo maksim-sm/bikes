@@ -1,6 +1,6 @@
 import type { BicycleType } from "../domain/product";
 
-export const CATALOG_SORT_FIELDS = ["name", "publishedAt", "price"] as const;
+export const CATALOG_SORT_FIELDS = ["name", "publishedAt", "price", "relevance"] as const;
 export type CatalogSortField = (typeof CATALOG_SORT_FIELDS)[number];
 
 export interface CatalogListFilters {

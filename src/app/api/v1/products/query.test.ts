@@ -143,6 +143,55 @@ describe("product HTTP query", () => {
     ).rejects.toBeInstanceOf(ValidationError);
   });
 
+  it("searches brand, model, SKU, and specification text", async () => {
+    const other = product({
+      id: "p2",
+      slug: "slash",
+      name: "Slash",
+      bicycleType: "MTB",
+      categorySlug: "mtb",
+      groupset: "SRAM GX",
+      variants: [
+        {
+          id: "v2",
+          productId: "p2",
+          sku: "SL-L",
+          frameSize: "L",
+          wheelSize: "29",
+          color: "зелёный",
+          listPriceMinor: 499900,
+          currency: "BYN",
+          isActive: true,
+        },
+      ],
+    });
+    const repo = catalog([product(), other]);
+    const byBrand = await listProductsHttp(
+      repo,
+      now,
+      new URL("http://localhost/api/v1/products?q=Trek"),
+    );
+    expect(byBrand.data.map((row) => row.slug).sort()).toEqual(["emonda", "slash"]);
+    const byModel = await listProductsHttp(
+      repo,
+      now,
+      new URL("http://localhost/api/v1/products?q=%C3%89monda"),
+    );
+    expect(byModel.data.map((row) => row.slug)).toEqual(["emonda"]);
+    const bySku = await listProductsHttp(
+      repo,
+      now,
+      new URL("http://localhost/api/v1/products?q=SL-L"),
+    );
+    expect(bySku.data.map((row) => row.slug)).toEqual(["slash"]);
+    const bySpec = await listProductsHttp(
+      repo,
+      now,
+      new URL("http://localhost/api/v1/products?q=Shimano%20105"),
+    );
+    expect(bySpec.data.map((row) => row.slug)).toEqual(["emonda"]);
+  });
+
   it("hides unpublished slugs", async () => {
     await expect(
       getProductHttp(catalog([product({ status: "DRAFT" })]), now, "emonda"),

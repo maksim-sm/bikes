@@ -93,7 +93,7 @@ export function parseProductListQuery(url: URL): {
     page: page.page,
     pageSize: page.pageSize,
     sort: parseSortQuery(query, CATALOG_SORT_FIELDS, {
-      field: "publishedAt",
+      field: parsed.q ? "relevance" : "publishedAt",
       direction: "desc",
     }),
     filters: {

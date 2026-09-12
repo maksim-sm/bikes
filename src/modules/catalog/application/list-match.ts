@@ -4,6 +4,7 @@ import {
   type Category,
   type Product,
 } from "../domain/product";
+import { productMatchesSearch } from "../domain/search";
 import type { CatalogListQuery } from "./list-query";
 import type { CatalogListResult } from "./ports";
 
@@ -60,12 +61,8 @@ export function productMatchesListQuery(
   if (filters.brakeType && product.brakeType !== filters.brakeType) {
     return false;
   }
-  if (filters.q) {
-    const needle = filters.q.toLowerCase();
-    const hay = `${product.name} ${product.brandName}`.toLowerCase();
-    if (!hay.includes(needle)) {
-      return false;
-    }
+  if (filters.q && !productMatchesSearch(product, filters.q)) {
+    return false;
   }
   const active = product.variants.filter((variant) => variant.isActive);
   if (active.length === 0) {

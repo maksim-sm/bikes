@@ -119,7 +119,7 @@ runs in PostgreSQL (`docs/catalog.md`). Any other key except `page`,
 
 `sort=<allowedField>&order=asc|desc`. Unknown fields are `validation_failed`.
 Each list names its default (products: `publishedAt desc`; also `name`,
-`price`).
+`price`, `relevance` — default when `q` is set).
 
 ## Request IDs
 
