@@ -84,9 +84,17 @@ function setup() {
     },
   };
   const reserved: string[] = [];
+  const cancelled: string[] = [];
+  const committed: string[] = [];
   const inventory: OrderInventory = {
     async reserveForOrder(input) {
       reserved.push(`${input.variantId}:${input.quantity}`);
+    },
+    async cancelForOrder(orderId) {
+      cancelled.push(orderId);
+    },
+    async commitForOrder(orderId) {
+      committed.push(orderId);
     },
   };
   const delivery: OrderDelivery = {
@@ -102,7 +110,7 @@ function setup() {
     delivery,
     clock: { now: () => new Date("2026-09-12T10:00:00.000Z") },
   });
-  return { services, reserved, orders };
+  return { services, reserved, cancelled, committed, orders };
 }
 
 describe("order status machine", () => {
@@ -143,7 +151,7 @@ describe("order services", () => {
   });
 
   it("can cancel a paid order without changing payment status", async () => {
-    const { services } = setup();
+    const { services, cancelled: released } = setup();
     const placed = await services.placeOrder({
       cartId: "c1",
       actorUserId: "user-1",
@@ -164,6 +172,7 @@ describe("order services", () => {
     const cancelled = await services.cancelOrder(placed.id, customerPrincipal("user-1"));
     expect(cancelled.status).toBe("CANCELLED");
     expect(cancelled.paymentStatus).toBe("SUCCEEDED");
+    expect(released).toEqual([placed.id]);
   });
 
   it("rejects strangers reading an order", async () => {

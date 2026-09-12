@@ -59,6 +59,8 @@ export const GET = withRoute("customer", async (ctx) => {
     },
     inventory: {
       async reserveForOrder() {},
+      async cancelForOrder() {},
+      async commitForOrder() {},
     },
     delivery: {
       async quote() {

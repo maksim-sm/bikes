@@ -1,4 +1,9 @@
-import type { InventoryItem, Reservation } from "../domain/inventory";
+import type {
+  ExternalMovementType,
+  InventoryItem,
+  Movement,
+  Reservation,
+} from "../domain/inventory";
 
 export interface Clock {
   now(): Date;
@@ -7,7 +12,6 @@ export interface Clock {
 export interface InventoryRepository {
   getByVariantId(variantId: string): Promise<InventoryItem | null>;
   getByItemId(id: string): Promise<InventoryItem | null>;
-  saveItem(item: InventoryItem): Promise<InventoryItem>;
   insertActive(input: {
     inventoryItemId: string;
     quantity: number;
@@ -18,8 +22,18 @@ export interface InventoryRepository {
   getReservation(id: string): Promise<Reservation | null>;
   saveReservation(reservation: Reservation): Promise<Reservation>;
   listDueActive(now: Date): Promise<Reservation[]>;
+  listActiveByOrder(orderId: string): Promise<Reservation[]>;
+  insertExternalMovement(input: {
+    inventoryItemId: string;
+    type: ExternalMovementType;
+    quantity: number;
+    note: string | null;
+    now: Date;
+  }): Promise<Movement>;
+  listMovements(inventoryItemId: string): Promise<Movement[]>;
   listInStockVariantIds(): Promise<string[]>;
   listAvailabilityByVariantIds(
     variantIds: readonly string[],
   ): Promise<Array<{ variantId: string; available: number }>>;
+  expireDue?(now: Date): Promise<number>;
 }

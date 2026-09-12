@@ -2,108 +2,40 @@ import { describe, expect, it } from "vitest";
 import { ConflictError, ForbiddenError } from "@/lib/errors";
 import { customerPrincipal, staffPrincipal } from "@/modules/identity";
 import {
+  applyAdjustment,
   applyCommit,
   applyRelease,
   applyReserve,
   available,
   canReserve,
   nextReservationStatus,
-  type InventoryItem,
-  type Reservation,
 } from "../domain/inventory";
-import type { InventoryRepository } from "./ports";
+import { createMemoryInventoryRepository } from "../infrastructure/memory-inventory";
 import { createInventoryServices } from "./services";
 
 const now = new Date("2026-09-12T12:00:00.000Z");
+const clerk = staffPrincipal("inv", ["inventory"]);
+const manager = staffPrincipal("mgr", ["manager"]);
 
-function memoryInventory(initial: InventoryItem): InventoryRepository {
-  const items = new Map<string, InventoryItem>([[initial.id, { ...initial }]]);
-  const byVariant = new Map<string, string>([[initial.variantId, initial.id]]);
-  const reservations = new Map<string, Reservation>();
-  let seq = 0;
-
-  function itemOrThrow(id: string): InventoryItem {
-    const item = items.get(id);
-    if (!item) {
-      throw new Error("missing item");
-    }
-    return item;
-  }
-
-  return {
-    async getByVariantId(variantId) {
-      const id = byVariant.get(variantId);
-      return id ? (items.get(id) ?? null) : null;
-    },
-    async getByItemId(id) {
-      return items.get(id) ?? null;
-    },
-    async saveItem(item) {
-      items.set(item.id, item);
-      return item;
-    },
-    async insertActive(input) {
-      items.set(
-        input.inventoryItemId,
-        applyReserve(itemOrThrow(input.inventoryItemId), input.quantity),
-      );
-      seq += 1;
-      const reservation: Reservation = {
-        id: `r${seq}`,
-        inventoryItemId: input.inventoryItemId,
-        quantity: input.quantity,
-        status: "ACTIVE",
-        expiresAt: input.expiresAt,
-      };
-      reservations.set(reservation.id, reservation);
-      return reservation;
-    },
-    async getReservation(id) {
-      return reservations.get(id) ?? null;
-    },
-    async saveReservation(reservation) {
-      const previous = reservations.get(reservation.id);
-      if (previous && previous.status === "ACTIVE" && reservation.status !== "ACTIVE") {
-        const item = itemOrThrow(reservation.inventoryItemId);
-        const next =
-          reservation.status === "COMMITTED"
-            ? applyCommit(item, reservation.quantity)
-            : applyRelease(item, reservation.quantity);
-        items.set(item.id, next);
-      }
-      reservations.set(reservation.id, reservation);
-      return reservation;
-    },
-    async listInStockVariantIds() {
-      return [...items.values()]
-        .filter((item) => item.onHand - item.reserved > 0)
-        .map((item) => item.variantId);
-    },
-    async listAvailabilityByVariantIds(variantIds) {
-      const wanted = new Set(variantIds);
-      return [...items.values()]
-        .filter((item) => wanted.has(item.variantId))
-        .map((item) => ({
-          variantId: item.variantId,
-          available: item.onHand - item.reserved,
-        }));
-    },
-    async listDueActive(at) {
-      return [...reservations.values()].filter(
-        (row) => row.status === "ACTIVE" && row.expiresAt.getTime() <= at.getTime(),
-      );
-    },
-  };
+function services(onHand = 2, reserved = 0) {
+  return createInventoryServices({
+    inventory: createMemoryInventoryRepository([
+      { id: "i1", variantId: "v1", onHand, reserved },
+    ]),
+    clock: { now: () => now },
+  });
 }
 
 describe("inventory counters", () => {
-  const item: InventoryItem = { id: "i1", variantId: "v1", onHand: 2, reserved: 1 };
+  const item = { id: "i1", variantId: "v1", onHand: 2, reserved: 1 };
 
   it("derives available and refuses oversell in memory the same way as SQL", () => {
     expect(available(item)).toBe(1);
     expect(canReserve(item, 1)).toBe(true);
     expect(canReserve(item, 2)).toBe(false);
     expect(applyReserve(item, 1).reserved).toBe(2);
+    expect(applyAdjustment(item, 1).onHand).toBe(1);
+    expect(() => applyAdjustment(item, 2)).toThrow("adjustment_below_reserved");
   });
 
   it("only leaves ACTIVE through commit, release, or expire", () => {
@@ -111,34 +43,94 @@ describe("inventory counters", () => {
     expect(() => nextReservationStatus("COMMITTED", "release")).toThrow(
       "reservation_not_active",
     );
+    expect(applyRelease(applyReserve(item, 1), 1).reserved).toBe(1);
+    expect(applyCommit({ ...item, reserved: 1 }, 1)).toEqual({
+      id: "i1",
+      variantId: "v1",
+      onHand: 1,
+      reserved: 0,
+    });
   });
 });
 
 describe("inventory services", () => {
-  it("reserves then commits without application-only leftover stock", async () => {
-    const inventory = createInventoryServices({
-      inventory: memoryInventory({ id: "i1", variantId: "v1", onHand: 1, reserved: 0 }),
-      clock: { now: () => now },
-    });
-    const hold = await inventory.reserve({ variantId: "v1", quantity: 1 });
+  it("records receipt, reserve, commit, and return as a ledger", async () => {
+    const inventory = services(0);
+    expect(
+      await inventory.receiveStock(clerk, {
+        variantId: "v1",
+        quantity: 2,
+        note: "приход",
+      }),
+    ).toEqual({ onHand: 2, reserved: 0, available: 2 });
+    const hold = await inventory.reserve({ variantId: "v1", quantity: 1, orderId: "o1" });
     await expect(
-      inventory.reserve({ variantId: "v1", quantity: 1 }),
+      inventory.reserve({ variantId: "v1", quantity: 2 }),
     ).rejects.toBeInstanceOf(ConflictError);
     await inventory.commit(hold.id);
     expect(await inventory.getAvailability("v1")).toEqual({
-      onHand: 0,
+      onHand: 1,
       reserved: 0,
-      available: 0,
+      available: 1,
     });
+    await inventory.returnStock(clerk, { variantId: "v1", quantity: 1, note: "возврат" });
+    expect((await inventory.listMovements("v1")).map((row) => row.type)).toEqual([
+      "RECEIPT",
+      "RESERVE",
+      "COMMIT",
+      "RETURN",
+    ]);
   });
 
-  it("expires due holds and restores available", async () => {
-    const inventory = createInventoryServices({
-      inventory: memoryInventory({ id: "i1", variantId: "v1", onHand: 1, reserved: 0 }),
-      clock: { now: () => now },
+  it("adjusts write-offs without touching reserved units", async () => {
+    const inventory = services(3);
+    const hold = await inventory.reserve({ variantId: "v1", quantity: 2 });
+    await expect(
+      inventory.adjustStock(clerk, { variantId: "v1", quantity: 2 }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(
+      await inventory.adjustStock(manager, { variantId: "v1", quantity: 1 }),
+    ).toEqual({
+      onHand: 2,
+      reserved: 2,
+      available: 0,
     });
-    await inventory.reserve({ variantId: "v1", quantity: 1, holdMs: -1 });
-    expect(await inventory.expireDue()).toBe(1);
+    await inventory.release(hold.id);
+    expect(await inventory.getAvailability("v1")).toEqual({
+      onHand: 2,
+      reserved: 0,
+      available: 2,
+    });
+    expect((await inventory.listMovements("v1")).map((row) => row.type)).toEqual([
+      "RESERVE",
+      "ADJUSTMENT",
+      "RELEASE",
+    ]);
+  });
+
+  it("cancels an active hold and every hold on an order", async () => {
+    const inventory = services(4);
+    const first = await inventory.reserve({
+      variantId: "v1",
+      quantity: 1,
+      orderId: "o9",
+    });
+    await inventory.reserve({ variantId: "v1", quantity: 2, orderId: "o9" });
+    await inventory.cancel(first.id);
+    expect(await inventory.cancelForOrder("o9")).toHaveLength(1);
+    expect(await inventory.getAvailability("v1")).toEqual({
+      onHand: 4,
+      reserved: 0,
+      available: 4,
+    });
+    await expect(inventory.cancel(first.id)).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("commits every active hold for an order", async () => {
+    const inventory = services(3);
+    await inventory.reserve({ variantId: "v1", quantity: 1, orderId: "o2" });
+    await inventory.reserve({ variantId: "v1", quantity: 1, orderId: "o2" });
+    expect(await inventory.commitForOrder("o2")).toHaveLength(2);
     expect(await inventory.getAvailability("v1")).toEqual({
       onHand: 1,
       reserved: 0,
@@ -146,25 +138,40 @@ describe("inventory services", () => {
     });
   });
 
-  it("lets only the inventory role receive stock", async () => {
-    const inventory = createInventoryServices({
-      inventory: memoryInventory({ id: "i1", variantId: "v1", onHand: 1, reserved: 0 }),
-      clock: { now: () => now },
+  it("expires due holds and restores available", async () => {
+    const inventory = services(1);
+    await inventory.reserve({ variantId: "v1", quantity: 1, holdMs: -1 });
+    expect(await inventory.expireDue()).toBe(1);
+    expect(await inventory.getAvailability("v1")).toEqual({
+      onHand: 1,
+      reserved: 0,
+      available: 1,
     });
+    expect((await inventory.listMovements("v1")).map((row) => row.type)).toEqual([
+      "RESERVE",
+      "EXPIRE",
+    ]);
+  });
+
+  it("lets only inventory-capable staff receive, adjust, or return stock", async () => {
+    const inventory = services(1);
     await expect(
       inventory.receiveStock(customerPrincipal("u1"), { variantId: "v1", quantity: 2 }),
     ).rejects.toBeInstanceOf(ForbiddenError);
     await expect(
-      inventory.receiveStock(staffPrincipal("ops", ["order_management"]), {
+      inventory.adjustStock(staffPrincipal("ops", ["order_management"]), {
         variantId: "v1",
-        quantity: 2,
+        quantity: 1,
       }),
     ).rejects.toBeInstanceOf(ForbiddenError);
-    expect(
-      await inventory.receiveStock(staffPrincipal("inv", ["inventory"]), {
+    await expect(
+      inventory.returnStock(staffPrincipal("ops", ["order_management"]), {
         variantId: "v1",
-        quantity: 2,
+        quantity: 1,
       }),
-    ).toEqual({ onHand: 3, reserved: 0, available: 3 });
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    expect(await inventory.receiveStock(clerk, { variantId: "v1", quantity: 2 })).toEqual(
+      { onHand: 3, reserved: 0, available: 3 },
+    );
   });
 });

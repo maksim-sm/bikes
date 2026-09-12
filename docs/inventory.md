@@ -13,10 +13,10 @@ in process memory.
 
 ### On-hand
 
-Physical units in the warehouse. Increased by a **receipt**. Decreased by an
-**adjustment** (write-off, damage) or by **commit** (the unit left for a
-customer). Never negative. Never lower than `reserved` (check constraint and
-adjustment trigger).
+Physical units in the warehouse. Increased by a **receipt** or a **return**.
+Decreased by an **adjustment** (write-off, damage) or by **commit** (the unit
+left for a customer). Never negative. Never lower than `reserved` (check
+constraint and adjustment trigger).
 
 ### Reserved
 
@@ -78,12 +78,33 @@ The sale happened: the reserved units leave the warehouse.
 Both `reserved` and `on_hand` decrease by the reserved quantity. `available`
 is unchanged (the units were already unavailable).
 
+## Operations
+
+`createInventoryServices` is the only write API. Each call is one unit of
+work; production persists through reservation rows or movement inserts so the
+triggers stay the serialisation point.
+
+| Service          | Effect                                                       | Ledger row                      |
+| ---------------- | ------------------------------------------------------------ | ------------------------------- |
+| `receiveStock`   | Supplier arrival. `on_hand` increases. Staff only.           | `RECEIPT` (app insert)          |
+| `adjustStock`    | Write-off / damage. `on_hand` decreases, not below reserved. | `ADJUSTMENT` (app insert)       |
+| `returnStock`    | Sold unit comes back. `on_hand` increases. Staff only.       | `RETURN` (app insert)           |
+| `reserve`        | Promise units to a cart or order. Fails if `available < n`.  | `RESERVE` (reservation trigger) |
+| `release`        | Give an ACTIVE hold back.                                    | `RELEASE` (reservation trigger) |
+| `cancel`         | Same counter path as release (order cancelled before sale).  | `RELEASE` (reservation trigger) |
+| `cancelForOrder` | Release every ACTIVE hold for that order.                    | `RELEASE` per hold              |
+| `commit`         | Sale left the warehouse. `on_hand` and `reserved` decrease.  | `COMMIT` (reservation trigger)  |
+| `commitForOrder` | Commit every ACTIVE hold for that order.                     | `COMMIT` per hold               |
+| `expireDue`      | Worker: ACTIVE rows past `expires_at` become EXPIRED.        | `EXPIRE` (reservation trigger)  |
+
+`listMovements(variantId)` reads the append-only ledger.
+
 ## Movements
 
-`inventory_movements` is append-only. Application code may insert **RECEIPT**
-and **ADJUSTMENT** only. **RESERVE**, **RELEASE**, **EXPIRE**, and **COMMIT**
-are written by the reservation AFTER trigger so the ledger matches the
-counters. Each row stores `on_hand_after` and `reserved_after`.
+`inventory_movements` is append-only. Application code may insert **RECEIPT**,
+**ADJUSTMENT**, and **RETURN** only. **RESERVE**, **RELEASE**, **EXPIRE**, and
+**COMMIT** are written by the reservation AFTER trigger so the ledger matches
+the counters. Each row stores `on_hand_after` and `reserved_after`.
 
 ## What application code must not do
 
@@ -92,6 +113,8 @@ counters. Each row stores `on_hand_after` and `reserved_after`.
 - Delete reservation or movement rows.
 - Insert a reservation that is not ACTIVE.
 - Insert a RESERVE/RELEASE/EXPIRE/COMMIT movement by hand.
+- Call `saveItem` / add `on_hand` in process memory for a receipt, return, or
+  adjustment. Insert the movement row instead.
 
 Insert an ACTIVE reservation (or UPDATE its status) inside the same database
 transaction as the cart/order change that required it. The trigger is the
