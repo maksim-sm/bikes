@@ -2,7 +2,12 @@ import { cookies } from "next/headers";
 import { getAuthServices } from "@/app/api/_lib/compose";
 import { SESSION_COOKIE_NAME, type Principal } from "@/modules/identity";
 import type { CartActor } from "@/modules/cart";
-import { getOrCreateGuestActor, isGuestToken, readGuestToken } from "./guest-cart";
+import {
+  GUEST_CART_COOKIE,
+  getOrCreateGuestActor,
+  isGuestToken,
+  readGuestToken,
+} from "./guest-cart";
 
 export function actorFromPrincipal(principal: Principal): CartActor | null {
   if (principal.type === "anonymous") {
@@ -23,7 +28,7 @@ export function actorFromRequest(
   return guestToken ? { kind: "guest", guestToken } : null;
 }
 
-export async function resolveCartActor(): Promise<CartActor> {
+export async function readCartActor(): Promise<CartActor | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE_NAME)?.value ?? null;
   const principal = await (await getAuthServices()).resolve(token);
@@ -31,7 +36,13 @@ export async function resolveCartActor(): Promise<CartActor> {
   if (authenticated) {
     return authenticated;
   }
-  return getOrCreateGuestActor();
+  const guest = store.get(GUEST_CART_COOKIE)?.value;
+  return guestActorFromCookieValue(guest);
+}
+
+/** Creates a guest cookie. Call only from a Server Action or Route Handler. */
+export async function resolveCartActor(): Promise<CartActor> {
+  return (await readCartActor()) ?? getOrCreateGuestActor();
 }
 
 export function guestActorFromCookieValue(value: string | undefined): CartActor | null {

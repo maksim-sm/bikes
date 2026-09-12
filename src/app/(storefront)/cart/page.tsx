@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { getCartServices } from "@/app/api/_lib/compose";
 import { formatPrice, t } from "@/lib/i18n";
 import { ButtonLink, Container, Stack } from "@/ui";
-import { resolveCartActor } from "../_lib/cart-actor";
+import { readCartActor } from "../_lib/cart-actor";
+import type { CartView } from "@/modules/cart";
+import { createPricingServices } from "@/modules/pricing";
 import { CartEditor } from "./cart-editor";
 import styles from "./cart.module.css";
 
@@ -18,8 +20,15 @@ interface PageProps {
 
 export default async function CartPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const actor = await resolveCartActor();
-  const view = await (await getCartServices()).getCartView(actor);
+  const actor = await readCartActor();
+  const view: CartView = actor
+    ? await (await getCartServices()).getCartView(actor)
+    : {
+        id: "",
+        items: [],
+        subtotalMinor: 0,
+        currency: createPricingServices().currency(),
+      };
 
   return (
     <Container>
