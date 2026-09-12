@@ -43,6 +43,7 @@ export interface OrderDelivery {
     methodCode: string;
     destination: { region: string; city: string };
     itemCount: number;
+    subtotalMinor: number;
   }): Promise<{ costMinor: number; methodName: string } | null>;
 }
 

@@ -131,6 +131,14 @@ enum DeliveryRecordStatus {
   @@map("delivery_status")
 }
 
+enum DeliveryKind {
+  COURIER
+  PICKUP
+  REGIONAL
+
+  @@map("delivery_kind")
+}
+
 enum InventoryReservationStatus {
   ACTIVE
   COMMITTED
@@ -666,13 +674,20 @@ model Refund {
 // ===========================================================================
 
 model DeliveryMethod {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code        String   @unique @db.VarChar(40)
-  name        String   @db.VarChar(160)
-  description String?  @db.Text
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code               String       @unique @db.VarChar(40)
+  name               String       @db.VarChar(160)
+  description        String?      @db.Text
+  kind               DeliveryKind
+  pickupRegion       String?      @map("pickup_region") @db.VarChar(80)
+  pickupCity         String?      @map("pickup_city") @db.VarChar(80)
+  pickupStreet       String?      @map("pickup_street") @db.VarChar(160)
+  pickupPostalCode   String?      @map("pickup_postal_code") @db.VarChar(16)
+  /// Cart subtotal at or above this amount quotes the method at 0. Null = no threshold.
+  freeThresholdMinor Int?         @map("free_threshold_minor")
+  isActive           Boolean      @default(true) @map("is_active")
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   zones   DeliveryZone[]
   shipments Delivery[]
@@ -685,11 +700,12 @@ model DeliveryZone {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   deliveryMethodId String   @map("delivery_method_id") @db.Uuid
   name             String   @db.VarChar(160)
-  /// Empty string means "every city in this region".
+  /// Empty string means "every city in this region". Empty region and city means nationwide.
   region           String   @db.VarChar(80)
   city             String   @default("") @db.VarChar(80)
   costMinor        Int      @map("cost_minor")
   estimatedDays    Int      @map("estimated_days")
+  estimatedText    String   @map("estimated_text") @db.VarChar(160)
   isActive         Boolean  @default(true) @map("is_active")
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)

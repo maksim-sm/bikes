@@ -22,7 +22,8 @@ export interface CheckoutQuoteOption {
   methodName: string;
   costMinor: number;
   estimatedDays: number;
-  kind: "courier" | "pickup";
+  estimatedText: string;
+  kind: "courier" | "pickup" | "regional";
   pickup: {
     region: string;
     city: string;
@@ -78,7 +79,11 @@ export function CheckoutForm({
   useEffect(() => {
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      const params = new URLSearchParams({ region, city });
+      const params = new URLSearchParams({
+        region,
+        city,
+        subtotalMinor: String(subtotalMinor),
+      });
       void fetch(`/api/v1/delivery/quotes?${params.toString()}`, {
         signal: controller.signal,
       })
@@ -113,7 +118,7 @@ export function CheckoutForm({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [region, city]);
+  }, [region, city, subtotalMinor]);
 
   const selected = useMemo(
     () => quotes.find((quote) => quote.methodCode === methodCode) ?? null,
@@ -370,9 +375,7 @@ export function CheckoutForm({
 }
 
 function deliveryLabel(quote: CheckoutQuoteOption): string {
-  const price = formatPrice(quote.costMinor);
-  if (quote.kind === "pickup") {
-    return `${quote.methodName} — ${price}. ${t.checkout.pickupReady}`;
-  }
-  return `${quote.methodName} — ${price}, ${quote.estimatedDays} ${t.checkout.deliveryDays}`;
+  const price =
+    quote.costMinor === 0 ? t.checkout.deliveryFree : formatPrice(quote.costMinor);
+  return `${quote.methodName} — ${price}. ${quote.estimatedText}`;
 }

@@ -49,7 +49,8 @@ not write them into `order_items`.
 - `POST /api/v1/checkout` — public (guest or session). Resolves the actor's
   cart from cookies; a client `cartId` is ignored.
 - `GET /api/v1/delivery/quotes` — public. Returns server quotes for a
-  destination.
+  destination (optional `subtotalMinor` applies a configured free-delivery
+  threshold for display; checkout re-quotes with the server subtotal).
 - `GET /api/v1/orders/:id` — customer. Ownership stays in the service.
 
 The checkout DTO includes the **server** totals. It does not echo a client
@@ -60,7 +61,7 @@ total.
 `/checkout` is a guest form. An account is not required. The page collects:
 
 - contact name, email, and phone;
-- a server-quoted delivery method (courier or pickup);
+- a server-quoted delivery method (courier, pickup, or regional);
 - a delivery address, or the shop pickup point when self-collection is chosen;
 - a payment method (cash or card on receipt, or a bank transfer — collection
   through a payment provider is a later swap of `PaymentProvider`);

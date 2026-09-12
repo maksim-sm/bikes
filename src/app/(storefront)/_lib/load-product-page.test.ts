@@ -39,6 +39,7 @@ describe("loadProductPage", () => {
       methodCode: "minsk-courier",
       costMinor: 2500,
       estimatedDays: 1,
+      estimatedText: "1 рабочий день",
     });
   });
 

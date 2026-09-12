@@ -2,6 +2,7 @@ import type { DeliveryMethodRecord, DeliveryZone, Destination } from "../domain/
 
 export interface DeliveryRepository {
   getMethod(code: string): Promise<DeliveryMethodRecord | null>;
+  listMethods(): Promise<DeliveryMethodRecord[]>;
   listActiveMethods(): Promise<DeliveryMethodRecord[]>;
   listZones(methodCode: string): Promise<DeliveryZone[]>;
 }

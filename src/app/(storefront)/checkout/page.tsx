@@ -40,10 +40,13 @@ export default async function CheckoutPage() {
     );
   }
 
-  const quotes = await getDeliveryServices().listQuotes({
-    region: DEFAULT_REGION,
-    city: DEFAULT_CITY,
-  });
+  const quotes = await getDeliveryServices().listQuotes(
+    {
+      region: DEFAULT_REGION,
+      city: DEFAULT_CITY,
+    },
+    { subtotalMinor: view.subtotalMinor },
+  );
 
   return (
     <Container>

@@ -19,6 +19,8 @@ defines principals, staff titles, and customer isolation. `docs/catalog.md`
 defines storefront listing filters (PostgreSQL, not Elasticsearch).
 `docs/checkout.md` defines server-controlled order placement.
 `docs/payments.md` defines the replaceable payment provider port.
+`docs/delivery.md` defines methods, zones, free-delivery thresholds, and
+staff shipment assignment.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -28,9 +30,10 @@ Cookie sessions and customer auth live in `identity`. Prisma repositories
 exist for auth tables, catalog listing, inventory, media, and production
 carts. Local demo catalogue and cart stay in-memory. Integration and
 end-to-end test tiers are still targets. Storefront product, catalog, cart,
-and checkout pages exist; staff can manage the catalogue under
-`/admin`. There is no customer account UI yet. Cart and checkout totals
-are recalculated server-side (`docs/cart.md`, `docs/checkout.md`).
+and checkout pages exist; staff can manage the catalogue and assign
+shipments under `/admin`. There is no customer account UI yet. Cart and
+checkout totals are recalculated server-side (`docs/cart.md`,
+`docs/checkout.md`). Delivery quotes are table-driven (`docs/delivery.md`).
 
 ## 1. Why a modular monolith
 
@@ -323,27 +326,25 @@ Constraints:
 
 ## 9. Delivery abstraction
 
-Same shape as payments, and for the same reason: courier, pickup point,
-Belpochta, and in-store collection are not yet decided.
+Manual-first and table-driven (`docs/delivery.md`, ADR-0006, ADR-0025).
+Courier in Minsk, shop pickup, and regional oblast delivery are configured
+methods. There is no carrier API.
 
 ```ts
-export interface DeliveryMethod {
-  readonly code: string;
-  quote(input: {
-    destination: Destination;
-    items: ParcelItem[];
-  }): Promise<{ costMinor: number; estimatedDays: number } | null>;
-}
+quoteMethod(method, zones, destination, { subtotalMinor }): DeliveryQuote | null;
 ```
 
-- `delivery` owns shipping zones, regional cost rules, and pickup point data.
-- A method returning `null` from `quote` means "unavailable for this
-  destination", which is a normal outcome, not an error.
-- `orders` stores the chosen method's `code` and the quoted cost **as captured at
-  order time**. Quotes are never recomputed against a historical order; tariffs
-  change and an order's recorded cost is a fact.
-- Carrier API clients, if any, live inside `delivery`. No carrier SDK type
-  appears in another module's signature.
+- Kinds are `pickup`, `courier`, and `regional`. Zones hold a fixed
+  `costMinor` and `estimatedText`. A nationwide wildcard (`region` and `city`
+  empty) is how pickup is offered outside Minsk.
+- `null` means unavailable for that destination — a normal outcome.
+- An optional `freeThresholdMinor` on the method quotes `0` when the cart
+  subtotal is at or above it. Checkout passes the **server** subtotal.
+- `orders` stores the method `code` and the quoted cost **as captured at
+  order time**. Quotes are never recomputed against a historical order.
+- `order_management` assigns one shipment per order and later enters
+  tracking. Carrier SDK types, if any are added later, stay inside
+  `delivery`.
 
 ## 10. Media storage abstraction
 
@@ -502,7 +503,7 @@ Decisions already settled are recorded in `docs/adr/` and are **not** open for
 reconsideration except under the conditions each ADR names: the modular monolith
 (ADR-0001), Next.js App Router (ADR-0002), PostgreSQL (ADR-0003), Prisma pinned
 to stable 7.10.0 (ADR-0004), the provider-neutral payment abstraction
-(ADR-0005), manual-first delivery (ADR-0006), object storage for media
+(ADR-0005), manual-first delivery (ADR-0006, ADR-0025), object storage for media
 (ADR-0007), the testing strategy (ADR-0008), Russian-first localization
 (ADR-0009), BYN as integer minor units (ADR-0010), CSS Modules with design
 tokens for styling (ADR-0011), the first catalogue schema with per-variant
@@ -519,8 +520,9 @@ silently settled by whoever writes the first line of relevant code.
    merchant account. Blocks real checkout but not its construction, because of
    the mock provider in section 8 and ADR-0005.
 2. **Delivery rate table contents and the eventual carrier.** Business decision.
-   ADR-0006 settles the manual-first approach; the actual zones, rates, and
-   which carrier is used are still to be supplied by the business.
+   ADR-0006 and ADR-0025 settle the manual-first shape (pickup, courier,
+   regional, zones, optional free threshold). The numbers in the demo table
+   and which carrier staff use are still to be supplied by the business.
 3. **Hosting target and managed PostgreSQL provider.** Blocks section 15's
    specifics and the local development database that section 13's integration
    tier depends on. This is the highest-priority unblock: ADR-0008's integration

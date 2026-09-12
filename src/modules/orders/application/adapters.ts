@@ -66,7 +66,9 @@ export function orderInventoryAdapter(inventory: InventoryServices): OrderInvent
 export function orderDeliveryAdapter(delivery: DeliveryServices): OrderDelivery {
   return {
     async quote(input) {
-      const quote = await delivery.quote(input.methodCode, input.destination);
+      const quote = await delivery.quote(input.methodCode, input.destination, {
+        subtotalMinor: input.subtotalMinor,
+      });
       if (!quote) {
         return null;
       }

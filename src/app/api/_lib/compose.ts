@@ -27,7 +27,10 @@ import {
   createDemoDeliveryRepository,
   createDeliveryServices,
   createMemoryShipments,
+  createPrismaDeliveryRepository,
+  createPrismaShipmentRepository,
   type DeliveryServices,
+  type ShipmentRepository,
 } from "@/modules/delivery";
 import {
   createInventoryServices,
@@ -144,6 +147,7 @@ const composeGlobals = globalThis as unknown as {
   bikesPaymentProvider?: MockPaymentProvider;
   bikesInventory?: InventoryServices;
   bikesAuthPromise?: Promise<AuthServices>;
+  bikesMemoryShipments?: ShipmentRepository;
 };
 
 const DEMO_STOCK: InventoryItem[] = [
@@ -321,10 +325,29 @@ export function setCartRepository(repository: CartRepository): void {
   cartOverride = repository;
 }
 
+function getDeliveryRepository() {
+  if (process.env.VITEST === "true" || process.env.NODE_ENV !== "production") {
+    return createDemoDeliveryRepository();
+  }
+  return createPrismaDeliveryRepository();
+}
+
+function getShipmentRepository(): ShipmentRepository {
+  if (process.env.VITEST === "true") {
+    composeGlobals.bikesMemoryShipments ??= createMemoryShipments();
+    return composeGlobals.bikesMemoryShipments;
+  }
+  if (process.env.NODE_ENV !== "production") {
+    composeGlobals.bikesMemoryShipments ??= createMemoryShipments();
+    return composeGlobals.bikesMemoryShipments;
+  }
+  return createPrismaShipmentRepository();
+}
+
 export function getDeliveryServices(): DeliveryServices {
   return createDeliveryServices({
-    methods: createDemoDeliveryRepository(),
-    shipments: createMemoryShipments(),
+    methods: getDeliveryRepository(),
+    shipments: getShipmentRepository(),
   });
 }
 
@@ -400,6 +423,7 @@ export function resetRepositories(): void {
   paymentProvider = new MockPaymentProvider();
   composeGlobals.bikesMemoryPayments = paymentRepo;
   composeGlobals.bikesPaymentProvider = paymentProvider;
+  composeGlobals.bikesMemoryShipments = createMemoryShipments();
   delete composeGlobals.bikesAuthPromise;
   delete composeGlobals.bikesInventory;
 }

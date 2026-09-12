@@ -25,7 +25,7 @@ Rules:
 | [0003](0003-postgresql.md)                         | PostgreSQL                                      | Accepted                                                                 |
 | [0004](0004-prisma.md)                             | Prisma as ORM, pinned to stable                 | Accepted                                                                 |
 | [0005](0005-provider-neutral-payments.md)          | Provider-neutral payment abstraction            | Accepted (amended by [0022](0022-payment-provider-operations.md))        |
-| [0006](0006-manual-first-delivery.md)              | Manual-first delivery integration               | Accepted                                                                 |
+| [0006](0006-manual-first-delivery.md)              | Manual-first delivery integration               | Accepted (amended by [0025](0025-belarus-delivery-configuration.md))     |
 | [0007](0007-object-storage-media.md)               | Object storage for media, keys not URLs         | Accepted                                                                 |
 | [0008](0008-testing-strategy.md)                   | Testing strategy                                | Accepted                                                                 |
 | [0009](0009-russian-first-i18n.md)                 | Russian-first localization                      | Accepted                                                                 |
@@ -44,3 +44,4 @@ Rules:
 | [0022](0022-payment-provider-operations.md)        | Replaceable payment provider operations         | Accepted                                                                 |
 | [0023](0023-server-authoritative-payment-state.md) | Server-authoritative payment lifecycle          | Accepted                                                                 |
 | [0024](0024-payment-failure-releases-holds.md)     | Failed/expired payments release holds once      | Accepted                                                                 |
+| [0025](0025-belarus-delivery-configuration.md)     | Belarus delivery kinds, zones, and assignment   | Accepted                                                                 |
