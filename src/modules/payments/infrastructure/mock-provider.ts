@@ -131,6 +131,24 @@ export class MockPaymentProvider implements PaymentProvider {
     return normalizePaymentStatus(rawStatus);
   }
 
+  /** Register a charge that already exists (demo seed / tests). */
+  seedCharge(input: {
+    paymentId: string;
+    orderId: string;
+    amountMinor: number;
+    status?: NormalizedPaymentStatus;
+  }): void {
+    this.byId.set(input.paymentId, {
+      paymentId: input.paymentId,
+      orderId: input.orderId,
+      amountMinor: input.amountMinor,
+      currency: "BYN",
+      status: input.status ?? "SUCCEEDED",
+      refundedMinor: 0,
+      redirectUrl: "https://store.local/return",
+    });
+  }
+
   /** Test helpers: move a charge without pretending the browser did it. */
   markPending(providerPaymentId: string): void {
     this.require(providerPaymentId).status = "PENDING";

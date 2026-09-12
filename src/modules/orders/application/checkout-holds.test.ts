@@ -109,6 +109,9 @@ function stack(options?: { now?: Date; holdMs?: number }) {
     async listByUser(userId) {
       return [...orders.values()].filter((order) => order.userId === userId);
     },
+    async listForStaff() {
+      return [...orders.values()];
+    },
   };
   const cart: Cart = {
     id: "c1",

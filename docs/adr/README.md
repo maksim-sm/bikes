@@ -49,3 +49,4 @@ Rules:
 | [0027](0027-customer-account-area.md)              | Customer self-service account area              | Accepted (amended by [0028](0028-persistent-wishlist.md))                |
 | [0028](0028-persistent-wishlist.md)                | Persistent wishlist; no duplicates              | Accepted                                                                 |
 | [0029](0029-admin-shell-authorization.md)          | Admin shell, staff idle timeout, audit context  | Accepted                                                                 |
+| [0030](0030-admin-order-operations.md)             | Staff order queue, notes, and refunds           | Accepted                                                                 |

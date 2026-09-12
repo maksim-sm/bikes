@@ -14,7 +14,7 @@ describe("admin access", () => {
     expect(canAccessAdmin(orders)).toBe(true);
     expect(canAccessAdmin(customer)).toBe(false);
     expect(adminHomePath(inventory)).toBe("/admin/inventory");
-    expect(adminHomePath(orders)).toBe("/admin/deliveries");
+    expect(adminHomePath(orders)).toBe("/admin/orders");
   });
 
   it("shows only the nav items the principal can use", () => {
@@ -22,11 +22,13 @@ describe("admin access", () => {
       "/admin/inventory",
     ]);
     expect(visibleAdminNav(orders).map((item) => item.href)).toEqual([
+      "/admin/orders",
       "/admin/deliveries",
     ]);
     expect(visibleAdminNav(admin).map((item) => item.href)).toEqual([
       "/admin/products",
       "/admin/products/new",
+      "/admin/orders",
       "/admin/deliveries",
       "/admin/inventory",
     ]);

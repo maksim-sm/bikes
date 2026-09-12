@@ -14,15 +14,17 @@ export interface AdminNavItem {
   href:
     | "/admin/products"
     | "/admin/products/new"
+    | "/admin/orders"
     | "/admin/deliveries"
     | "/admin/inventory";
   capability: AdminNavCapability;
-  labelKey: "products" | "newProduct" | "deliveries" | "inventory";
+  labelKey: "products" | "newProduct" | "orders" | "deliveries" | "inventory";
 }
 
 export const ADMIN_NAV: readonly AdminNavItem[] = [
   { href: "/admin/products", capability: "manage_catalog", labelKey: "products" },
   { href: "/admin/products/new", capability: "manage_catalog", labelKey: "newProduct" },
+  { href: "/admin/orders", capability: "manage_orders", labelKey: "orders" },
   { href: "/admin/deliveries", capability: "manage_orders", labelKey: "deliveries" },
   { href: "/admin/inventory", capability: "manage_inventory", labelKey: "inventory" },
 ];
@@ -53,7 +55,7 @@ export function adminHomePath(principal: Principal): string {
     return "/admin/products";
   }
   if (canManageOrders(principal)) {
-    return "/admin/deliveries";
+    return "/admin/orders";
   }
   if (canManageInventory(principal)) {
     return "/admin/inventory";

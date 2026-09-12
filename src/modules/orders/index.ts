@@ -9,12 +9,16 @@
 
 export {
   formatOrderNumber,
+  normalizeStaffNotes,
+  orderMatchesAdminQuery,
   projectFulfillmentStatus,
   paymentEventConfirmsHold,
   paymentEventReleasesReservation,
   paymentEventRequiresHold,
   projectPaymentStatus,
   transitionOrder,
+  STAFF_NOTES_MAX,
+  type AdminOrderQuery,
   type FulfillmentStatus,
   type Order,
   type OrderLine,

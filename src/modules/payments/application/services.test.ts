@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ConflictError, ValidationError } from "@/lib/errors";
+import { ConflictError, ForbiddenError, ValidationError } from "@/lib/errors";
+import { customerPrincipal, staffPrincipal } from "@/modules/identity";
 import {
   applyProviderEvent,
   canStartPayment,
@@ -321,5 +322,30 @@ describe("validation", () => {
     await expect(payments.refundPayment(started.paymentId, 99999)).rejects.toBeInstanceOf(
       ValidationError,
     );
+  });
+});
+
+describe("staff payment operations", () => {
+  it("lists attempts and refunds only for order-management staff", async () => {
+    const provider = new MockPaymentProvider();
+    const payments = createPaymentServices({
+      payments: createMemoryPaymentRepository(),
+      provider,
+      orders: orders(),
+    });
+    const started = await payments.startPayment("o1", "https://store.local/return");
+    provider.succeed(started.paymentId);
+    await payments.getPaymentStatus(started.paymentId);
+    const ops = staffPrincipal("ops", ["order_management"]);
+    const listed = await payments.listPaymentsForOrder(ops, "o1");
+    expect(listed).toHaveLength(1);
+    await expect(
+      payments.listPaymentsForOrder(customerPrincipal("c1"), "o1"),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    const refunded = await payments.refundAsStaff(ops, started.paymentId, 4500);
+    expect(refunded.status).toBe("REFUNDED");
+    await expect(
+      payments.refundAsStaff(customerPrincipal("c1"), started.paymentId, 1),
+    ).rejects.toBeInstanceOf(ForbiddenError);
   });
 });

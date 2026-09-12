@@ -1,4 +1,5 @@
 import type { Order } from "../domain/order";
+import { orderMatchesAdminQuery } from "../domain/order";
 import type { OrderRepository } from "../application/ports";
 
 export function createMemoryOrderRepository(
@@ -20,6 +21,12 @@ export function createMemoryOrderRepository(
     async listByUser(userId) {
       return [...orders.values()]
         .filter((order) => order.userId === userId)
+        .sort((left, right) => right.number.localeCompare(left.number))
+        .map((order) => ({ ...order, items: [...order.items] }));
+    },
+    async listForStaff(query) {
+      return [...orders.values()]
+        .filter((order) => orderMatchesAdminQuery(order, query))
         .sort((left, right) => right.number.localeCompare(left.number))
         .map((order) => ({ ...order, items: [...order.items] }));
     },

@@ -1,6 +1,12 @@
 import type { Prisma } from "../../../generated/prisma/client";
 import { prisma, type PrismaClient } from "@/lib/db";
-import type { Order, OrderLine, OrderShipping, OrderStatus } from "../domain/order";
+import type {
+  AdminOrderQuery,
+  Order,
+  OrderLine,
+  OrderShipping,
+  OrderStatus,
+} from "../domain/order";
 import type { OrderRepository } from "../application/ports";
 
 function toShipping(row: {
@@ -71,6 +77,7 @@ function snapshotOf(order: Order): Record<string, unknown> {
     customerEmail: order.customerEmail,
     customerName: order.customerName,
     customerPhone: order.customerPhone,
+    staffNotes: order.staffNotes,
     paymentMethodCode: order.paymentMethodCode,
     shipping: order.shipping,
     items: order.items,
@@ -108,6 +115,7 @@ export function createPrismaOrderRepository(
         customerEmail: order.customerEmail,
         customerName: order.customerName,
         customerPhone: order.customerPhone,
+        staffNotes: order.staffNotes,
         shippingRecipientName: order.shipping.recipientName,
         shippingPhone: order.shipping.phone,
         shippingCountryCode: order.shipping.countryCode,
@@ -151,6 +159,7 @@ export function createPrismaOrderRepository(
           status: order.status,
           paymentStatus: order.paymentStatus,
           fulfillmentStatus: order.fulfillmentStatus,
+          staffNotes: order.staffNotes,
         },
         include: { items: true },
       });
@@ -178,7 +187,51 @@ export function createPrismaOrderRepository(
       });
       return rows.map(toOrder);
     },
+
+    async listForStaff(query) {
+      const rows = await client.order.findMany({
+        where: staffWhere(query),
+        include: { items: { orderBy: { createdAt: "asc" } } },
+        orderBy: { placedAt: "desc" },
+      });
+      return rows.map(toOrder);
+    },
   };
+}
+
+function staffWhere(query: AdminOrderQuery): Prisma.OrderWhereInput {
+  const filters: Prisma.OrderWhereInput[] = [];
+  if (query.status) {
+    filters.push({ status: query.status });
+  }
+  if (query.paymentStatus) {
+    filters.push({ paymentStatus: query.paymentStatus });
+  }
+  if (query.fulfillmentStatus) {
+    filters.push({ fulfillmentStatus: query.fulfillmentStatus });
+  }
+  const raw = query.q?.trim() ?? "";
+  if (raw.length > 0) {
+    const contains = { contains: raw, mode: "insensitive" as const };
+    const search: Prisma.OrderWhereInput[] = [
+      { number: contains },
+      { customerEmail: contains },
+      { customerName: contains },
+      { customerPhone: contains },
+      { staffNotes: contains },
+      { shippingRecipientName: contains },
+      { shippingPhone: contains },
+      { items: { some: { sku: contains } } },
+    ];
+    if (/^[0-9a-f-]{36}$/i.test(raw)) {
+      search.push({ id: raw });
+    }
+    filters.push({ OR: search });
+  }
+  if (filters.length === 0) {
+    return {};
+  }
+  return { AND: filters };
 }
 
 function toOrder(row: {
@@ -196,6 +249,7 @@ function toOrder(row: {
   customerEmail: string;
   customerName: string;
   customerPhone: string;
+  staffNotes: string | null;
   placedSnapshot: unknown;
   shippingRecipientName: string;
   shippingPhone: string;
@@ -232,6 +286,7 @@ function toOrder(row: {
     customerEmail: row.customerEmail,
     customerName: row.customerName,
     customerPhone: row.customerPhone,
+    staffNotes: row.staffNotes,
     paymentMethodCode: snapshotPaymentMethod(row.placedSnapshot),
     shipping: toShipping(row),
     items: row.items.map(toLine),

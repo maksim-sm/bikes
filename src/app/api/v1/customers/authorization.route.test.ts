@@ -93,6 +93,7 @@ describe("customer resource isolation", () => {
       customerName: "Иван",
       customerPhone: "+375291112233",
       paymentMethodCode: "cash_on_delivery",
+      staffNotes: null,
       shipping: {
         recipientName: "Иван",
         phone: "+375291112233",
@@ -116,6 +117,9 @@ describe("customer resource isolation", () => {
       },
       async listByUser(userId) {
         return userId === order.userId ? [order] : [];
+      },
+      async listForStaff() {
+        return [order];
       },
     });
 

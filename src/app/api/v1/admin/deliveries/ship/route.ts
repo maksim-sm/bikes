@@ -2,6 +2,7 @@ import { z } from "zod";
 import { parseWithSchema } from "@/lib/http";
 import { withRoute } from "@/app/api/_lib/route";
 import { getDeliveryServices } from "@/app/api/_lib/compose";
+import { syncOrderFulfillment } from "@/app/admin/_lib/sync-fulfillment";
 import { toShipmentDto } from "../dto";
 
 export const dynamic = "force-dynamic";
@@ -18,5 +19,6 @@ export const POST = withRoute("order_management", async (ctx) => {
     body.orderId,
     body.trackingNumber,
   );
+  await syncOrderFulfillment(ctx.principal, body.orderId, "shipped");
   return { data: { shipment: toShipmentDto(shipment) } };
 });
