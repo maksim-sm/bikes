@@ -20,7 +20,19 @@ const published: Product = {
   frameMaterial: null,
   groupset: null,
   brakeType: null,
-  variants: [],
+  variants: [
+    {
+      id: "v1",
+      productId: "p1",
+      sku: "EM-M",
+      frameSize: "M",
+      wheelSize: "28",
+      color: "чёрный",
+      listPriceMinor: 349900,
+      currency: "BYN",
+      isActive: true,
+    },
+  ],
 };
 
 afterEach(() => {
