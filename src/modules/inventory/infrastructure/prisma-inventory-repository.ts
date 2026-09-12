@@ -44,6 +44,13 @@ function toReservation(row: {
   };
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function actorUserIdOrNull(value: string | null): string | null {
+  return value !== null && UUID_RE.test(value) ? value : null;
+}
+
 function toMovement(row: {
   id: string;
   inventoryItemId: string;
@@ -140,7 +147,7 @@ export function createPrismaInventoryRepository(
           onHandAfter: 0,
           reservedAfter: 0,
           note: input.note,
-          actorUserId: input.actorUserId,
+          actorUserId: actorUserIdOrNull(input.actorUserId),
         },
       });
       return toMovement(row);
