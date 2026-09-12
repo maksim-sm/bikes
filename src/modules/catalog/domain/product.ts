@@ -145,6 +145,7 @@ export interface ProductWriteInput {
   modelYear: number | null;
   warrantyMonths: number | null;
   warrantyText: string | null;
+  images?: readonly ProductImage[];
   variants: readonly ProductWriteVariant[];
 }
 
@@ -238,13 +239,30 @@ export function assertRequiredProduct(input: ProductWriteInput): void {
     if (variant.status !== undefined) {
       resolveVariantStatus({ status: variant.status });
     }
-    for (const image of variant.images ?? []) {
-      if (image.key.trim().length === 0) {
-        throw new Error("variant_media_key_invalid");
-      }
+    assertImages(variant.images ?? [], "variant_media_key_invalid");
+  }
+  assertImages(input.images ?? [], "product_media_key_invalid");
+  assertUniqueVariants(input.variants);
+}
+
+function assertImages(images: readonly ProductImage[], emptyKeyCode: string): void {
+  for (const image of images) {
+    if (image.key.trim().length === 0) {
+      throw new Error(emptyKeyCode);
+    }
+    if (image.alt.trim().length === 0) {
+      throw new Error("product_image_alt_required");
     }
   }
-  assertUniqueVariants(input.variants);
+}
+
+export function normalizeImages(images: readonly ProductImage[]): ProductImage[] {
+  return images.map((image, index) => ({
+    key: image.key.trim(),
+    alt: image.alt.trim(),
+    role: index === 0 ? "PRIMARY" : image.role === "PRIMARY" ? "GALLERY" : image.role,
+    sortOrder: index,
+  }));
 }
 
 export function toWrittenVariant(
@@ -253,12 +271,7 @@ export function toWrittenVariant(
   id: string,
 ): ProductVariant {
   const status = resolveVariantStatus(input);
-  const images = (input.images ?? []).map((image, index) => ({
-    key: image.key.trim(),
-    alt: image.alt.trim(),
-    role: image.role,
-    sortOrder: image.sortOrder ?? index,
-  }));
+  const images = normalizeImages(input.images ?? []);
   return {
     id,
     productId,
@@ -295,6 +308,7 @@ export function publishProduct(product: Product, now: Date): Product {
     modelYear: product.modelYear,
     warrantyMonths: product.warrantyMonths,
     warrantyText: product.warrantyText,
+    images: product.images,
     variants: product.variants,
   });
   if (!hasActiveVariant(product)) {

@@ -354,7 +354,8 @@ export interface MediaStore {
   change of storage backend; a URL does not.
 - `catalog` owns the association between a product and its image keys; `media`
   owns the bytes and knows nothing about products.
-- Uploads validate content type and size at the boundary, and derivative sizes
+- Uploads sniff magic bytes and enforce a size limit at the boundary. File
+  extensions and client `Content-Type` headers are not trusted. Derivative sizes
   are generated on upload or on first request rather than shipping full-
   resolution originals to the storefront.
 - A local filesystem implementation is the development default so that no cloud

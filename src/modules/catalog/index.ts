@@ -45,6 +45,7 @@ export {
   createCatalogAdminServices,
   type CatalogAdminServices,
 } from "./application/admin-services";
+export { catalogMediaReferences, imageKeysOf } from "./application/media-references";
 export { createMemoryCatalogRepository } from "./infrastructure/memory-catalog-repository";
 export {
   createDemoCatalogInventory,
