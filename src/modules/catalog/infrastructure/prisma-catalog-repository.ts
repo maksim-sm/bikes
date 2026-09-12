@@ -2,7 +2,7 @@ import { Prisma } from "../../../generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { descendantCategorySlugs } from "../application/list-match";
 import type { CatalogListQuery } from "../application/list-query";
-import type { CatalogListResult, CatalogRepository } from "../application/ports";
+import type { CatalogRepository } from "../application/ports";
 import type {
   BicycleType,
   Brand,
