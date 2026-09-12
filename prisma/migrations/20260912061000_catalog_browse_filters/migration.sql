@@ -20,8 +20,8 @@ ALTER TABLE "product_variants"
 
 ALTER TABLE "product_variants" ALTER COLUMN "wheel_size" DROP DEFAULT;
 
-ALTER TABLE "product_variants"
-  DROP CONSTRAINT "product_variants_product_id_frame_size_color_key";
+-- Init created a unique INDEX, not a table constraint.
+DROP INDEX IF EXISTS "product_variants_product_id_frame_size_color_key";
 
 ALTER TABLE "product_variants"
   ADD CONSTRAINT "product_variants_product_id_size_color_key"

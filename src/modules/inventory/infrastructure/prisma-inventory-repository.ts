@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/db";
+import { prisma, type PrismaClient } from "@/lib/db";
+import { mapInventoryWriteError } from "../application/inventory-errors";
 import type { InventoryRepository } from "../application/ports";
 import type {
   ExternalMovementType,
@@ -72,54 +73,64 @@ function toMovement(row: {
  * variant ids instead of joining `inventory_items` from the catalog repository.
  * Reservation and movement inserts rely on PostgreSQL triggers for counters.
  */
-export function createPrismaInventoryRepository(): InventoryRepository {
+export function createPrismaInventoryRepository(
+  client: PrismaClient = prisma,
+): InventoryRepository {
   return {
     async getByVariantId(variantId) {
-      const row = await prisma.inventoryItem.findUnique({ where: { variantId } });
+      const row = await client.inventoryItem.findUnique({ where: { variantId } });
       return row ? toItem(row) : null;
     },
     async getByItemId(id) {
-      const row = await prisma.inventoryItem.findUnique({ where: { id } });
+      const row = await client.inventoryItem.findUnique({ where: { id } });
       return row ? toItem(row) : null;
     },
     async insertActive(input) {
-      const row = await prisma.inventoryReservation.create({
-        data: {
-          inventoryItemId: input.inventoryItemId,
-          quantity: input.quantity,
-          expiresAt: input.expiresAt,
-          status: "ACTIVE",
-          ...(input.cartId !== undefined ? { cartId: input.cartId } : {}),
-          ...(input.orderId !== undefined ? { orderId: input.orderId } : {}),
-        },
-      });
-      return toReservation(row);
+      try {
+        const row = await client.inventoryReservation.create({
+          data: {
+            inventoryItemId: input.inventoryItemId,
+            quantity: input.quantity,
+            expiresAt: input.expiresAt,
+            status: "ACTIVE",
+            ...(input.cartId !== undefined ? { cartId: input.cartId } : {}),
+            ...(input.orderId !== undefined ? { orderId: input.orderId } : {}),
+          },
+        });
+        return toReservation(row);
+      } catch (error) {
+        mapInventoryWriteError(error);
+      }
     },
     async getReservation(id) {
-      const row = await prisma.inventoryReservation.findUnique({ where: { id } });
+      const row = await client.inventoryReservation.findUnique({ where: { id } });
       return row ? toReservation(row) : null;
     },
     async saveReservation(reservation) {
-      const row = await prisma.inventoryReservation.update({
-        where: { id: reservation.id },
-        data: { status: reservation.status },
-      });
-      return toReservation(row);
+      try {
+        const row = await client.inventoryReservation.update({
+          where: { id: reservation.id },
+          data: { status: reservation.status },
+        });
+        return toReservation(row);
+      } catch (error) {
+        mapInventoryWriteError(error);
+      }
     },
     async listDueActive(now) {
-      const rows = await prisma.inventoryReservation.findMany({
+      const rows = await client.inventoryReservation.findMany({
         where: { status: "ACTIVE", expiresAt: { lte: now } },
       });
       return rows.map(toReservation);
     },
     async listActiveByOrder(orderId) {
-      const rows = await prisma.inventoryReservation.findMany({
+      const rows = await client.inventoryReservation.findMany({
         where: { status: "ACTIVE", orderId },
       });
       return rows.map(toReservation);
     },
     async insertExternalMovement(input) {
-      const row = await prisma.inventoryMovement.create({
+      const row = await client.inventoryMovement.create({
         data: {
           inventoryItemId: input.inventoryItemId,
           type: input.type as ExternalMovementType,
@@ -132,14 +143,14 @@ export function createPrismaInventoryRepository(): InventoryRepository {
       return toMovement(row);
     },
     async listMovements(inventoryItemId) {
-      const rows = await prisma.inventoryMovement.findMany({
+      const rows = await client.inventoryMovement.findMany({
         where: { inventoryItemId },
         orderBy: { createdAt: "asc" },
       });
       return rows.map(toMovement);
     },
     async listInStockVariantIds() {
-      const rows = await prisma.inventoryItem.findMany({
+      const rows = await client.inventoryItem.findMany({
         where: { available: { gt: 0 } },
         select: { variantId: true },
       });
@@ -149,14 +160,14 @@ export function createPrismaInventoryRepository(): InventoryRepository {
       if (variantIds.length === 0) {
         return [];
       }
-      const rows = await prisma.inventoryItem.findMany({
+      const rows = await client.inventoryItem.findMany({
         where: { variantId: { in: [...variantIds] } },
         select: { variantId: true, available: true },
       });
       return rows.map((row) => ({ variantId: row.variantId, available: row.available }));
     },
     async expireDue(now) {
-      const rows = await prisma.$queryRaw<Array<{ expired: bigint | number }>>`
+      const rows = await client.$queryRaw<Array<{ expired: bigint | number }>>`
         SELECT expire_inventory_reservations(${now}) AS expired
       `;
       return Number(rows[0]?.expired ?? 0);
