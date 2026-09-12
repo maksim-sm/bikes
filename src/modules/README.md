@@ -45,8 +45,13 @@ existing one.
 
 ## Current modules
 
-These are structural placeholders. No business logic exists yet; the folders
-establish ownership so that the first feature has an obvious home.
+Application services live in each module's `application/` folder and are
+exported from `index.ts`. They take repository and clock ports as arguments so
+unit tests (and later Prisma repositories) can supply them. `app/` and `src/ui`
+must not import Prisma or `@/lib/db`.
+
+Customers and wishlist are not their own modules: they are services on
+`identity`, which owns those tables.
 
 | Module      | Owns                                                   |
 | ----------- | ------------------------------------------------------ |

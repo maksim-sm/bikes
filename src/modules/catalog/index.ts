@@ -1,14 +1,42 @@
 /**
  * catalog module — public entry point.
  *
- * Owns products, variants, categories, and specifications.
- * Stock lives in `inventory` (one inventory item per variant).
- *
- * Everything this module offers to the rest of the application is re-exported
- * here. Its `domain/`, `application/`, and `infrastructure/` layers are
- * internal and may not be imported from outside this folder.
- *
- * No business logic yet; see `src/modules/README.md`.
+ * Owns products, variants, categories, brands, and specifications.
+ * Stock lives in `inventory`. Displayed price lives in `pricing`.
  */
 
-export {};
+export { escapeIlike, productMatchesSearch, searchDocument } from "./domain/search";
+export {
+  BICYCLE_TYPES,
+  findActiveVariant,
+  isBicycleType,
+  isListedOnStorefront,
+  lowestListPriceMinor,
+  type BicycleType,
+  type Brand,
+  type Category,
+  type Product,
+  type ProductImage,
+  type ProductStatus,
+  type ProductVariant,
+} from "./domain/product";
+export {
+  CATALOG_SORT_FIELDS,
+  type CatalogListFilters,
+  type CatalogListQuery,
+  type CatalogSortField,
+} from "./application/list-query";
+export type {
+  CatalogInventory,
+  CatalogListResult,
+  CatalogRepository,
+  Clock,
+} from "./application/ports";
+export { createCatalogServices, type CatalogServices } from "./application/services";
+export { createMemoryCatalogRepository } from "./infrastructure/memory-catalog-repository";
+export {
+  createDemoCatalogInventory,
+  createDemoCatalogRepository,
+  demoEmonda,
+} from "./infrastructure/demo-catalog";
+export { createPrismaCatalogRepository } from "./application/create-catalog";

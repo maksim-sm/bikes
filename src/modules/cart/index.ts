@@ -1,13 +1,20 @@
 /**
  * cart module — public entry point.
  *
- * Owns the cart aggregate, its line items, and quantity rules.
- *
- * Everything this module offers to the rest of the application is re-exported
- * here. Its `domain/`, `application/`, and `infrastructure/` layers are
- * internal and may not be imported from outside this folder.
- *
- * No business logic yet; see `src/modules/README.md`.
+ * Owns the cart aggregate and quantity rules. Does not decrement stock or
+ * take payment; checkout calls `inventory` and `orders`.
  */
 
-export {};
+export {
+  MAX_LINE_QUANTITY,
+  MIN_LINE_QUANTITY,
+  actorOwnsCart,
+  addToLine,
+  assertLineQuantity,
+  type Cart,
+  type CartActor,
+  type CartLine,
+} from "./domain/cart";
+export type { CartCatalog, CartRepository } from "./application/ports";
+export { createCartServices, type CartServices } from "./application/services";
+export { createMemoryCartRepository } from "./infrastructure/memory-cart-repository";

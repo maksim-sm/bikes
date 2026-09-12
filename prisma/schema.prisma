@@ -29,12 +29,38 @@ enum UserRole {
   @@map("user_role")
 }
 
+enum StaffRole {
+  ADMIN
+  MANAGER
+  INVENTORY
+  ORDER_MANAGEMENT
+
+  @@map("staff_role")
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+
+  @@map("auth_token_type")
+}
+
 enum ProductStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
 
   @@map("product_status")
+}
+
+enum BicycleType {
+  ROAD
+  MTB
+  GRAVEL
+  CITY
+  KIDS
+
+  @@map("bicycle_type")
 }
 
 enum ProductMediaRole {
@@ -124,19 +150,68 @@ model User {
   email        String    @unique @db.VarChar(320)
   passwordHash String    @map("password_hash") @db.VarChar(255)
   role         UserRole  @default(CUSTOMER)
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(6)
   disabledAt   DateTime? @map("disabled_at") @db.Timestamptz(6)
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  profile   CustomerProfile?
-  addresses Address[]
-  carts     Cart[]
-  wishlist  Wishlist?
-  orders    Order[]
-  auditLogs AuditLog[]
+  profile    CustomerProfile?
+  addresses  Address[]
+  carts      Cart[]
+  wishlist   Wishlist?
+  orders     Order[]
+  auditLogs  AuditLog[]
+  sessions   AuthSession[]
+  authTokens AuthToken[]
+  staffRoles UserStaffRole[]
 
   @@index([role], map: "users_role_idx")
   @@map("users")
+}
+
+/// Staff job titles. Customers have none. A staff user may hold several.
+model UserStaffRole {
+  userId    String    @map("user_id") @db.Uuid
+  role      StaffRole
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, role])
+  @@index([role], map: "user_staff_roles_role_idx")
+  @@map("user_staff_roles")
+}
+
+/// Opaque session: the cookie holds the raw token; only `token_hash` is stored.
+model AuthSession {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.Char(64)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "auth_sessions_user_id_idx")
+  @@index([expiresAt], map: "auth_sessions_expires_at_idx")
+  @@map("auth_sessions")
+}
+
+/// One-time email-verify and password-reset tokens. Stored hashed, like sessions.
+model AuthToken {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String        @map("user_id") @db.Uuid
+  type      AuthTokenType
+  tokenHash String        @unique @map("token_hash") @db.Char(64)
+  expiresAt DateTime      @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime?    @map("consumed_at") @db.Timestamptz(6)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type], map: "auth_tokens_user_id_type_idx")
+  @@map("auth_tokens")
 }
 
 model CustomerProfile {
@@ -243,17 +318,27 @@ model Category {
 }
 
 model Product {
-  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  brandId     String        @map("brand_id") @db.Uuid
-  categoryId  String        @map("category_id") @db.Uuid
-  slug        String        @unique @db.VarChar(120)
-  name        String        @db.VarChar(200)
-  description String        @db.Text
-  locale      String        @default("ru") @db.VarChar(5)
-  status      ProductStatus @default(DRAFT)
-  publishedAt DateTime?     @map("published_at") @db.Timestamptz(6)
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  brandId       String        @map("brand_id") @db.Uuid
+  categoryId    String        @map("category_id") @db.Uuid
+  slug          String        @unique @db.VarChar(120)
+  name          String        @db.VarChar(200)
+  description   String        @db.Text
+  locale        String        @default("ru") @db.VarChar(5)
+  status        ProductStatus @default(DRAFT)
+  publishedAt   DateTime?     @map("published_at") @db.Timestamptz(6)
+  bicycleType   BicycleType   @map("bicycle_type")
+  frameMaterial String?       @map("frame_material") @db.VarChar(80)
+  groupset      String?       @db.VarChar(80)
+  brakeType     String?       @map("brake_type") @db.VarChar(40)
+  modelYear     Int?          @map("model_year")
+  warrantyMonths Int?         @map("warranty_months")
+  warrantyText  String?       @map("warranty_text") @db.VarChar(200)
+  /// Denormalized search document. Triggers keep it in sync; the GIN tsvector
+  /// lives only in SQL (`products.search_vector`) so Prisma never writes it.
+  searchText    String        @default("") @map("search_text") @db.Text
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   brand     Brand           @relation(fields: [brandId], references: [id], onDelete: Restrict)
   category  Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
@@ -265,6 +350,9 @@ model Product {
   @@index([categoryId, status, publishedAt(sort: Desc)], map: "products_category_status_published_idx")
   @@index([brandId, status], map: "products_brand_status_idx")
   @@index([status, createdAt(sort: Desc)], map: "products_status_created_idx")
+  @@index([bicycleType, status], map: "products_bicycle_type_status_idx")
+  @@index([frameMaterial], map: "products_frame_material_idx")
+  @@index([groupset], map: "products_groupset_idx")
   @@map("products")
 }
 
@@ -273,6 +361,7 @@ model ProductVariant {
   productId      String   @map("product_id") @db.Uuid
   sku            String   @unique @db.VarChar(64)
   frameSize      String   @map("frame_size") @db.VarChar(16)
+  wheelSize      String   @map("wheel_size") @db.VarChar(16)
   color          String   @db.VarChar(80)
   listPriceMinor Int      @map("list_price_minor")
   currency       String   @default("BYN") @db.Char(3)
@@ -285,8 +374,11 @@ model ProductVariant {
   orderItems OrderItem[]
   inventory  InventoryItem?
 
-  @@unique([productId, frameSize, color], map: "product_variants_product_id_frame_size_color_key")
+  @@unique([productId, frameSize, color, wheelSize], map: "product_variants_product_id_size_color_key")
   @@index([productId, isActive], map: "product_variants_product_id_is_active_idx")
+  @@index([frameSize], map: "product_variants_frame_size_idx")
+  @@index([wheelSize], map: "product_variants_wheel_size_idx")
+  @@index([listPriceMinor], map: "product_variants_list_price_minor_idx")
   @@map("product_variants")
 }
 

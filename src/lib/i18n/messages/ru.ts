@@ -71,6 +71,60 @@ export const ru = {
     privacy: "Политика конфиденциальности",
   },
 
+  catalog: {
+    title: "Каталог велосипедов",
+    fromPrice: "от",
+    openProduct: "Открыть карточку",
+  },
+
+  product: {
+    featured: "Популярный велосипед",
+    model: "Модель",
+    year: "Год",
+    type: "Тип",
+    price: "Цена",
+    availability: "Наличие",
+    inStock: "В наличии",
+    outOfStock: "Нет в наличии",
+    unitsLeft: "осталось",
+    frameSize: "Размер рамы",
+    wheelSize: "Размер колёс",
+    color: "Цвет",
+    specifications: "Характеристики",
+    warranty: "Гарантия",
+    warrantyMonths: "мес.",
+    delivery: "Доставка",
+    deliveryDays: "дн.",
+    selected: "выбрано",
+    addedToCart: "Товар добавлен в корзину",
+    goToCart: "Перейти в корзину",
+    unavailable: "Этой комплектации нет в наличии",
+    pickVariant: "Выберите размер и цвет",
+    sku: "Артикул",
+    frameMaterial: "Материал рамы",
+    groupset: "Групсет",
+    brakeType: "Тормоза",
+    description: "Описание",
+    gallery: "Фотографии модели",
+    addFailed: "Не удалось добавить товар в корзину",
+  },
+
+  bicycleType: {
+    ROAD: "Шоссейный",
+    MTB: "Горный",
+    GRAVEL: "Гравел",
+    CITY: "Городской",
+    KIDS: "Детский",
+  },
+
+  cart: {
+    title: "Корзина",
+    empty: "В корзине пока ничего нет",
+    continueShopping: "Вернуться в каталог",
+    quantity: "Количество",
+    added: "Товар добавлен",
+  },
+
   dev: {
     underConstruction: "Приложение находится в разработке",
     foundationOnly:

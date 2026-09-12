@@ -14,14 +14,18 @@ built on and the toolchain measured on the machine. `docs/adr/` records the
 decisions behind it — when an ADR and this document disagree, the most recent
 accepted ADR is correct and this document needs updating.
 `docs/inventory.md` defines on-hand, reserved, available, expiration, release,
-and commit.
+and commit. `docs/api.md` is the external HTTP contract. `docs/auth.md`
+defines principals, staff titles, and customer isolation. `docs/catalog.md`
+defines storefront listing filters (PostgreSQL, not Elasticsearch).
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
-boundary rules, the design system, and the Prisma schema through commerce
-entities and the inventory ledger. No storefront features, authentication, or
-repositories have been built yet. `tests/` and most module layers are still
-targets rather than existing files.
+boundary rules, the design system, the Prisma schema through the inventory
+ledger, application services, and versioned Route Handlers under `/api/v1`.
+Cookie sessions and customer auth live in `identity`. Prisma repositories
+exist for auth tables and catalog listing; other modules still use in-memory
+ports. Integration and end-to-end test tiers are still targets. Storefront
+product, catalog, and guest-cart pages exist; there is no account UI yet.
 
 ## 1. Why a modular monolith
 
@@ -56,7 +60,6 @@ src/
     payments/
     delivery/
     identity/
-    media/
     media/
     pricing/
     inventory/
@@ -112,6 +115,9 @@ Each module owns a slice of the business and the tables backing it.
 `catalog` and `pricing` are deliberately separate: promotions, VAT display, and
 currency rules change on a different schedule from the product catalogue, and
 merging them tends to scatter price logic across product queries.
+
+Customer profile, address book, and wishlist operations are application
+services on `identity`. There is no `customers` or `wishlist` module folder.
 
 ### Module anatomy
 
@@ -214,15 +220,15 @@ imported nowhere but module repositories.
 ## 6. API boundary
 
 The application is server-rendered; most data reaches the browser through server
-components, so **there is no general-purpose public REST API and none should be
-built speculatively.** HTTP endpoints exist only where something outside our
-rendering pipeline must call in.
+components. **Do not grow an ad-hoc REST surface.** External HTTP exists only
+where something outside our rendering pipeline must call in, and those callers
+share one contract: `docs/api.md` (ADR-0015).
 
-| Surface           | Location              | Use for                                                              |
-| ----------------- | --------------------- | -------------------------------------------------------------------- |
-| Server components | `app/**/page.tsx`     | Reading data for rendering                                           |
-| Server actions    | `app/**/actions.ts`   | Mutations from our own UI                                            |
-| Route handlers    | `app/api/**/route.ts` | Payment webhooks, health checks, sitemap, future third-party clients |
+| Surface           | Location              | Use for                                                  |
+| ----------------- | --------------------- | -------------------------------------------------------- |
+| Server components | `app/**/page.tsx`     | Reading data for rendering                               |
+| Server actions    | `app/**/actions.ts`   | Mutations from our own UI                                |
+| Route handlers    | `app/api/**/route.ts` | Health, payment webhooks, `/api/v1/*` for non-UI clients |
 
 Rules for all three: every entry point validates its input with a schema
 (Zod or equivalent) at the boundary and passes typed, validated data inward, so
@@ -231,11 +237,21 @@ authorization check — never rely on the caller having checked. Domain errors f
 `lib/errors.ts` are mapped to HTTP status codes or UI state at this layer only;
 internal error details and stack traces never reach the client.
 
+Route Handlers additionally:
+
+- wrap work in `withRoute` so the envelope, request id, logs, and error map
+  are the same on every path;
+- return DTOs, never service objects or spread domain entities;
+- paginate, filter, and sort through the allow-lists in `src/lib/http`;
+- resolve a `Principal` from `identity` and pass it into services.
+
 ## 7. Authentication and authorization boundary
 
 `identity` owns users, credentials, sessions, roles, customer profiles,
-addresses, and wishlists. Roles are `customer` and `staff`; add a third only
-when a real permission diverges.
+addresses, and wishlists. Callers are `anonymous` or an authenticated
+`customer` / `staff` principal. Staff job titles (`admin`, `manager`,
+`inventory`, `order_management`) live on `user_staff_roles` (ADR-0017). Use
+the helpers in `identity` — do not invent a second permission matrix.
 
 - Session establishment and verification live in `identity`. No other module
   reads session cookies or tokens.
@@ -244,10 +260,11 @@ when a real permission diverges.
   ambient request state — a service that reaches for the current session cannot
   be tested or called from a background job.
 - **Authorization** (may they do this) is enforced in two places, deliberately:
-  route-level checks in `app/` for coarse access, such as gating `admin/`
-  entirely behind the `staff` role, and ownership checks inside domain services
-  for anything user-scoped. A service that loads an order by id must verify the
-  requesting user owns it; the URL is not a permission.
+  route-level checks in `app/` (`withRoute` policies, including staff titles)
+  and ownership checks inside services for anything user-scoped. A customer
+  must not read another customer's order, address, wishlist, or profile. A
+  service that loads an order by id must verify the principal; the URL is not
+  a permission.
 - Passwords, if used, are hashed with a modern memory-hard algorithm. Sessions
   are httpOnly, `Secure`, and `SameSite=Lax` cookies.
 - The admin area is never exposed through the same navigation as the storefront
@@ -476,33 +493,33 @@ to stable 7.10.0 (ADR-0004), the provider-neutral payment abstraction
 (ADR-0009), BYN as integer minor units (ADR-0010), CSS Modules with design
 tokens for styling (ADR-0011), the first catalogue schema with per-variant
 stock grain and no EAV (ADR-0012), independent order/payment/fulfillment
-statuses (ADR-0013), and the race-safe inventory ledger (ADR-0014). Availability
-vocabulary is in `docs/inventory.md`.
+statuses (ADR-0013), the race-safe inventory ledger (ADR-0014), Route
+Handler HTTP conventions (ADR-0015), and customer authentication with Argon2id
+plus hashed httpOnly sessions (ADR-0016). Availability vocabulary is in
+`docs/inventory.md`; the HTTP envelope is in `docs/api.md`.
 
 What remains open. Each names who must decide and what it blocks; none should be
 silently settled by whoever writes the first line of relevant code.
 
-1. **Auth implementation: Auth.js v4 stable or v5 beta.** Engineering decision.
-   Blocks `identity`. Section 7's boundaries hold either way.
-2. **Payment provider: bePaid, WebPay, or ERIP.** Business decision, requires a
+1. **Payment provider: bePaid, WebPay, or ERIP.** Business decision, requires a
    merchant account. Blocks real checkout but not its construction, because of
    the mock provider in section 8 and ADR-0005.
-3. **Delivery rate table contents and the eventual carrier.** Business decision.
+2. **Delivery rate table contents and the eventual carrier.** Business decision.
    ADR-0006 settles the manual-first approach; the actual zones, rates, and
    which carrier is used are still to be supplied by the business.
-4. **Hosting target and managed PostgreSQL provider.** Blocks section 15's
+3. **Hosting target and managed PostgreSQL provider.** Blocks section 15's
    specifics and the local development database that section 13's integration
    tier depends on. This is the highest-priority unblock: ADR-0008's integration
    tier cannot run without it.
-5. **Object storage provider and credentials.** Blocks production media under
+4. **Object storage provider and credentials.** Blocks production media under
    ADR-0007; the filesystem implementation covers development meanwhile.
-6. **Admin scope: custom admin area or an off-the-shelf CMS.** Determines
+5. **Admin scope: custom admin area or an off-the-shelf CMS.** Determines
    whether `app/admin/` is built out at all. Note that ADR-0006's manual-first
    delivery assumes staff have somewhere to record tracking references.
-7. **VAT and currency presentation.** Business decision. Blocks `pricing`.
+6. **VAT and currency presentation.** Business decision. Blocks `pricing`.
    ADR-0010 fixes the representation; how VAT is displayed and whether a second
    currency is shown are not settled.
-8. **Whether Belarusian is added as a second locale.** Business decision.
+7. **Whether Belarusian is added as a second locale.** Business decision.
    ADR-0009 ships Russian-only and defers the routing segment; this answer
    activates that deferred work.
 

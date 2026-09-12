@@ -1,15 +1,24 @@
 /**
  * inventory module — public entry point.
  *
- * Owns on-hand stock, reservations, and the movement ledger. One inventory
- * item per product variant. Counters change in PostgreSQL triggers, not by
- * application arithmetic. Vocabulary is defined in `docs/inventory.md`.
- *
- * Everything this module offers to the rest of the application is re-exported
- * here. Its `domain/`, `application/`, and `infrastructure/` layers are
- * internal and may not be imported from outside this folder.
- *
- * No business logic yet; see `src/modules/README.md`.
+ * Owns on-hand, reserved, and available counters and reservation lifecycle.
+ * Counter arithmetic is defined in domain for tests; production writes go
+ * through reservation rows so PostgreSQL triggers remain the race boundary.
  */
 
-export {};
+export {
+  applyCommit,
+  applyReceipt,
+  applyRelease,
+  applyReserve,
+  available,
+  canReserve,
+  isExpired,
+  nextReservationStatus,
+  type InventoryItem,
+  type Reservation,
+  type ReservationStatus,
+} from "./domain/inventory";
+export type { Clock, InventoryRepository } from "./application/ports";
+export { createInventoryServices, type InventoryServices } from "./application/services";
+export { createPrismaCatalogInventory } from "./application/create-inventory";

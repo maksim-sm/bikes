@@ -16,7 +16,9 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm run lint && pnpm run format:check && pnpm run db:generate && pnpm run build && pnpm run typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm run lint && pnpm run format:check && pnpm run db:generate && pnpm run build && pnpm run typecheck && pnpm test",
     "env:check": "tsx --env-file-if-exists=.env.local scripts/check-env.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -25,6 +27,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@node-rs/argon2": "2.2.1",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "next": "16.3.4",
@@ -46,7 +49,8 @@
     "prisma": "7.10.0",
     "tsx": "4.20.6",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.70.0"
+    "typescript-eslint": "8.70.0",
+    "vitest": "3.2.4"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -54,7 +58,8 @@
       "unrs-resolver",
       "sharp",
       "prisma",
-      "@prisma/engines"
+      "@prisma/engines",
+      "@node-rs/argon2"
     ]
   }
 }

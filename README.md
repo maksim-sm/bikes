@@ -53,6 +53,7 @@ the database role (Prisma's shadow database).
 | `pnpm lint`              | ESLint, including the architecture boundary rules           |
 | `pnpm lint:fix`          | ESLint with autofix                                         |
 | `pnpm typecheck`         | `tsc --noEmit`                                              |
+| `pnpm test`              | Unit tests for domain and application services (Vitest)     |
 | `pnpm format`            | Rewrite files with Prettier                                 |
 | `pnpm format:check`      | Fail if anything is unformatted                             |
 | `pnpm env:check`         | Validate environment configuration without starting the app |
@@ -60,7 +61,7 @@ the database role (Prisma's shadow database).
 | `pnpm db:migrate`        | Create and apply a development migration                    |
 | `pnpm db:migrate:deploy` | Apply committed migrations (safe on an empty database)      |
 | `pnpm db:status`         | Show whether the database is up to date                     |
-| `pnpm check`             | Lint, format check, generate client, build, typecheck       |
+| `pnpm check`             | Lint, format check, generate client, build, typecheck, test |
 
 Before pushing, `pnpm check` is the one command worth remembering.
 
@@ -87,7 +88,7 @@ To add a variable: add it to the schema in `src/lib/config.ts`, add it to
 ```
 src/
   app/            Routing and rendering only (Next.js App Router)
-    api/health/   Liveness endpoint
+    api/          Route Handlers: health and `/api/v1` (see docs/api.md)
   modules/        Domain modules — the modular-monolith seam
     catalog/ pricing/ cart/ orders/
     payments/ delivery/ identity/ media/ inventory/ audit/
@@ -96,6 +97,7 @@ src/
     config.ts     Validated environment configuration
     logger.ts     Structured JSON logging
     errors.ts     Error taxonomy
+    http/         Envelope, validation, pagination, error mapping
     i18n/         Locale resolution, Russian messages, Intl formatting
     db.ts         Prisma client (imported only by module repositories)
 prisma/           Schema and committed SQL migrations
@@ -172,12 +174,13 @@ decide it. See `src/modules/README.md` for the internal layering rules.
 
 - `docs/architecture.md` — the architecture contract: what goes where and why.
 - `docs/inventory.md` — on-hand, reserved, available, expiration, release, commit.
+- `docs/api.md` — Route Handler envelope, validation, errors, auth, pagination.
 - `docs/adr/` — decision records. Read these before proposing a change to the
   stack; each lists the conditions under which reopening it is legitimate.
 - `docs/BASELINE.md` — the pre-implementation audit.
 
 ## Status
 
-Foundation, visual system, and the database schema through inventory. No
-catalogue UI, cart, checkout, or authentication yet. The module folders exist so
-that the first feature has an unambiguous home.
+Foundation, visual system, database schema, application services, versioned
+HTTP Route Handlers, and customer authentication with httpOnly sessions. No
+catalogue UI, cart page, or checkout yet.

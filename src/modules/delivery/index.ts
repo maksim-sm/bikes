@@ -1,13 +1,27 @@
 /**
  * delivery module — public entry point.
  *
- * Owns shipping methods, regional zones, and cost calculation.
- *
- * Everything this module offers to the rest of the application is re-exported
- * here. Its `domain/`, `application/`, and `infrastructure/` layers are
- * internal and may not be imported from outside this folder.
- *
- * No business logic yet; see `src/modules/README.md`.
+ * Owns methods, zones, quotes, and the shipment assignment. Manual-first:
+ * staff record tracking after a human arranges the parcel.
  */
 
-export {};
+export {
+  matchZone,
+  nextShipmentStatus,
+  quoteMethod,
+  type DeliveryMethodRecord,
+  type DeliveryQuote,
+  type DeliveryZone,
+  type Destination,
+  type ShipmentStatus,
+} from "./domain/quote";
+export type {
+  DeliveryRepository,
+  ShipmentRecord,
+  ShipmentRepository,
+} from "./application/ports";
+export { createDeliveryServices, type DeliveryServices } from "./application/services";
+export {
+  createDemoDeliveryRepository,
+  createMemoryShipments,
+} from "./infrastructure/demo-delivery";

@@ -1,0 +1,57 @@
+import type { Cart } from "@/modules/cart";
+import type { Product } from "@/modules/catalog";
+import type { FulfillmentStatus, Order, OrderLine, PaymentStatus } from "../domain/order";
+
+export interface Clock {
+  now(): Date;
+}
+
+export interface OrderRepository {
+  nextSequence(day: Date): Promise<number>;
+  save(order: Order): Promise<Order>;
+  findById(id: string): Promise<Order | null>;
+}
+
+export interface OrderCart {
+  getCartById(cartId: string): Promise<Cart | null>;
+  clear(cartId: string): Promise<void>;
+}
+
+export interface OrderCatalog {
+  getProductForVariant(variantId: string): Promise<Product | null>;
+}
+
+export interface OrderInventory {
+  reserveForOrder(input: {
+    variantId: string;
+    quantity: number;
+    orderId: string;
+  }): Promise<void>;
+}
+
+export interface OrderDelivery {
+  quote(input: {
+    methodCode: string;
+    destination: { region: string; city: string };
+    itemCount: number;
+  }): Promise<{ costMinor: number; methodName: string } | null>;
+}
+
+export interface PlaceOrderInput {
+  cartId: string;
+  actorUserId: string | null;
+  customerEmail: string;
+  customerName: string;
+  customerPhone: string;
+  destination: {
+    recipientName: string;
+    phone: string;
+    region: string;
+    city: string;
+    street: string;
+    postalCode: string;
+  };
+  deliveryMethodCode: string;
+}
+
+export type { OrderLine, PaymentStatus, FulfillmentStatus };

@@ -1,13 +1,15 @@
 /**
  * pricing module — public entry point.
  *
- * Owns price calculation, VAT presentation, discounts, and currency rules.
- *
- * Everything this module offers to the rest of the application is re-exported
- * here. Its `domain/`, `application/`, and `infrastructure/` layers are
- * internal and may not be imported from outside this folder.
- *
- * No business logic yet; see `src/modules/README.md`.
+ * Owns displayed-price arithmetic (VAT, discounts, currency later).
+ * Money is integer kopeks. Callers never compute totals with floats.
  */
 
-export {};
+export {
+  BYN,
+  lineTotalMinor,
+  orderTotalMinor,
+  sumMinor,
+  type Currency,
+} from "./domain/money";
+export { createPricingServices, type PricingServices } from "./application/services";
