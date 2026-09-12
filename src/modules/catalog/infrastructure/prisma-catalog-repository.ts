@@ -13,13 +13,19 @@ import type {
 import { escapeIlike } from "../domain/search";
 
 type ProductRow = Prisma.ProductGetPayload<{
-  include: { brand: true; category: true; variants: true };
+  include: {
+    brand: true;
+    category: true;
+    variants: true;
+    media: { include: { media: true } };
+  };
 }>;
 
 const productInclude = {
   brand: true,
   category: true,
   variants: { where: { isActive: true } },
+  media: { include: { media: true }, orderBy: { sortOrder: "asc" as const } },
 } as const;
 
 function toVariant(row: ProductRow["variants"][number]): ProductVariant {
@@ -51,6 +57,15 @@ function toProduct(row: ProductRow): Product {
     frameMaterial: row.frameMaterial,
     groupset: row.groupset,
     brakeType: row.brakeType,
+    modelYear: row.modelYear,
+    warrantyMonths: row.warrantyMonths,
+    warrantyText: row.warrantyText,
+    images: row.media.map((item) => ({
+      key: item.media.key,
+      alt: item.alt,
+      role: item.role,
+      sortOrder: item.sortOrder,
+    })),
     variants: row.variants.map(toVariant),
   };
 }

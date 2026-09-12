@@ -3,6 +3,9 @@ import {
   type Product,
   type ProductVariant,
 } from "@/modules/catalog";
+import { mediaSrc } from "@/modules/media";
+
+export { mediaSrc };
 
 /** Public list row. Internal status and timestamps stay on the service. */
 export interface ProductListDto {
@@ -22,8 +25,18 @@ export interface ProductListDto {
 }
 
 /** Public detail. Variants are sellable snapshots, not inventory rows. */
+export interface ProductImageDto {
+  src: string;
+  alt: string;
+  role: "PRIMARY" | "GALLERY";
+}
+
 export interface ProductDetailDto extends ProductListDto {
   description: string;
+  modelYear: number | null;
+  warrantyMonths: number | null;
+  warrantyText: string | null;
+  images: ProductImageDto[];
   variants: ProductVariantDto[];
 }
 
@@ -73,6 +86,16 @@ export function toProductDetailDto(product: Product): ProductDetailDto {
   return {
     ...toProductListDto(product),
     description: product.description,
+    modelYear: product.modelYear,
+    warrantyMonths: product.warrantyMonths,
+    warrantyText: product.warrantyText,
+    images: [...product.images]
+      .sort((left, right) => left.sortOrder - right.sortOrder)
+      .map((image) => ({
+        src: mediaSrc(image.key),
+        alt: image.alt,
+        role: image.role,
+      })),
     variants: product.variants
       .filter((variant) => variant.isActive)
       .map(toProductVariantDto),

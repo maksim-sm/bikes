@@ -49,3 +49,11 @@
   min-height: var(--target-min);
   font-size: var(--text-sm);
 }
+
+.cart {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}

@@ -16,6 +16,10 @@ const product: Product = {
   frameMaterial: "карбон",
   groupset: "Shimano 105",
   brakeType: "ободной",
+  modelYear: 2026,
+  warrantyMonths: 24,
+  warrantyText: null,
+  images: [],
   variants: [
     {
       id: "v1",

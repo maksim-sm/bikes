@@ -41,3 +41,15 @@ one query per product. With `q`, the default sort is `relevance`.
 `GET /api/v1/categories` and `GET /api/v1/brands` return the trees/lists used
 to build the storefront filters. Specifications that are not columns yet stay
 off the query string (no EAV).
+
+## Product detail
+
+Storefront pages under `/products/[slug]` are Server Components. They load a
+published product through catalog services, then ask **inventory** for
+per-variant availability by id (no catalog→inventory SQL join). Delivery quotes
+for Минск come from the delivery module. Images are opaque media keys rendered
+as `/api/media/…` placeholders until the object store is wired.
+
+Variant size and color are real radio groups. The selected option is marked
+with a thicker border **and** the visible word «выбрано»; color is never the
+only cue. Add-to-cart is a server action on a guest `bikes_guest` cookie.

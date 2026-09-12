@@ -21,3 +21,7 @@ export type {
   ShipmentRepository,
 } from "./application/ports";
 export { createDeliveryServices, type DeliveryServices } from "./application/services";
+export {
+  createDemoDeliveryRepository,
+  createMemoryShipments,
+} from "./infrastructure/demo-delivery";

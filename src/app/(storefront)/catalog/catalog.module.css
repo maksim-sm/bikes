@@ -1,0 +1,13 @@
+.page {
+  padding-block: var(--space-6) var(--space-7);
+}
+
+.lead {
+  max-width: var(--container-prose);
+  color: var(--color-text-muted);
+}
+
+.price {
+  margin: 0;
+  font-weight: var(--weight-bold);
+}

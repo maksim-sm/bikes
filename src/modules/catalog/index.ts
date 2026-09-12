@@ -16,6 +16,7 @@ export {
   type Brand,
   type Category,
   type Product,
+  type ProductImage,
   type ProductStatus,
   type ProductVariant,
 } from "./domain/product";
@@ -33,4 +34,9 @@ export type {
 } from "./application/ports";
 export { createCatalogServices, type CatalogServices } from "./application/services";
 export { createMemoryCatalogRepository } from "./infrastructure/memory-catalog-repository";
+export {
+  createDemoCatalogInventory,
+  createDemoCatalogRepository,
+  demoEmonda,
+} from "./infrastructure/demo-catalog";
 export { createPrismaCatalogRepository } from "./application/create-catalog";

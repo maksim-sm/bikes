@@ -331,6 +331,9 @@ model Product {
   frameMaterial String?       @map("frame_material") @db.VarChar(80)
   groupset      String?       @db.VarChar(80)
   brakeType     String?       @map("brake_type") @db.VarChar(40)
+  modelYear     Int?          @map("model_year")
+  warrantyMonths Int?         @map("warranty_months")
+  warrantyText  String?       @map("warranty_text") @db.VarChar(200)
   /// Denormalized search document. Triggers keep it in sync; the GIN tsvector
   /// lives only in SQL (`products.search_vector`) so Prisma never writes it.
   searchText    String        @default("") @map("search_text") @db.Text

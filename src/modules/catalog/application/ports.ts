@@ -16,6 +16,9 @@ export interface CatalogListResult {
  */
 export interface CatalogInventory {
   listInStockVariantIds(): Promise<string[]>;
+  listAvailabilityByVariantIds(
+    variantIds: readonly string[],
+  ): Promise<Array<{ variantId: string; available: number }>>;
 }
 
 export interface CatalogRepository {

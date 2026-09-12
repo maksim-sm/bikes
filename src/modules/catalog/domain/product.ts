@@ -15,6 +15,13 @@ export interface ProductVariant {
   isActive: boolean;
 }
 
+export interface ProductImage {
+  key: string;
+  alt: string;
+  role: "PRIMARY" | "GALLERY";
+  sortOrder: number;
+}
+
 export interface Product {
   id: string;
   slug: string;
@@ -29,6 +36,10 @@ export interface Product {
   frameMaterial: string | null;
   groupset: string | null;
   brakeType: string | null;
+  modelYear: number | null;
+  warrantyMonths: number | null;
+  warrantyText: string | null;
+  images: ProductImage[];
   variants: ProductVariant[];
 }
 

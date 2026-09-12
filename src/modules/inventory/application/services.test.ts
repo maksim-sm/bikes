@@ -79,6 +79,15 @@ function memoryInventory(initial: InventoryItem): InventoryRepository {
         .filter((item) => item.onHand - item.reserved > 0)
         .map((item) => item.variantId);
     },
+    async listAvailabilityByVariantIds(variantIds) {
+      const wanted = new Set(variantIds);
+      return [...items.values()]
+        .filter((item) => wanted.has(item.variantId))
+        .map((item) => ({
+          variantId: item.variantId,
+          available: item.onHand - item.reserved,
+        }));
+    },
     async listDueActive(at) {
       return [...reservations.values()].filter(
         (row) => row.status === "ACTIVE" && row.expiresAt.getTime() <= at.getTime(),

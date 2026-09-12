@@ -28,6 +28,9 @@ export interface InventoryServices {
   commit(reservationId: string): Promise<Reservation>;
   expireDue(): Promise<number>;
   listInStockVariantIds(): Promise<string[]>;
+  listAvailabilityByVariantIds(
+    variantIds: readonly string[],
+  ): Promise<Array<{ variantId: string; available: number }>>;
   receiveStock(
     principal: Principal,
     input: { variantId: string; quantity: number },
@@ -91,6 +94,10 @@ export function createInventoryServices(deps: {
 
     async listInStockVariantIds() {
       return deps.inventory.listInStockVariantIds();
+    },
+
+    async listAvailabilityByVariantIds(variantIds) {
+      return deps.inventory.listAvailabilityByVariantIds(variantIds);
     },
 
     async receiveStock(principal, input) {

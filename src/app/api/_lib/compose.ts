@@ -3,7 +3,25 @@ import type {
   CatalogListQuery,
   CatalogRepository,
 } from "@/modules/catalog";
-import { createPrismaCatalogRepository } from "@/modules/catalog";
+import {
+  createCatalogServices,
+  createDemoCatalogInventory,
+  createDemoCatalogRepository,
+  createPrismaCatalogRepository,
+  type CatalogServices,
+} from "@/modules/catalog";
+import {
+  createCartServices,
+  createMemoryCartRepository,
+  type CartCatalog,
+  type CartServices,
+} from "@/modules/cart";
+import {
+  createDemoDeliveryRepository,
+  createDeliveryServices,
+  createMemoryShipments,
+  type DeliveryServices,
+} from "@/modules/delivery";
 import { createPrismaCatalogInventory } from "@/modules/inventory";
 import {
   createCustomerServices,
@@ -39,6 +57,9 @@ export const emptyCatalog: CatalogRepository = {
 
 const emptyInventory: CatalogInventory = {
   async listInStockVariantIds() {
+    return [];
+  },
+  async listAvailabilityByVariantIds() {
     return [];
   },
 };
@@ -84,6 +105,9 @@ let catalogOverride: CatalogRepository | null = null;
 let catalogPromise: Promise<CatalogRepository> | null = null;
 let inventoryOverride: CatalogInventory | null = null;
 let inventoryPromise: Promise<CatalogInventory> | null = null;
+let cartRepo = createMemoryCartRepository();
+const demoCatalog = createDemoCatalogRepository();
+const demoInventory = createDemoCatalogInventory();
 let orderRepo: OrderRepository = emptyOrders;
 let customerRepo: CustomerRepository = createMemoryCustomerRepository();
 let wishlistRepo: WishlistRepository = createMemoryWishlistRepository();
@@ -102,10 +126,21 @@ export async function getCatalogRepository(): Promise<CatalogRepository> {
   if (process.env.VITEST === "true") {
     return emptyCatalog;
   }
+  if (process.env.NODE_ENV !== "production") {
+    return demoCatalog;
+  }
   if (!catalogPromise) {
     catalogPromise = createPrismaCatalogRepository();
   }
   return catalogPromise;
+}
+
+export async function getCatalogServices(): Promise<CatalogServices> {
+  return createCatalogServices({
+    catalog: await getCatalogRepository(),
+    clock: { now: () => new Date() },
+    inventory: await getCatalogInventory(),
+  });
 }
 
 export async function getCatalogInventory(): Promise<CatalogInventory> {
@@ -115,10 +150,37 @@ export async function getCatalogInventory(): Promise<CatalogInventory> {
   if (process.env.VITEST === "true") {
     return emptyInventory;
   }
+  if (process.env.NODE_ENV !== "production") {
+    return demoInventory;
+  }
   if (!inventoryPromise) {
     inventoryPromise = createPrismaCatalogInventory();
   }
   return inventoryPromise;
+}
+
+function storefrontCatalog(): CartCatalog {
+  return {
+    async variantIsPurchasable(variantId) {
+      const inventory = await getCatalogInventory();
+      const stock = await inventory.listAvailabilityByVariantIds([variantId]);
+      return (stock[0]?.available ?? 0) > 0;
+    },
+  };
+}
+
+export function getCartServices(): CartServices {
+  return createCartServices({
+    carts: cartRepo,
+    catalog: storefrontCatalog(),
+  });
+}
+
+export function getDeliveryServices(): DeliveryServices {
+  return createDeliveryServices({
+    methods: createDemoDeliveryRepository(),
+    shipments: createMemoryShipments(),
+  });
 }
 
 export function getOrderRepository(): OrderRepository {
@@ -153,6 +215,7 @@ export function resetRepositories(): void {
   };
   authOverride = null;
   authPromise = null;
+  cartRepo = createMemoryCartRepository();
 }
 
 export function setCustomerRepository(repository: CustomerRepository): void {

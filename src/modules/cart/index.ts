@@ -17,3 +17,4 @@ export {
 } from "./domain/cart";
 export type { CartCatalog, CartRepository } from "./application/ports";
 export { createCartServices, type CartServices } from "./application/services";
+export { createMemoryCartRepository } from "./infrastructure/memory-cart-repository";

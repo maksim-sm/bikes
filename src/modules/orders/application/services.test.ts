@@ -28,6 +28,10 @@ const product: Product = {
   frameMaterial: null,
   groupset: null,
   brakeType: null,
+  modelYear: null,
+  warrantyMonths: null,
+  warrantyText: null,
+  images: [],
   variants: [
     {
       id: "v1",

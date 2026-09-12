@@ -19,4 +19,7 @@ export interface InventoryRepository {
   saveReservation(reservation: Reservation): Promise<Reservation>;
   listDueActive(now: Date): Promise<Reservation[]>;
   listInStockVariantIds(): Promise<string[]>;
+  listAvailabilityByVariantIds(
+    variantIds: readonly string[],
+  ): Promise<Array<{ variantId: string; available: number }>>;
 }

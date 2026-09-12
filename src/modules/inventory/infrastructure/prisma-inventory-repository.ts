@@ -7,7 +7,7 @@ import type { InventoryRepository } from "../application/ports";
  */
 export function createPrismaInventoryAvailability(): Pick<
   InventoryRepository,
-  "listInStockVariantIds"
+  "listInStockVariantIds" | "listAvailabilityByVariantIds"
 > {
   return {
     async listInStockVariantIds() {
@@ -16,6 +16,16 @@ export function createPrismaInventoryAvailability(): Pick<
         select: { variantId: true },
       });
       return rows.map((row) => row.variantId);
+    },
+    async listAvailabilityByVariantIds(variantIds) {
+      if (variantIds.length === 0) {
+        return [];
+      }
+      const rows = await prisma.inventoryItem.findMany({
+        where: { variantId: { in: [...variantIds] } },
+        select: { variantId: true, available: true },
+      });
+      return rows.map((row) => ({ variantId: row.variantId, available: row.available }));
     },
   };
 }
