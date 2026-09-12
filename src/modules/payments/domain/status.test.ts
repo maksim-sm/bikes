@@ -10,9 +10,13 @@ describe("normalizePaymentStatus", () => {
   });
 
   it("maps common provider aliases", () => {
+    expect(normalizePaymentStatus("created")).toBe("CREATED");
+    expect(normalizePaymentStatus("authorized")).toBe("AUTHORIZED");
     expect(normalizePaymentStatus("paid")).toBe("SUCCEEDED");
     expect(normalizePaymentStatus("declined")).toBe("FAILED");
+    expect(normalizePaymentStatus("expired")).toBe("EXPIRED");
     expect(normalizePaymentStatus("canceled")).toBe("CANCELLED");
+    expect(normalizePaymentStatus("refunding")).toBe("REFUND_PENDING");
     expect(normalizePaymentStatus("processing")).toBe("PENDING");
   });
 
@@ -27,7 +31,8 @@ describe("payment identifiers", () => {
   it("builds stable attempt and refund keys", () => {
     expect(paymentAttemptIdempotencyKey("ord-1", 2)).toBe("pay:ord-1:2");
     expect(refundIdempotencyKey("pay-1", 2500)).toBe("refund:pay-1:2500");
-    expect(paymentStatusToOrderEvent("PENDING")).toBeNull();
+    expect(paymentStatusToOrderEvent("CREATED")).toEqual({ type: "created" });
+    expect(paymentStatusToOrderEvent("PENDING")).toEqual({ type: "pending" });
     expect(paymentStatusToOrderEvent("PARTIALLY_REFUNDED")).toEqual({
       type: "partially_refunded",
     });

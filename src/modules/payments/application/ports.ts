@@ -1,6 +1,6 @@
 import type { PaymentAttempt, ProviderEvent } from "../domain/payment";
 import type { PaymentIdempotencyKey, PaymentProviderRef } from "../domain/provider";
-import type { NormalizedPaymentStatus } from "../domain/status";
+import type { NormalizedPaymentStatus, PaymentOrderEventType } from "../domain/status";
 
 export interface CreatePaymentInput {
   orderId: string;
@@ -66,10 +66,5 @@ export interface PaymentRepository {
 
 export interface PaymentOrder {
   amountDueMinor(orderId: string): Promise<{ amountMinor: number; currency: "BYN" }>;
-  applyEvent(
-    orderId: string,
-    event: {
-      type: "succeeded" | "failed" | "cancelled" | "refunded" | "partially_refunded";
-    },
-  ): Promise<void>;
+  applyEvent(orderId: string, event: { type: PaymentOrderEventType }): Promise<void>;
 }

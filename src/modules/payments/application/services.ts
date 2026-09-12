@@ -1,6 +1,7 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
 import {
   applyProviderEvent,
+  canCancelPayment,
   canStartPayment,
   refundStatus,
   type Payment,
@@ -21,6 +22,11 @@ export interface PaymentServices {
     redirectUrl: string;
   }>;
   getPaymentStatus(paymentId: string): Promise<NormalizedPaymentStatus>;
+  /**
+   * Browser return landing. Polls the provider and applies a legal
+   * transition. Query-string claims (`?status=paid`) are not accepted.
+   */
+  observeReturn(paymentId: string): Promise<Payment>;
   cancelPayment(paymentId: string): Promise<Payment>;
   refundPayment(paymentId: string, amountMinor: number): Promise<Payment>;
   handleWebhook(
@@ -54,11 +60,15 @@ export function createPaymentServices(deps: {
   async function applyRemoteStatus(
     payment: Payment,
     status: NormalizedPaymentStatus,
+    mode: "strict" | "lenient",
   ): Promise<Payment> {
     let next: NormalizedPaymentStatus;
     try {
       next = applyProviderEvent(payment, status);
     } catch {
+      if (mode === "lenient") {
+        return payment;
+      }
       throw new ConflictError("payment cannot accept this status", {
         paymentId: payment.id,
         status,
@@ -68,18 +78,21 @@ export function createPaymentServices(deps: {
       return payment;
     }
     const updated = await deps.payments.save({ ...payment, status: next });
-    const orderEvent = paymentStatusToOrderEvent(next);
-    if (orderEvent) {
-      await deps.orders.applyEvent(payment.orderId, orderEvent);
-    }
+    await deps.orders.applyEvent(payment.orderId, paymentStatusToOrderEvent(next));
     return updated;
+  }
+
+  async function syncFromProvider(payment: Payment): Promise<Payment> {
+    const providerPaymentId = requireProviderPaymentId(payment);
+    const status = await deps.provider.getPaymentStatus({ providerPaymentId });
+    return applyRemoteStatus(payment, status, "lenient");
   }
 
   return {
     async startPayment(orderId, returnUrl) {
       const existing = await deps.payments.listByOrder(orderId);
       if (!canStartPayment(existing)) {
-        throw new ConflictError("order already has a pending or succeeded payment", {
+        throw new ConflictError("order already has an open payment attempt", {
           orderId,
         });
       }
@@ -92,33 +105,34 @@ export function createPaymentServices(deps: {
         returnUrl,
         idempotencyKey,
       });
-      await deps.payments.save({
+      const payment = await deps.payments.save({
         id: created.paymentId,
         orderId,
         provider: deps.provider.name,
         providerPaymentId: created.paymentId,
         amountMinor: due.amountMinor,
         currency: "BYN",
-        status: "PENDING",
+        status: "CREATED",
         idempotencyKey,
       });
+      await deps.orders.applyEvent(orderId, paymentStatusToOrderEvent(payment.status));
       return created;
     },
 
     async getPaymentStatus(paymentId) {
-      const payment = await requirePayment(paymentId);
-      const providerPaymentId = requireProviderPaymentId(payment);
-      const status = await deps.provider.getPaymentStatus({ providerPaymentId });
-      try {
-        await applyRemoteStatus(payment, status);
-      } catch {
-        // Illegal transitions on a poll do not hide the provider's current status.
-      }
-      return status;
+      const updated = await syncFromProvider(await requirePayment(paymentId));
+      return updated.status;
+    },
+
+    async observeReturn(paymentId) {
+      return syncFromProvider(await requirePayment(paymentId));
     },
 
     async cancelPayment(paymentId) {
       const payment = await requirePayment(paymentId);
+      if (!canCancelPayment(payment)) {
+        throw new ConflictError("payment cannot be cancelled", { paymentId });
+      }
       const providerPaymentId = requireProviderPaymentId(payment);
       let status: NormalizedPaymentStatus;
       try {
@@ -127,12 +141,16 @@ export function createPaymentServices(deps: {
         if (error instanceof Error && error.message === "payment_not_found") {
           throw new NotFoundError("provider payment not found", { paymentId });
         }
-        if (error instanceof Error && error.message === "payment_not_pending") {
-          throw new ConflictError("payment is not pending", { paymentId });
+        if (
+          error instanceof Error &&
+          (error.message === "payment_not_pending" ||
+            error.message === "payment_not_cancellable")
+        ) {
+          throw new ConflictError("payment cannot be cancelled", { paymentId });
         }
         throw error;
       }
-      return applyRemoteStatus(payment, status);
+      return applyRemoteStatus(payment, status, "strict");
     },
 
     async refundPayment(paymentId, amountMinor) {
@@ -165,7 +183,7 @@ export function createPaymentServices(deps: {
         }
         throw error;
       }
-      return applyRemoteStatus(payment, status);
+      return applyRemoteStatus(payment, status, "strict");
     },
 
     async handleWebhook(rawBody, headers) {
@@ -192,7 +210,7 @@ export function createPaymentServices(deps: {
         });
       }
 
-      const updated = await applyRemoteStatus(payment, verified.status);
+      const updated = await applyRemoteStatus(payment, verified.status, "lenient");
       await deps.payments.saveEvent({
         id: verified.providerEventId,
         paymentId: payment.id,

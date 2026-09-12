@@ -164,6 +164,7 @@ webhook bodies.
 | GET    | `/api/v1/customers/:userId/profile`   | customer | Profile DTO (self or manager/admin)  |
 | GET    | `/api/v1/customers/:userId/addresses` | customer | Address DTOs (self or manager/admin) |
 | GET    | `/api/v1/customers/:userId/wishlist`  | customer | Wishlist DTO (self or manager/admin) |
+| GET    | `/api/v1/payments/:id`                | public   | Return landing; ignores `?status=`   |
 | POST   | `/api/v1/payments/webhooks`           | public   | Provider webhook (signature)         |
 
 New external endpoints are Route Handlers that reuse `withRoute` and a DTO.

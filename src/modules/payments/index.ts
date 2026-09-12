@@ -8,8 +8,11 @@
 
 export {
   applyProviderEvent,
+  canCancelPayment,
   canStartPayment,
+  canTransition,
   refundStatus,
+  PAYMENT_TRANSITIONS,
   type Payment,
   type PaymentAttempt,
   type PaymentEvent,
@@ -27,6 +30,7 @@ export {
   normalizePaymentStatus,
   paymentStatusToOrderEvent,
   type NormalizedPaymentStatus,
+  type PaymentOrderEventType,
 } from "./domain/status";
 export type {
   CreatePaymentInput,
