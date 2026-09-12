@@ -121,6 +121,12 @@ describe("product HTTP query", () => {
         async listInStockVariantIds() {
           return ["v1"];
         },
+        async listAvailabilityByVariantIds(variantIds) {
+          return variantIds.map((variantId) => ({
+            variantId,
+            available: variantId === "v1" ? 1 : 0,
+          }));
+        },
       },
     );
     expect(listed.data.map((row) => row.slug)).toEqual(["emonda"]);
@@ -131,6 +137,9 @@ describe("product HTTP query", () => {
       {
         async listInStockVariantIds() {
           return [];
+        },
+        async listAvailabilityByVariantIds(variantIds) {
+          return variantIds.map((variantId) => ({ variantId, available: 0 }));
         },
       },
     );
