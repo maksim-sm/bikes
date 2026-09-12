@@ -56,6 +56,7 @@ export interface PlaceOrderInput {
     postalCode: string;
   };
   deliveryMethodCode: string;
+  paymentMethodCode: string;
 }
 
 export type { OrderLine, PaymentStatus, FulfillmentStatus };

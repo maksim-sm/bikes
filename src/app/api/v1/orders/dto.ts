@@ -12,6 +12,7 @@ export interface OrderDto {
   totalMinor: number;
   deliveryMethodCode: string;
   deliveryMethodName: string;
+  paymentMethodCode: string;
   items: Array<{
     sku: string;
     productName: string;
@@ -34,6 +35,7 @@ export function toOrderDto(order: Order): OrderDto {
     totalMinor: order.totalMinor,
     deliveryMethodCode: order.deliveryMethodCode,
     deliveryMethodName: order.deliveryMethodName,
+    paymentMethodCode: order.paymentMethodCode,
     items: order.items.map((item) => ({
       sku: item.sku,
       productName: item.productName,

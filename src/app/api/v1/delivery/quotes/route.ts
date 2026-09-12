@@ -26,6 +26,8 @@ export const GET = withRoute("public", async (ctx) => {
         methodName: quote.methodName,
         costMinor: quote.costMinor,
         estimatedDays: quote.estimatedDays,
+        kind: quote.kind,
+        pickup: quote.pickup,
       })),
     },
   };

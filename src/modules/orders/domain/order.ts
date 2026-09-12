@@ -52,6 +52,7 @@ export interface Order {
   customerEmail: string;
   customerName: string;
   customerPhone: string;
+  paymentMethodCode: string;
   shipping: OrderShipping;
   items: OrderLine[];
 }

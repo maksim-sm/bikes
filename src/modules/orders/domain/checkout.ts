@@ -1,3 +1,22 @@
+export const CHECKOUT_PAYMENT_CODES = [
+  "cash_on_delivery",
+  "card_on_delivery",
+  "bank_transfer",
+] as const;
+
+export type CheckoutPaymentCode = (typeof CHECKOUT_PAYMENT_CODES)[number];
+
+export function isCheckoutPaymentCode(value: string): value is CheckoutPaymentCode {
+  return (CHECKOUT_PAYMENT_CODES as readonly string[]).includes(value);
+}
+
+export function assertCheckoutPayment(code: string): CheckoutPaymentCode {
+  if (!isCheckoutPaymentCode(code)) {
+    throw new Error("checkout_payment_invalid");
+  }
+  return code;
+}
+
 export interface CheckoutCustomer {
   customerEmail: string;
   customerName: string;

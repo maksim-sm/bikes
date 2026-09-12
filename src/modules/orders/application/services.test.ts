@@ -70,6 +70,7 @@ function placeInput(overrides: Partial<PlaceOrderInput> = {}): PlaceOrderInput {
     customerPhone: "+375291112233",
     destination,
     deliveryMethodCode: "minsk-courier",
+    paymentMethodCode: "cash_on_delivery",
     ...overrides,
   };
 }
@@ -186,6 +187,7 @@ describe("order services", () => {
     expect(order.totalMinor).toBe(4500);
     expect(order.deliveryMethodName).toBe("Курьер по Минску");
     expect(order.customerEmail).toBe("a@b.by");
+    expect(order.paymentMethodCode).toBe("cash_on_delivery");
     expect(order.items[0]?.productName).toBe("Émonda");
     expect(order.items[0]?.unitPriceMinor).toBe(1000);
     expect(order.paymentStatus).toBe("PENDING");
@@ -244,6 +246,9 @@ describe("order services", () => {
     ).rejects.toBeInstanceOf(ValidationError);
     await expect(
       services.checkout(placeInput({ customerName: "   " })),
+    ).rejects.toBeInstanceOf(ValidationError);
+    await expect(
+      services.checkout(placeInput({ paymentMethodCode: "forged-free" })),
     ).rejects.toBeInstanceOf(ValidationError);
   });
 

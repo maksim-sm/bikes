@@ -1,3 +1,12 @@
+export type DeliveryKind = "courier" | "pickup";
+
+export interface PickupPoint {
+  region: string;
+  city: string;
+  street: string;
+  postalCode: string;
+}
+
 export interface Destination {
   region: string;
   city: string;
@@ -19,12 +28,16 @@ export interface DeliveryQuote {
   methodName: string;
   costMinor: number;
   estimatedDays: number;
+  kind: DeliveryKind;
+  pickup: PickupPoint | null;
 }
 
 export interface DeliveryMethodRecord {
   code: string;
   name: string;
   isActive: boolean;
+  kind: DeliveryKind;
+  pickup: PickupPoint | null;
 }
 
 export function matchZone(
@@ -63,6 +76,8 @@ export function quoteMethod(
     methodName: method.name,
     costMinor: zone.costMinor,
     estimatedDays: zone.estimatedDays,
+    kind: method.kind,
+    pickup: method.kind === "pickup" ? method.pickup : null,
   };
 }
 

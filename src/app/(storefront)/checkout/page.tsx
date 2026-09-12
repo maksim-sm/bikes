@@ -55,6 +55,8 @@ export default async function CheckoutPage() {
               variantId: line.variantId,
               productName: line.productName ?? "",
               brandName: line.brandName ?? "",
+              frameSize: line.frameSize,
+              color: line.color,
               quantity: line.quantity,
               unitPriceMinor: line.unitPriceMinor,
               lineTotalMinor: line.lineTotalMinor,

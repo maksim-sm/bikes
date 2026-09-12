@@ -1,5 +1,5 @@
 import { t } from "@/lib/i18n";
-import { Cluster, Container } from "@/ui";
+import { Cluster, Container, TextLink } from "@/ui";
 import styles from "./site-footer.module.css";
 
 export function SiteFooter() {
@@ -12,7 +12,14 @@ export function SiteFooter() {
           <span className={styles.rights}>
             © {year} {t.site.name}. {t.footer.rights}.
           </span>
-          <span>{t.site.tagline}</span>
+          <Cluster space={4}>
+            <TextLink href="/legal/terms" subtle>
+              {t.footer.terms}
+            </TextLink>
+            <TextLink href="/legal/privacy" subtle>
+              {t.footer.privacy}
+            </TextLink>
+          </Cluster>
         </Cluster>
       </Container>
     </footer>

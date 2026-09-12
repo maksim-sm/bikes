@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getOrderServices } from "@/app/api/_lib/compose";
 import { formatPrice, t } from "@/lib/i18n";
-import { ButtonLink, Container, Stack } from "@/ui";
+import { ButtonLink, Card, Container, Stack } from "@/ui";
+import { paymentMethodLabel } from "../../payment-label";
 import styles from "../../checkout.module.css";
 
 export const dynamic = "force-dynamic";
@@ -32,23 +33,38 @@ export default async function CheckoutConfirmationPage({ params }: PageProps) {
           <p>
             {t.checkout.confirmationLead} <strong>{order.number}</strong>
           </p>
-          <ul className={styles.lines}>
-            {order.items.map((item) => (
-              <li key={`${item.sku}-${item.variantId}`}>
-                {item.brandName} {item.productName} × {item.quantity} —{" "}
-                {formatPrice(item.lineTotalMinor)}
-              </li>
-            ))}
-          </ul>
+          <Card filled>
+            <ul className={styles.lines}>
+              {order.items.map((item) => (
+                <li key={`${item.sku}-${item.variantId}`}>
+                  <span>
+                    {item.brandName} {item.productName} × {item.quantity}
+                  </span>
+                  <span>{formatPrice(item.lineTotalMinor)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className={styles.row}>
+              <span>{t.checkout.subtotal}</span>
+              <span>{formatPrice(order.subtotalMinor)}</span>
+            </p>
+            <p className={styles.row}>
+              <span>{t.checkout.delivery}</span>
+              <span>
+                {order.deliveryMethodName} — {formatPrice(order.deliveryCostMinor)}
+              </span>
+            </p>
+            <p className={styles.row}>
+              <span>{t.checkout.payment}</span>
+              <span>{paymentMethodLabel(order.paymentMethodCode)}</span>
+            </p>
+            <p className={styles.total}>
+              <span>{t.checkout.total}</span>
+              <span>{formatPrice(order.totalMinor)}</span>
+            </p>
+          </Card>
           <p>
-            {t.checkout.subtotal}: {formatPrice(order.subtotalMinor)}
-          </p>
-          <p>
-            {t.checkout.delivery}: {order.deliveryMethodName} —{" "}
-            {formatPrice(order.deliveryCostMinor)}
-          </p>
-          <p className={styles.total}>
-            {t.checkout.total}: {formatPrice(order.totalMinor)}
+            {order.shipping.street}, {order.shipping.city}, {order.shipping.postalCode}
           </p>
           <div>
             <ButtonLink href="/catalog" variant="secondary">

@@ -48,3 +48,17 @@ not write them into `order_items`.
 
 The checkout DTO includes the **server** totals. It does not echo a client
 total.
+
+## Storefront
+
+`/checkout` is a guest form. An account is not required. The page collects:
+
+- contact name, email, and phone;
+- a server-quoted delivery method (courier or pickup);
+- a delivery address, or the shop pickup point when self-collection is chosen;
+- a payment method (cash or card on receipt, or a bank transfer);
+- consent, with links to `/legal/terms` and `/legal/privacy`.
+
+Field errors stay on the control. Cart, stock, and delivery conflicts stay
+in a page-level alert. Preview totals are display-only; the placed total is
+still computed by `checkoutTotals`.

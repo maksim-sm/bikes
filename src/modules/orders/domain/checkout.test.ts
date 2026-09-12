@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertCheckoutCustomer,
   assertCheckoutDestination,
+  assertCheckoutPayment,
   checkoutTotals,
 } from "./checkout";
 
@@ -44,5 +45,10 @@ describe("checkout domain", () => {
       totalMinor: 702300,
     });
     expect(() => checkoutTotals([100], -1)).toThrow("checkout_delivery_cost_invalid");
+  });
+
+  it("accepts only known payment methods", () => {
+    expect(assertCheckoutPayment("cash_on_delivery")).toBe("cash_on_delivery");
+    expect(() => assertCheckoutPayment("forged-free")).toThrow("checkout_payment_invalid");
   });
 });

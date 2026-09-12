@@ -9,10 +9,12 @@ export {
   matchZone,
   nextShipmentStatus,
   quoteMethod,
+  type DeliveryKind,
   type DeliveryMethodRecord,
   type DeliveryQuote,
   type DeliveryZone,
   type Destination,
+  type PickupPoint,
   type ShipmentStatus,
 } from "./domain/quote";
 export type {

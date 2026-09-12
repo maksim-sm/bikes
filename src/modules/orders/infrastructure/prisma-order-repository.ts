@@ -47,6 +47,18 @@ function toLine(row: {
   };
 }
 
+function snapshotPaymentMethod(snapshot: unknown): string {
+  if (
+    snapshot !== null &&
+    typeof snapshot === "object" &&
+    "paymentMethodCode" in snapshot &&
+    typeof snapshot.paymentMethodCode === "string"
+  ) {
+    return snapshot.paymentMethodCode;
+  }
+  return "cash_on_delivery";
+}
+
 function snapshotOf(order: Order): Record<string, unknown> {
   return {
     number: order.number,
@@ -59,6 +71,7 @@ function snapshotOf(order: Order): Record<string, unknown> {
     customerEmail: order.customerEmail,
     customerName: order.customerName,
     customerPhone: order.customerPhone,
+    paymentMethodCode: order.paymentMethodCode,
     shipping: order.shipping,
     items: order.items,
   };
@@ -173,6 +186,7 @@ export function createPrismaOrderRepository(
         customerEmail: row.customerEmail,
         customerName: row.customerName,
         customerPhone: row.customerPhone,
+        paymentMethodCode: snapshotPaymentMethod(row.placedSnapshot),
         shipping: toShipping(row),
         items: row.items.map(toLine),
       };

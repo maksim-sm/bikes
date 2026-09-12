@@ -20,11 +20,15 @@ export {
   type PaymentStatus,
 } from "./domain/order";
 export {
+  CHECKOUT_PAYMENT_CODES,
   assertCheckoutCustomer,
   assertCheckoutDestination,
+  assertCheckoutPayment,
   checkoutTotals,
+  isCheckoutPaymentCode,
   type CheckoutCustomer,
   type CheckoutDestination,
+  type CheckoutPaymentCode,
 } from "./domain/checkout";
 export type {
   Clock,

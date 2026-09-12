@@ -28,6 +28,7 @@ const checkoutSchema = z.object({
   customerPhone: z.string(),
   destination: destinationSchema,
   deliveryMethodCode: z.string().min(1),
+  paymentMethodCode: z.string().min(1),
   cartId: z.string().optional(),
   totalMinor: z.number().optional(),
   subtotalMinor: z.number().optional(),
@@ -65,6 +66,7 @@ export const POST = withRoute("public", async (ctx) => {
     customerPhone: body.customerPhone,
     destination: body.destination,
     deliveryMethodCode: body.deliveryMethodCode,
+    paymentMethodCode: body.paymentMethodCode,
   });
 
   return { data: toOrderDto(order), status: 201 };
