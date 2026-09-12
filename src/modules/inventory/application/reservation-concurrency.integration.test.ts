@@ -189,6 +189,17 @@ describe("reservation concurrency against PostgreSQL", () => {
         },
         async applyEvent(_orderId, event) {
           outcomes.push(event.type);
+          if (
+            event.type === "failed" ||
+            event.type === "expired" ||
+            event.type === "cancelled"
+          ) {
+            try {
+              await inventory.cancel(hold.id);
+            } catch {
+              // already released
+            }
+          }
         },
       },
     });
@@ -204,8 +215,20 @@ describe("reservation concurrency against PostgreSQL", () => {
       }),
       { "x-mock-signature": "ok" },
     );
+    await payments.handleWebhook(
+      JSON.stringify({
+        paymentId: started.paymentId,
+        eventId: "evt-fail",
+        type: "failed",
+      }),
+      { "x-mock-signature": "ok" },
+    );
     expect(outcomes).toEqual(["created", "failed"]);
-    await inventory.cancel(hold.id);
+    try {
+      await inventory.cancel(hold.id);
+    } catch {
+      // already released by the failed payment
+    }
     const afterFailure = await inventory.getAvailability(variantId);
     assertSafe(afterFailure);
     expect(afterFailure).toEqual({ onHand: 1, reserved: 0, available: 1 });

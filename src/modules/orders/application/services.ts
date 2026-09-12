@@ -19,6 +19,9 @@ import {
 } from "../domain/checkout";
 import {
   formatOrderNumber,
+  paymentEventConfirmsHold,
+  paymentEventReleasesReservation,
+  paymentEventRequiresHold,
   projectFulfillmentStatus,
   projectPaymentStatus,
   transitionOrder,
@@ -33,6 +36,7 @@ import type {
   OrderCatalog,
   OrderDelivery,
   OrderInventory,
+  OrderPayments,
   OrderRepository,
   PlaceOrderInput,
 } from "./ports";
@@ -96,6 +100,7 @@ export function createOrderServices(deps: {
   inventory: OrderInventory;
   delivery: OrderDelivery;
   clock: Clock;
+  payments?: OrderPayments;
 }): OrderServices {
   async function load(id: string): Promise<Order> {
     const order = await deps.orders.findById(id);
@@ -235,7 +240,11 @@ export function createOrderServices(deps: {
         throw new ConflictError("order cannot be cancelled", { orderId: id });
       }
       await deps.inventory.cancelForOrder(order.id);
-      return deps.orders.save(order);
+      const saved = await deps.orders.save(order);
+      if (deps.payments) {
+        await deps.payments.cancelOpenForOrder(order.id);
+      }
+      return saved;
     },
 
     async completeOrder(id, principal) {
@@ -253,6 +262,28 @@ export function createOrderServices(deps: {
     async applyPaymentEvent(id, event) {
       const order = await load(id);
       const paymentStatus: PaymentStatus = projectPaymentStatus(event);
+      if (paymentEventReleasesReservation(event.type)) {
+        await deps.inventory.cancelForOrder(order.id);
+      }
+      if (paymentEventRequiresHold(event.type) && order.status === "PLACED") {
+        if (!(await deps.inventory.hasActiveForOrder(order.id))) {
+          try {
+            for (const line of order.items) {
+              await deps.inventory.reserveForOrder({
+                variantId: line.variantId,
+                quantity: line.quantity,
+                orderId: order.id,
+              });
+            }
+          } catch (error) {
+            await deps.inventory.cancelForOrder(order.id);
+            throw error;
+          }
+        }
+      }
+      if (paymentEventConfirmsHold(event.type)) {
+        await deps.inventory.confirmForOrder(order.id);
+      }
       return deps.orders.save({ ...order, paymentStatus });
     },
 

@@ -51,7 +51,9 @@ import {
   type WishlistRepository,
   type WishlistServices,
 } from "@/modules/identity";
+import { isAppError } from "@/lib/errors";
 import {
+  createCheckoutHoldReconciler,
   createMemoryOrderRepository,
   createOrderServices,
   createPrismaOrderRepository,
@@ -59,10 +61,11 @@ import {
   orderCatalogAdapter,
   orderDeliveryAdapter,
   orderInventoryAdapter,
+  type CheckoutHoldReconciler,
   type OrderRepository,
   type OrderServices,
 } from "@/modules/orders";
-import type { PaymentOrder, PaymentRepository } from "@/modules/payments";
+import type { PaymentRepository } from "@/modules/payments";
 import {
   createMemoryPaymentRepository,
   createPaymentServices,
@@ -125,13 +128,6 @@ export const emptyOrders: OrderRepository = {
 
 let paymentRepo = createMemoryPaymentRepository();
 let paymentProvider = new MockPaymentProvider();
-
-const emptyPaymentOrders: PaymentOrder = {
-  async amountDueMinor() {
-    return { amountMinor: 0, currency: "BYN" };
-  },
-  async applyEvent() {},
-};
 
 let catalogOverride: CatalogRepository | null = null;
 let catalogPromise: Promise<CatalogRepository> | null = null;
@@ -356,6 +352,9 @@ export async function getOrderServices(): Promise<OrderServices> {
     inventory: orderInventoryAdapter(await getInventoryServices()),
     delivery: orderDeliveryAdapter(getDeliveryServices()),
     clock,
+    payments: {
+      cancelOpenForOrder: (orderId) => getPaymentServices().cancelOpenForOrder(orderId),
+    },
   });
 }
 
@@ -532,6 +531,36 @@ export function getPaymentServices() {
   return createPaymentServices({
     payments: sharedPaymentRepository(),
     provider: sharedPaymentProvider(),
-    orders: emptyPaymentOrders,
+    clock: { now: () => new Date() },
+    orders: {
+      async amountDueMinor(orderId) {
+        try {
+          const order = await (await getOrderServices()).getPlacedOrder(orderId);
+          return { amountMinor: order.totalMinor, currency: "BYN" };
+        } catch (error) {
+          if (isAppError(error) && error.code === "not_found") {
+            return { amountMinor: 0, currency: "BYN" };
+          }
+          throw error;
+        }
+      },
+      async applyEvent(orderId, event) {
+        try {
+          await (await getOrderServices()).applyPaymentEvent(orderId, event);
+        } catch (error) {
+          if (isAppError(error) && error.code === "not_found") {
+            return;
+          }
+          throw error;
+        }
+      },
+    },
+  });
+}
+
+export async function getCheckoutHoldReconciler(): Promise<CheckoutHoldReconciler> {
+  return createCheckoutHoldReconciler({
+    inventory: await getInventoryServices(),
+    payments: getPaymentServices(),
   });
 }

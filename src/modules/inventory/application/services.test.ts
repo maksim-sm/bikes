@@ -147,6 +147,27 @@ describe("inventory services", () => {
     });
   });
 
+  it("releases an order hold only once if expire and cancel race", async () => {
+    const inventory = services(1);
+    await inventory.reserve({
+      variantId: "v1",
+      quantity: 1,
+      orderId: "o-race",
+      holdMs: -1,
+    });
+    expect(await inventory.expireDue()).toBe(1);
+    expect(await inventory.cancelForOrder("o-race")).toEqual([]);
+    expect(await inventory.getAvailability("v1")).toEqual({
+      onHand: 1,
+      reserved: 0,
+      available: 1,
+    });
+    expect((await inventory.listMovements("v1")).map((row) => row.type)).toEqual([
+      "RESERVE",
+      "EXPIRE",
+    ]);
+  });
+
   it("expires due holds and restores available", async () => {
     const inventory = services(1);
     await inventory.reserve({ variantId: "v1", quantity: 1, holdMs: -1 });

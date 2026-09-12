@@ -1,7 +1,8 @@
 # Payments
 
 Status: authoritative for the provider-neutral payment port. Companion:
-ADR-0005, ADR-0022, ADR-0023, `docs/architecture.md` §8, `docs/checkout.md`.
+ADR-0005, ADR-0022, ADR-0023, ADR-0024, `docs/architecture.md` §8,
+`docs/checkout.md`.
 
 `payments` owns attempts, the provider event log, and refunds. It does not
 write order rows. `orders` decides what a normalized event means for order
@@ -60,6 +61,16 @@ return polls.
 `AUTHORIZED` is a hold. `SUCCEEDED` is paid (captured). Partial refunds exist
 only when the provider reports them. A new attempt is allowed after
 `FAILED`, `EXPIRED`, `CANCELLED`, or `REFUNDED`.
+
+A `CREATED` / `PENDING` attempt times out after 15 minutes (`expiresAt`).
+`expireDue` and `observeReturn` apply `EXPIRED`. Abandoned checkouts (the
+inventory hold expired first) are closed by `expireOpenForOrders`.
+
+`FAILED`, `EXPIRED`, and `CANCELLED` tell `orders` to release ACTIVE
+reservations. `cancelForOrder` skips holds that are already released or
+expired, so a webhook replay plus a timeout plus `expireDue` still decrement
+`reserved` **once**. A later `startPayment` is a retry: `created` re-reserves
+if the order is still `PLACED` and has no ACTIVE hold.
 
 ## Replacing the provider
 

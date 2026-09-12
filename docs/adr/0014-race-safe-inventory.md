@@ -1,6 +1,6 @@
 # ADR-0014: Race-safe inventory ledger
 
-- Status: Accepted
+- Status: Accepted (amended by [ADR-0024](0024-payment-failure-releases-holds.md))
 - Date: 2026-09-11
 - Partially supersedes: ADR-0012 (stock **location** only)
 

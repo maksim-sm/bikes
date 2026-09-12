@@ -54,6 +54,7 @@ export interface PaymentProvider extends PaymentProviderRef {
 
 export interface PaymentRepository {
   listByOrder(orderId: string): Promise<PaymentAttempt[]>;
+  listExpiredOpen(now: Date): Promise<PaymentAttempt[]>;
   save(payment: PaymentAttempt): Promise<PaymentAttempt>;
   findById(id: string): Promise<PaymentAttempt | null>;
   findByProviderPaymentId(
@@ -62,6 +63,10 @@ export interface PaymentRepository {
   ): Promise<PaymentAttempt | null>;
   findEvent(provider: string, providerEventId: string): Promise<ProviderEvent | null>;
   saveEvent(event: ProviderEvent): Promise<ProviderEvent>;
+}
+
+export interface Clock {
+  now(): Date;
 }
 
 export interface PaymentOrder {

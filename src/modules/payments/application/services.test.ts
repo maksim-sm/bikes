@@ -30,6 +30,7 @@ function attempt(overrides: Partial<PaymentAttempt> = {}): PaymentAttempt {
     currency: "BYN",
     status: "CREATED",
     idempotencyKey: paymentAttemptIdempotencyKey("o1", 1),
+    expiresAt: new Date("2026-09-12T10:15:00.000Z"),
     ...overrides,
   };
 }

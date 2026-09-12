@@ -34,6 +34,12 @@ those keys.
    `CANCELLED`, and rethrow.
 4. Clear the cart only after every line is reserved.
 
+Unpaid holds last 15 minutes. Payment timeout, a failed webhook, an expired
+reservation (abandoned checkout), and order cancellation all release those
+holds **once**. `createCheckoutHoldReconciler` is the sweep. A retry
+(`startPayment` after `FAILED` / `EXPIRED` / `CANCELLED`) reserves again if
+the stock is still available.
+
 Local demo and tests use in-memory orders and inventory. Production uses
 Prisma. Demo catalogue variant ids are not Postgres UUIDs, so the demo must
 not write them into `order_items`.

@@ -133,6 +133,10 @@ function setup(options?: {
       }
       reserved.push(`${input.variantId}:${input.quantity}`);
     },
+    async hasActiveForOrder() {
+      return reserved.length > cancelled.length;
+    },
+    async confirmForOrder() {},
     async cancelForOrder(orderId) {
       cancelled.push(orderId);
     },
@@ -265,6 +269,18 @@ describe("order services", () => {
     await expect(services.checkout(placeInput())).rejects.toBeInstanceOf(ConflictError);
     expect(cancelled).toHaveLength(1);
     expect([...orders.values()][0]?.status).toBe("CANCELLED");
+  });
+
+  it("releases reserved units when payment fails and re-reserves on retry", async () => {
+    const { services, cancelled, reserved } = setup();
+    const placed = await services.placeOrder(placeInput());
+    await services.applyPaymentEvent(placed.id, { type: "failed" });
+    expect(cancelled).toEqual([placed.id]);
+    await services.applyPaymentEvent(placed.id, { type: "failed" });
+    expect(cancelled).toEqual([placed.id, placed.id]);
+    expect(reserved).toEqual(["v1:2"]);
+    await services.applyPaymentEvent(placed.id, { type: "created" });
+    expect(reserved).toEqual(["v1:2", "v1:2"]);
   });
 
   it("can cancel a paid order without changing payment status", async () => {

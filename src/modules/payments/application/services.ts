@@ -3,6 +3,9 @@ import {
   applyProviderEvent,
   canCancelPayment,
   canStartPayment,
+  isOpenUnpaidPayment,
+  isPaymentTimedOut,
+  PAYMENT_TIMEOUT_MS,
   refundStatus,
   type Payment,
 } from "../domain/payment";
@@ -11,7 +14,7 @@ import {
   paymentStatusToOrderEvent,
   type NormalizedPaymentStatus,
 } from "../domain/status";
-import type { PaymentOrder, PaymentProvider, PaymentRepository } from "./ports";
+import type { Clock, PaymentOrder, PaymentProvider, PaymentRepository } from "./ports";
 
 export interface PaymentServices {
   startPayment(
@@ -33,13 +36,18 @@ export interface PaymentServices {
     rawBody: string,
     headers: Readonly<Record<string, string>>,
   ): Promise<Payment>;
+  expireDue(): Promise<number>;
+  expireOpenForOrders(orderIds: readonly string[]): Promise<number>;
+  cancelOpenForOrder(orderId: string): Promise<void>;
 }
 
 export function createPaymentServices(deps: {
   payments: PaymentRepository;
   provider: PaymentProvider;
   orders: PaymentOrder;
+  clock?: Clock;
 }): PaymentServices {
+  const clock = deps.clock ?? { now: () => new Date() };
   async function requirePayment(paymentId: string): Promise<Payment> {
     const payment = await deps.payments.findById(paymentId);
     if (!payment) {
@@ -82,10 +90,18 @@ export function createPaymentServices(deps: {
     return updated;
   }
 
+  async function expireLocally(payment: Payment): Promise<Payment> {
+    if (!isPaymentTimedOut(payment, clock.now())) {
+      return payment;
+    }
+    return applyRemoteStatus(payment, "EXPIRED", "lenient");
+  }
+
   async function syncFromProvider(payment: Payment): Promise<Payment> {
     const providerPaymentId = requireProviderPaymentId(payment);
     const status = await deps.provider.getPaymentStatus({ providerPaymentId });
-    return applyRemoteStatus(payment, status, "lenient");
+    const synced = await applyRemoteStatus(payment, status, "lenient");
+    return expireLocally(synced);
   }
 
   return {
@@ -114,6 +130,7 @@ export function createPaymentServices(deps: {
         currency: "BYN",
         status: "CREATED",
         idempotencyKey,
+        expiresAt: new Date(clock.now().getTime() + PAYMENT_TIMEOUT_MS),
       });
       await deps.orders.applyEvent(orderId, paymentStatusToOrderEvent(payment.status));
       return created;
@@ -210,7 +227,9 @@ export function createPaymentServices(deps: {
         });
       }
 
-      const updated = await applyRemoteStatus(payment, verified.status, "lenient");
+      const updated = await expireLocally(
+        await applyRemoteStatus(payment, verified.status, "lenient"),
+      );
       await deps.payments.saveEvent({
         id: verified.providerEventId,
         paymentId: payment.id,
@@ -221,6 +240,56 @@ export function createPaymentServices(deps: {
         status: verified.status,
       });
       return updated;
+    },
+
+    async expireDue() {
+      const due = await deps.payments.listExpiredOpen(clock.now());
+      let expired = 0;
+      for (const payment of due) {
+        const updated = await applyRemoteStatus(payment, "EXPIRED", "lenient");
+        if (updated.status === "EXPIRED" && payment.status !== "EXPIRED") {
+          expired += 1;
+        }
+      }
+      return expired;
+    },
+
+    async expireOpenForOrders(orderIds) {
+      let expired = 0;
+      for (const orderId of new Set(orderIds)) {
+        const attempts = await deps.payments.listByOrder(orderId);
+        for (const payment of attempts) {
+          if (!isOpenUnpaidPayment(payment.status)) {
+            continue;
+          }
+          const updated = await applyRemoteStatus(payment, "EXPIRED", "lenient");
+          if (updated.status === "EXPIRED" && payment.status !== "EXPIRED") {
+            expired += 1;
+          }
+        }
+      }
+      return expired;
+    },
+
+    async cancelOpenForOrder(orderId) {
+      const attempts = await deps.payments.listByOrder(orderId);
+      for (const payment of attempts) {
+        if (!canCancelPayment(payment)) {
+          continue;
+        }
+        if (payment.providerPaymentId) {
+          try {
+            const status = await deps.provider.cancelPayment({
+              providerPaymentId: payment.providerPaymentId,
+            });
+            await applyRemoteStatus(payment, status, "lenient");
+            continue;
+          } catch {
+            // Provider reject still closes the local attempt so a retry can start.
+          }
+        }
+        await applyRemoteStatus(payment, "CANCELLED", "lenient");
+      }
     },
   };
 }

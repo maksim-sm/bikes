@@ -58,6 +58,26 @@ export interface PaymentAttempt {
   currency: "BYN";
   status: PaymentStatus;
   idempotencyKey: PaymentIdempotencyKey | null;
+  expiresAt: Date | null;
+}
+
+/** Same window as an unpaid inventory hold. */
+export const PAYMENT_TIMEOUT_MS = 15 * 60 * 1000;
+
+export function isOpenUnpaidPayment(status: PaymentStatus): boolean {
+  return status === "CREATED" || status === "PENDING";
+}
+
+export function paymentReleasesReservation(status: PaymentStatus): boolean {
+  return status === "FAILED" || status === "EXPIRED" || status === "CANCELLED";
+}
+
+export function isPaymentTimedOut(payment: PaymentAttempt, now: Date): boolean {
+  return (
+    isOpenUnpaidPayment(payment.status) &&
+    payment.expiresAt !== null &&
+    payment.expiresAt.getTime() <= now.getTime()
+  );
 }
 
 /** Persisted name of a payment attempt (Prisma `Payment`). */
