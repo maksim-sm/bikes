@@ -16,6 +16,9 @@ export function createMemoryUserAccounts(): UserAccountRepository {
     async findById(id) {
       return users.get(id) ?? null;
     },
+    async listStaff() {
+      return [...users.values()].filter((user) => user.role === "STAFF");
+    },
     async create(input) {
       const user: AuthUser = {
         id: input.id ?? crypto.randomUUID(),

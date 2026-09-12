@@ -11,7 +11,8 @@ export {
   type AuditRecord,
   type AuditWrite,
 } from "./domain/audit";
-export type { AuditRepository } from "./application/ports";
+export { sanitizeAuditValue } from "./domain/sanitize";
+export type { AuditListQuery, AuditRepository } from "./application/ports";
 export { createAuditServices, type AuditServices } from "./application/services";
 export { createMemoryAuditRepository } from "./infrastructure/memory-audit-repository";
 export { createPrismaAuditRepository } from "./infrastructure/prisma-audit-repository";

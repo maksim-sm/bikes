@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { ForbiddenError } from "@/lib/errors";
+import { staffPrincipal } from "@/modules/identity";
 import { createMemoryAuditRepository } from "../infrastructure/memory-audit-repository";
 import { createAuditServices } from "./services";
 
@@ -15,7 +17,7 @@ describe("audit services", () => {
         action: "catalog.product.publish",
         entityType: "product",
         entityId: "p-emonda",
-        after: { status: "PUBLISHED" },
+        after: { status: "PUBLISHED", password: "secret", cardNumber: "4111" },
       },
     );
     const rows = await audit.listByEntity("product", "p-emonda");
@@ -25,6 +27,15 @@ describe("audit services", () => {
       requestId: "req-1",
       action: "catalog.product.publish",
       entityId: "p-emonda",
+      after: { status: "PUBLISHED", password: "[redacted]", cardNumber: "[redacted]" },
     });
+    expect(
+      await services.listRecent(staffPrincipal("admin-1", ["admin"]), {
+        entityType: "product",
+      }),
+    ).toHaveLength(1);
+    await expect(
+      services.listRecent(staffPrincipal("inv", ["inventory"])),
+    ).rejects.toBeInstanceOf(ForbiddenError);
   });
 });

@@ -17,6 +17,13 @@ const fromPrismaRole: Record<
   ORDER_MANAGEMENT: "order_management",
 };
 
+const toPrismaRole: Record<StaffRole, keyof typeof fromPrismaRole> = {
+  admin: "ADMIN",
+  manager: "MANAGER",
+  inventory: "INVENTORY",
+  order_management: "ORDER_MANAGEMENT",
+};
+
 function toUser(row: {
   id: string;
   email: string;
@@ -53,6 +60,14 @@ export function createPrismaUserAccounts(): UserAccountRepository {
       });
       return row ? toUser(row) : null;
     },
+    async listStaff() {
+      const rows = await prisma.user.findMany({
+        where: { role: "STAFF" },
+        include: { staffRoles: true },
+        orderBy: { email: "asc" },
+      });
+      return rows.map(toUser);
+    },
     async create(input) {
       const row = await prisma.user.create({
         data: {
@@ -72,6 +87,10 @@ export function createPrismaUserAccounts(): UserAccountRepository {
           passwordHash: user.passwordHash,
           emailVerifiedAt: user.emailVerifiedAt,
           disabledAt: user.disabledAt,
+          staffRoles: {
+            deleteMany: {},
+            create: user.staffRoles.map((role) => ({ role: toPrismaRole[role] })),
+          },
         },
         include: { staffRoles: true },
       });

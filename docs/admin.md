@@ -17,6 +17,9 @@ excluded from indexing.
 | `/admin/deliveries`           | `manage_orders`      | Methods, assign, tracking, ship, deliver     |
 | `/admin/inventory`            | `manage_inventory`   | Stock list, search, recent movements         |
 | `/admin/inventory/:variantId` | `manage_inventory`   | Counters, receive / adjust / return, history |
+| `/admin/customers`            | `read_any_customer`  | Customer lookup (access is audited)          |
+| `/admin/staff`                | `admin`              | Staff titles                                 |
+| `/admin/audit`                | `admin`              | Historical audit log                         |
 | `/admin/forbidden`            | signed-in staff      | Wrong capability for the requested page      |
 
 Demo staff: `staff@bikes.local` / `StaffPass12` (admin title).
@@ -40,8 +43,11 @@ anonymous and the row is revoked.
 ## Audit context
 
 Admin writes pass `{ actorUserId, requestId }` into `audit.record` after
-the domain service succeeds. Rows live in `audit_logs`. The console does
-not yet list them.
+the domain service succeeds. `prepareAuditRecord` redacts secrets and
+payment-instrument fields. Admins list the ledger at `/admin/audit`
+(ADR-0031). Recorded families: product and price changes, stock
+adjustments, order complete/cancel, refunds (status + amount), customer
+access, delivery configuration, and staff role changes.
 
 Inventory receive, adjust, and return also persist the actor and reason on
 the movement row itself. Reservation-trigger movements (reserve, release,

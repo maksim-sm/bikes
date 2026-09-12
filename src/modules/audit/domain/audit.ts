@@ -1,3 +1,5 @@
+import { sanitizeAuditValue } from "./sanitize";
+
 export interface AuditContext {
   actorUserId: string | null;
   requestId: string;
@@ -36,8 +38,8 @@ export function prepareAuditRecord(
     action: write.action,
     entityType: write.entityType,
     entityId: write.entityId,
-    before: write.before ?? null,
-    after: write.after ?? null,
+    before: write.before === undefined ? null : sanitizeAuditValue(write.before),
+    after: write.after === undefined ? null : sanitizeAuditValue(write.after),
     createdAt,
   };
 }

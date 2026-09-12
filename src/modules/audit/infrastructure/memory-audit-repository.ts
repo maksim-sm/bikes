@@ -15,5 +15,22 @@ export function createMemoryAuditRepository(
         (row) => row.entityType === entityType && row.entityId === entityId,
       );
     },
+    async listRecent(query) {
+      return rows
+        .filter((row) => {
+          if (query.action && row.action !== query.action) {
+            return false;
+          }
+          if (query.entityType && row.entityType !== query.entityType) {
+            return false;
+          }
+          if (query.entityId && row.entityId !== query.entityId) {
+            return false;
+          }
+          return true;
+        })
+        .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+        .slice(0, query.limit ?? 80);
+    },
   };
 }

@@ -7,7 +7,7 @@ import {
 
 export type AdminNavCapability = Extract<
   Capability,
-  "manage_catalog" | "manage_orders" | "manage_inventory"
+  "manage_catalog" | "manage_orders" | "manage_inventory" | "read_any_customer" | "admin"
 >;
 
 export interface AdminNavItem {
@@ -15,9 +15,19 @@ export interface AdminNavItem {
     | "/admin/products"
     | "/admin/products/new"
     | "/admin/deliveries"
-    | "/admin/inventory";
+    | "/admin/inventory"
+    | "/admin/customers"
+    | "/admin/staff"
+    | "/admin/audit";
   capability: AdminNavCapability;
-  labelKey: "products" | "newProduct" | "deliveries" | "inventory";
+  labelKey:
+    | "products"
+    | "newProduct"
+    | "deliveries"
+    | "inventory"
+    | "customers"
+    | "staff"
+    | "audit";
 }
 
 export const ADMIN_NAV: readonly AdminNavItem[] = [
@@ -25,6 +35,9 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { href: "/admin/products/new", capability: "manage_catalog", labelKey: "newProduct" },
   { href: "/admin/deliveries", capability: "manage_orders", labelKey: "deliveries" },
   { href: "/admin/inventory", capability: "manage_inventory", labelKey: "inventory" },
+  { href: "/admin/customers", capability: "read_any_customer", labelKey: "customers" },
+  { href: "/admin/staff", capability: "admin", labelKey: "staff" },
+  { href: "/admin/audit", capability: "admin", labelKey: "audit" },
 ];
 
 export function canManageCatalog(principal: Principal): boolean {
@@ -37,6 +50,14 @@ export function canManageOrders(principal: Principal): boolean {
 
 export function canManageInventory(principal: Principal): boolean {
   return hasCapability(principal, "manage_inventory");
+}
+
+export function canReadAnyCustomer(principal: Principal): boolean {
+  return hasCapability(principal, "read_any_customer");
+}
+
+export function canViewAudit(principal: Principal): boolean {
+  return hasCapability(principal, "admin");
 }
 
 export function canAccessAdmin(principal: Principal): boolean {

@@ -7,6 +7,8 @@ import { usesSecureCookies } from "@/app/api/_lib/csrf";
 import { isAppError } from "@/lib/errors";
 import {
   SESSION_COOKIE_NAME,
+  hasCapability,
+  requireAdmin,
   requireCatalogRole,
   requireInventoryRole,
   requireOrderManagementRole,
@@ -21,6 +23,8 @@ export {
   canManageCatalog,
   canManageInventory,
   canManageOrders,
+  canReadAnyCustomer,
+  canViewAudit,
   visibleAdminNav,
 } from "./access";
 
@@ -83,6 +87,32 @@ export async function requireAdminInventory(): Promise<
   const principal = await currentPrincipal();
   try {
     return requireInventoryRole(principal);
+  } catch (error) {
+    redirectStaffAuth(error, principal);
+  }
+}
+
+export async function requireAdminTitle(): Promise<
+  Extract<Principal, { type: "staff" }>
+> {
+  const principal = await currentPrincipal();
+  try {
+    return requireAdmin(principal);
+  } catch (error) {
+    redirectStaffAuth(error, principal);
+  }
+}
+
+export async function requireAdminCustomerRead(): Promise<
+  Extract<Principal, { type: "staff" }>
+> {
+  const principal = await currentPrincipal();
+  try {
+    const staff = requireStaff(principal);
+    if (!hasCapability(staff, "read_any_customer")) {
+      redirect(adminHref("/admin/forbidden"));
+    }
+    return staff;
   } catch (error) {
     redirectStaffAuth(error, principal);
   }

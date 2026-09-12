@@ -308,6 +308,64 @@ describe("customer authentication", () => {
     ).rejects.toBeInstanceOf(ForbiddenError);
   });
 
+  it("lets an admin change staff titles and look up a customer without leaking secrets", async () => {
+    const users = createMemoryUserAccounts();
+    const passwords = createArgon2PasswordHasher({ cheap: true });
+    const adminUser = await users.create({
+      email: "admin@bikes.local",
+      passwordHash: await passwords.hash("correct-horse"),
+      role: "STAFF",
+    });
+    await users.save({
+      ...adminUser,
+      staffRoles: ["admin"],
+      emailVerifiedAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    const clerk = await users.create({
+      email: "stock@bikes.local",
+      passwordHash: await passwords.hash("correct-horse"),
+      role: "STAFF",
+    });
+    const customer = await users.create({
+      email: "buyer@example.by",
+      passwordHash: await passwords.hash("correct-horse"),
+      role: "CUSTOMER",
+    });
+    const auth = createAuthServices({
+      users,
+      sessions: createMemorySessions(),
+      tokens: createMemoryAuthTokens(),
+      passwords,
+      tokensDigest: createSha256TokenDigest(),
+      mailer: createCapturingMailer(),
+      limiter: createMemoryRateLimiter({ limit: 20, windowMs: 60_000 }),
+      log: createSecurityLog(),
+      clock: { now: () => new Date() },
+      dummyPasswordHash: await passwords.hash("timing-pad"),
+    });
+    const admin = staffPrincipal(adminUser.id, ["admin"]);
+    expect(await auth.listStaff(admin)).toEqual(
+      expect.arrayContaining([
+        { userId: adminUser.id, email: "admin@bikes.local", roles: ["admin"] },
+      ]),
+    );
+    expect(await auth.setStaffRoles(admin, clerk.id, ["inventory"])).toMatchObject({
+      userId: clerk.id,
+      before: [],
+      after: ["inventory"],
+    });
+    await expect(
+      auth.setStaffRoles(admin, adminUser.id, ["inventory"]),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(await auth.lookupCustomer(admin, "buyer@example.by")).toEqual({
+      userId: customer.id,
+      email: "buyer@example.by",
+    });
+    await expect(
+      auth.lookupCustomer(staffPrincipal("inv", ["inventory"]), "buyer@example.by"),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
   it("rejects short passwords", async () => {
     const auth = await createMemoryAuthServices();
     await expect(

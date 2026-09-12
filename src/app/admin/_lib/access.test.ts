@@ -29,6 +29,9 @@ describe("admin access", () => {
       "/admin/products/new",
       "/admin/deliveries",
       "/admin/inventory",
+      "/admin/customers",
+      "/admin/staff",
+      "/admin/audit",
     ]);
   });
 });
