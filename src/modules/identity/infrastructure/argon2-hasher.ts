@@ -17,6 +17,7 @@ export function createArgon2PasswordHasher(options?: {
         timeCost,
         outputLen: 32,
         parallelism: 1,
+        // Default algorithm in @node-rs/argon2 is Argon2id.
       });
     },
     verify(hashed, password) {
