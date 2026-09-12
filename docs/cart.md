@@ -17,6 +17,8 @@ A cart is owned by exactly one of:
 PostgreSQL enforces the XOR and “one cart per user”. Production uses the
 Prisma repository. Tests and the local demo catalogue use the in-memory
 repository so demo variant ids are not written into `product_variants`.
+The demo cart and auth singletons live on `globalThis` so Route Handlers
+and Server Components see the same memory in `next dev`.
 
 ## Storefront
 

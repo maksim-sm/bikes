@@ -141,6 +141,19 @@ let inventoryPromise: Promise<CatalogInventory> | null = null;
 let cartOverride: CartRepository | null = null;
 let cartRepo = createMemoryCartRepository();
 let cartPromise: Promise<CartRepository> | null = null;
+
+const composeGlobals = globalThis as unknown as {
+  bikesMemoryCart?: CartRepository;
+  bikesAuthPromise?: Promise<AuthServices>;
+};
+
+function sharedMemoryCart(): CartRepository {
+  if (process.env.VITEST === "true") {
+    return cartRepo;
+  }
+  composeGlobals.bikesMemoryCart ??= createMemoryCartRepository();
+  return composeGlobals.bikesMemoryCart;
+}
 const demoCatalog = createDemoCatalogRepository();
 const demoInventory = createDemoCatalogInventory();
 let orderRepo: OrderRepository = emptyOrders;
@@ -276,7 +289,7 @@ async function getCartRepository(): Promise<CartRepository> {
     return cartOverride;
   }
   if (process.env.VITEST === "true" || process.env.NODE_ENV !== "production") {
-    return cartRepo;
+    return sharedMemoryCart();
   }
   if (!cartPromise) {
     cartPromise = createPrismaCartRepository();
@@ -342,6 +355,8 @@ export function resetRepositories(): void {
   cartOverride = null;
   cartPromise = null;
   cartRepo = createMemoryCartRepository();
+  composeGlobals.bikesMemoryCart = cartRepo;
+  composeGlobals.bikesAuthPromise = undefined;
 }
 
 export function setInventoryServices(services: InventoryServices): void {
@@ -428,15 +443,19 @@ export async function getAuthServices(): Promise<AuthServices> {
   if (authOverride) {
     return authOverride;
   }
-  if (!authPromise) {
-    authPromise =
-      process.env.VITEST === "true"
-        ? createMemoryAuthServices()
-        : process.env.NODE_ENV !== "production"
-          ? createDemoAuthServices()
-          : import("@/modules/identity").then((mod) => mod.createPrismaAuthServices());
+  if (process.env.VITEST === "true") {
+    if (!authPromise) {
+      authPromise = createMemoryAuthServices();
+    }
+    return authPromise;
   }
-  return authPromise;
+  if (!composeGlobals.bikesAuthPromise) {
+    composeGlobals.bikesAuthPromise =
+      process.env.NODE_ENV !== "production"
+        ? createDemoAuthServices()
+        : import("@/modules/identity").then((mod) => mod.createPrismaAuthServices());
+  }
+  return composeGlobals.bikesAuthPromise;
 }
 
 export function getPaymentServices() {

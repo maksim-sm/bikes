@@ -155,6 +155,9 @@ webhook bodies.
 | GET    | `/api/v1/categories`                  | public   | Category tree for discovery          |
 | GET    | `/api/v1/brands`                      | public   | Brands for discovery                 |
 | GET    | `/api/v1/cart`                        | public   | Cart view; server-side totals        |
+| POST   | `/api/v1/cart/items`                  | public   | Add a line; may set guest cookie     |
+| PATCH  | `/api/v1/cart/items`                  | public   | Quantity or sibling variant          |
+| DELETE | `/api/v1/cart/items`                  | public   | Remove a line                        |
 | GET    | `/api/v1/orders/:id`                  | customer | Order DTO (ownership in service)     |
 | GET    | `/api/v1/customers/:userId/profile`   | customer | Profile DTO (self or manager/admin)  |
 | GET    | `/api/v1/customers/:userId/addresses` | customer | Address DTOs (self or manager/admin) |
