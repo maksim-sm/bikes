@@ -101,6 +101,9 @@ function setup(options?: {
     async listByUser(userId) {
       return [...orders.values()].filter((order) => order.userId === userId);
     },
+    async listForStaff() {
+      return [...orders.values()];
+    },
   };
   const cart: Cart = {
     id: "c1",
@@ -325,5 +328,25 @@ describe("order services", () => {
     await expect(
       services.cancelOrder(placed.id, customerPrincipal("user-1")),
     ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("lets order staff list, filter, complete, and annotate an order", async () => {
+    const { services } = setup();
+    const placed = await services.placeOrder(placeInput());
+    const ops = staffPrincipal("ops", ["order_management"]);
+    await expect(
+      services.listStaffOrders(customerPrincipal("user-1")),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    const listed = await services.listStaffOrders(ops);
+    expect(listed.map((order) => order.id)).toEqual([placed.id]);
+
+    const noted = await services.updateStaffNotes(placed.id, ops, "  позвонить  ");
+    expect(noted.staffNotes).toBe("позвонить");
+
+    const completed = await services.completeOrder(placed.id, ops);
+    expect(completed.status).toBe("COMPLETED");
+    await expect(services.completeOrder(placed.id, ops)).rejects.toBeInstanceOf(
+      ConflictError,
+    );
   });
 });

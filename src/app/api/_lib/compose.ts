@@ -62,9 +62,12 @@ import {
 } from "@/modules/identity";
 import {
   demoCustomerAddress,
-  demoCustomerOrder,
   demoCustomerProfile,
   demoCustomerShipment,
+  demoOrders,
+  demoSucceededPayment,
+  DEMO_ORDER_ID,
+  DEMO_PROVIDER_PAYMENT_ID,
 } from "./demo-account";
 import { isAppError } from "@/lib/errors";
 import {
@@ -148,6 +151,9 @@ export const emptyOrders: OrderRepository = {
     return null;
   },
   async listByUser() {
+    return [];
+  },
+  async listForStaff() {
     return [];
   },
 };
@@ -388,7 +394,7 @@ export function getOrderRepository(): OrderRepository {
     return orderRepo;
   }
   if (process.env.NODE_ENV !== "production") {
-    composeGlobals.bikesMemoryOrders ??= createMemoryOrderRepository([demoCustomerOrder]);
+    composeGlobals.bikesMemoryOrders ??= createMemoryOrderRepository(demoOrders);
     return composeGlobals.bikesMemoryOrders;
   }
   return orderRepo;
@@ -654,11 +660,22 @@ export async function getAuthServices(): Promise<AuthServices> {
   return composeGlobals.bikesAuthPromise;
 }
 
+function seedDemoProvider(provider: MockPaymentProvider): void {
+  provider.seedCharge({
+    paymentId: DEMO_PROVIDER_PAYMENT_ID,
+    orderId: DEMO_ORDER_ID,
+    amountMinor: demoSucceededPayment.amountMinor,
+    status: "SUCCEEDED",
+  });
+}
+
 function sharedPaymentRepository(): PaymentRepository {
   if (process.env.VITEST === "true") {
     return paymentRepo;
   }
-  composeGlobals.bikesMemoryPayments ??= createMemoryPaymentRepository();
+  composeGlobals.bikesMemoryPayments ??= createMemoryPaymentRepository([
+    demoSucceededPayment,
+  ]);
   return composeGlobals.bikesMemoryPayments;
 }
 
@@ -666,7 +683,11 @@ function sharedPaymentProvider(): MockPaymentProvider {
   if (process.env.VITEST === "true") {
     return paymentProvider;
   }
-  composeGlobals.bikesPaymentProvider ??= new MockPaymentProvider();
+  if (!composeGlobals.bikesPaymentProvider) {
+    const provider = new MockPaymentProvider();
+    seedDemoProvider(provider);
+    composeGlobals.bikesPaymentProvider = provider;
+  }
   return composeGlobals.bikesPaymentProvider;
 }
 

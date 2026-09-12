@@ -7,6 +7,7 @@ import { fromDateTimeLocal } from "../../_lib/datetime";
 import { parsePriceBynToMinor } from "../../_lib/money";
 import { recordAdminAudit } from "../../_lib/audit";
 import { requireAdminOrderManagement } from "../../_lib/staff";
+import { syncOrderFulfillment } from "../../_lib/sync-fulfillment";
 
 export type DeliveryFormState = { ok: boolean; message: string } | null;
 
@@ -56,6 +57,7 @@ export async function assignShipmentAction(
       methodCode,
       costMinor,
     });
+    await syncOrderFulfillment(principal, orderId, "assigned");
     await recordAdminAudit(principal, {
       action: "delivery.shipment.assign",
       entityType: "shipment",
@@ -117,6 +119,7 @@ export async function markShippedAction(
       deliveredAt: shipped.deliveredAt,
       notes: String(formData.get("notes") ?? ""),
     });
+    await syncOrderFulfillment(principal, orderId, "shipped");
     await recordAdminAudit(principal, {
       action: "delivery.shipment.ship",
       entityType: "shipment",
@@ -140,6 +143,7 @@ export async function markDeliveredAction(
   }
   try {
     const delivered = await getDeliveryServices().markDelivered(principal, orderId);
+    await syncOrderFulfillment(principal, orderId, "delivered");
     await recordAdminAudit(principal, {
       action: "delivery.shipment.deliver",
       entityType: "shipment",

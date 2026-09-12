@@ -26,6 +26,8 @@ import {
   projectFulfillmentStatus,
   projectPaymentStatus,
   transitionOrder,
+  normalizeStaffNotes,
+  type AdminOrderQuery,
   type FulfillmentStatus,
   type Order,
   type OrderLine,
@@ -47,9 +49,11 @@ export interface OrderServices {
   placeOrder(input: PlaceOrderInput): Promise<Order>;
   getOrder(id: string, principal: Principal): Promise<Order>;
   listOrders(principal: Principal): Promise<Order[]>;
+  listStaffOrders(principal: Principal, query?: AdminOrderQuery): Promise<Order[]>;
   getPlacedOrder(id: string): Promise<Order>;
   cancelOrder(id: string, principal: Principal): Promise<Order>;
   completeOrder(id: string, principal: Principal): Promise<Order>;
+  updateStaffNotes(id: string, principal: Principal, notes: string): Promise<Order>;
   applyPaymentEvent(
     id: string,
     event: {
@@ -190,6 +194,7 @@ export function createOrderServices(deps: {
       customerName: customer.customerName,
       customerPhone: customer.customerPhone,
       paymentMethodCode,
+      staffNotes: null,
       shipping: {
         recipientName: destination.recipientName,
         phone: destination.phone,
@@ -235,6 +240,11 @@ export function createOrderServices(deps: {
       return deps.orders.listByUser(customer.userId);
     },
 
+    async listStaffOrders(principal, query = {}) {
+      requireOrderManagementRole(principal);
+      return deps.orders.listForStaff(query);
+    },
+
     async getPlacedOrder(id) {
       return load(id);
     },
@@ -264,6 +274,17 @@ export function createOrderServices(deps: {
         throw new ConflictError("order cannot be completed", { orderId: id });
       }
       await deps.inventory.commitForOrder(order.id);
+      return deps.orders.save(order);
+    },
+
+    async updateStaffNotes(id, principal, notes) {
+      requireOrderManagementRole(principal);
+      const order = await load(id);
+      try {
+        order.staffNotes = normalizeStaffNotes(notes);
+      } catch {
+        throw new ValidationError("staff notes are too long");
+      }
       return deps.orders.save(order);
     },
 

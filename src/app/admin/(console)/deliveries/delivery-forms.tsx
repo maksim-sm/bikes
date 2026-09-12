@@ -28,7 +28,13 @@ export interface TrackingFormValues {
   notes: string;
 }
 
-export function AssignShipmentForm({ methods }: { methods: DeliveryMethodOption[] }) {
+export function AssignShipmentForm({
+  methods,
+  orderId,
+}: {
+  methods: DeliveryMethodOption[];
+  orderId?: string;
+}) {
   const [state, action, pending] = useActionState<DeliveryFormState, FormData>(
     assignShipmentAction,
     null,
@@ -38,7 +44,11 @@ export function AssignShipmentForm({ methods }: { methods: DeliveryMethodOption[
     <form action={action} className={styles.form}>
       <h2>{t.admin.assignTitle}</h2>
       <p className={styles.hint}>{t.admin.assignLead}</p>
-      <TextField name="orderId" label={t.admin.orderId} required autoComplete="off" />
+      {orderId ? (
+        <input type="hidden" name="orderId" value={orderId} />
+      ) : (
+        <TextField name="orderId" label={t.admin.orderId} required autoComplete="off" />
+      )}
       <SelectField name="methodCode" label={t.fields.deliveryMethod} required>
         {methods.map((method) => (
           <option key={method.code} value={method.code}>
@@ -117,7 +127,7 @@ export function UpdateTrackingForm({ values }: { values: TrackingFormValues }) {
   );
 }
 
-export function MarkShippedForm() {
+export function MarkShippedForm({ orderId }: { orderId?: string }) {
   const [state, action, pending] = useActionState<DeliveryFormState, FormData>(
     markShippedAction,
     null,
@@ -126,7 +136,11 @@ export function MarkShippedForm() {
   return (
     <form action={action} className={styles.form}>
       <h2>{t.admin.shipTitle}</h2>
-      <TextField name="orderId" label={t.admin.orderId} required autoComplete="off" />
+      {orderId ? (
+        <input type="hidden" name="orderId" value={orderId} />
+      ) : (
+        <TextField name="orderId" label={t.admin.orderId} required autoComplete="off" />
+      )}
       <TextField
         name="trackingNumber"
         label={t.admin.trackingNumber}
@@ -160,7 +174,7 @@ export function MarkShippedForm() {
   );
 }
 
-export function MarkDeliveredForm() {
+export function MarkDeliveredForm({ orderId }: { orderId?: string }) {
   const [state, action, pending] = useActionState<DeliveryFormState, FormData>(
     markDeliveredAction,
     null,
@@ -169,7 +183,11 @@ export function MarkDeliveredForm() {
   return (
     <form action={action} className={styles.form}>
       <h2>{t.admin.deliverTitle}</h2>
-      <TextField name="orderId" label={t.admin.orderId} required autoComplete="off" />
+      {orderId ? (
+        <input type="hidden" name="orderId" value={orderId} />
+      ) : (
+        <TextField name="orderId" label={t.admin.orderId} required autoComplete="off" />
+      )}
       <Button type="submit" variant="primary" disabled={pending}>
         {t.admin.deliverSubmit}
       </Button>

@@ -14,6 +14,8 @@ excluded from indexing.
 | `/admin/products`     | `manage_catalog`     | Catalogue list                                |
 | `/admin/products/new` | `manage_catalog`     | Create a bicycle                              |
 | `/admin/products/:id` | `manage_catalog`     | Edit, publish, unpublish                      |
+| `/admin/orders`       | `manage_orders`      | Search, filters, status, payment, notes       |
+| `/admin/orders/:id`   | `manage_orders`      | Contact, payments, refund, delivery, notes    |
 | `/admin/deliveries`   | `manage_orders`      | Methods, assign, tracking, ship, deliver      |
 | `/admin/inventory`    | `manage_inventory`   | Warehouse entry (operations stay in services) |
 | `/admin/forbidden`    | signed-in staff      | Wrong capability for the requested page       |
@@ -27,7 +29,13 @@ Guards run on the server in the console layout and on each page. The same
 catalog, delivery, and inventory services. A path is not a permission.
 
 Navigation is filtered by `ADMIN_NAV` in `src/app/admin/_lib/access.ts`.
-Inventory-only staff see only Склад. Order clerks see only Доставка.
+Inventory-only staff see only Склад. Order clerks see Заказы and Доставка
+and land on `/admin/orders`.
+
+`listStaffOrders` searches number, email, name, phone, SKU, and notes, then
+optional status filters. Completing or cancelling a `PLACED` order, saving
+`staffNotes`, and starting a refund all go through module services. Refunds
+are allowed only on `SUCCEEDED` or `PARTIALLY_REFUNDED` attempts.
 
 ## Session timeout
 

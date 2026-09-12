@@ -71,8 +71,71 @@ export interface Order {
   customerName: string;
   customerPhone: string;
   paymentMethodCode: string;
+  staffNotes: string | null;
   shipping: OrderShipping;
   items: OrderLine[];
+}
+
+export const STAFF_NOTES_MAX = 2000;
+
+export interface AdminOrderQuery {
+  q?: string;
+  status?: OrderStatus;
+  paymentStatus?: PaymentStatus;
+  fulfillmentStatus?: FulfillmentStatus;
+}
+
+export function normalizeStaffNotes(value: string): string | null {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+  if (trimmed.length > STAFF_NOTES_MAX) {
+    throw new Error("staff_notes_too_long");
+  }
+  return trimmed;
+}
+
+export function orderMatchesAdminQuery(order: Order, query: AdminOrderQuery): boolean {
+  if (query.status && order.status !== query.status) {
+    return false;
+  }
+  if (query.paymentStatus && order.paymentStatus !== query.paymentStatus) {
+    return false;
+  }
+  if (query.fulfillmentStatus && order.fulfillmentStatus !== query.fulfillmentStatus) {
+    return false;
+  }
+  const raw = query.q?.trim() ?? "";
+  if (raw.length === 0) {
+    return true;
+  }
+  const needle = raw.toLowerCase();
+  const digits = raw.replace(/\D/g, "");
+  const haystack = [
+    order.id,
+    order.number,
+    order.customerEmail,
+    order.customerName,
+    order.customerPhone,
+    order.staffNotes ?? "",
+    order.shipping.phone,
+    order.shipping.recipientName,
+    ...order.items.map((item) => item.sku),
+  ]
+    .join(" ")
+    .toLowerCase();
+  if (haystack.includes(needle)) {
+    return true;
+  }
+  if (digits.length >= 6) {
+    const phoneHaystack = `${order.customerPhone}${order.shipping.phone}`.replace(
+      /\D/g,
+      "",
+    );
+    return phoneHaystack.includes(digits);
+  }
+  return false;
 }
 
 export function formatOrderNumber(placedAt: Date, sequence: number): string {

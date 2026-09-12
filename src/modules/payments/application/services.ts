@@ -1,4 +1,5 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
+import { requireOrderManagementRole, type Principal } from "@/modules/identity";
 import {
   applyProviderEvent,
   canCancelPayment,
@@ -32,6 +33,12 @@ export interface PaymentServices {
   observeReturn(paymentId: string): Promise<Payment>;
   cancelPayment(paymentId: string): Promise<Payment>;
   refundPayment(paymentId: string, amountMinor: number): Promise<Payment>;
+  listPaymentsForOrder(principal: Principal, orderId: string): Promise<Payment[]>;
+  refundAsStaff(
+    principal: Principal,
+    paymentId: string,
+    amountMinor: number,
+  ): Promise<Payment>;
   handleWebhook(
     rawBody: string,
     headers: Readonly<Record<string, string>>,
@@ -168,6 +175,16 @@ export function createPaymentServices(deps: {
         throw error;
       }
       return applyRemoteStatus(payment, status, "strict");
+    },
+
+    async listPaymentsForOrder(principal, orderId) {
+      requireOrderManagementRole(principal);
+      return deps.payments.listByOrder(orderId);
+    },
+
+    async refundAsStaff(principal, paymentId, amountMinor) {
+      requireOrderManagementRole(principal);
+      return this.refundPayment(paymentId, amountMinor);
     },
 
     async refundPayment(paymentId, amountMinor) {

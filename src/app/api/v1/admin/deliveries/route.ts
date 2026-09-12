@@ -3,6 +3,7 @@ import { ValidationError } from "@/lib/errors";
 import { parseFilters, parseWithSchema, searchParamsObject } from "@/lib/http";
 import { withRoute } from "@/app/api/_lib/route";
 import { getAuditServices, getDeliveryServices } from "@/app/api/_lib/compose";
+import { syncOrderFulfillment } from "@/app/admin/_lib/sync-fulfillment";
 import { actorUserId } from "@/modules/identity";
 import { toShipmentDto } from "./dto";
 
@@ -30,6 +31,7 @@ export const GET = withRoute("order_management", async (ctx) => {
 export const POST = withRoute("order_management", async (ctx) => {
   const body = parseWithSchema(assignSchema, await ctx.request.json());
   const shipment = await getDeliveryServices().assignShipment(ctx.principal, body);
+  await syncOrderFulfillment(ctx.principal, body.orderId, "assigned");
   await getAuditServices().record(
     { actorUserId: actorUserId(ctx.principal), requestId: ctx.requestId },
     {

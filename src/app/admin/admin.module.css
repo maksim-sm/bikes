@@ -2,6 +2,23 @@
   padding-block: var(--space-6) var(--space-7);
 }
 
+.filters {
+  display: grid;
+  gap: var(--space-4);
+  margin-block: var(--space-5);
+}
+
+@media (min-width: 900px) {
+  .filters {
+    grid-template-columns: minmax(12rem, 2fr) repeat(3, minmax(8rem, 1fr)) auto;
+    align-items: end;
+  }
+}
+
+.section {
+  margin-block: var(--space-6);
+}
+
 .shell {
   padding-block: var(--space-6) var(--space-7);
   min-height: 100vh;

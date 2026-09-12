@@ -1,6 +1,12 @@
 import type { Cart } from "@/modules/cart";
 import type { Product } from "@/modules/catalog";
-import type { FulfillmentStatus, Order, OrderLine, PaymentStatus } from "../domain/order";
+import type {
+  AdminOrderQuery,
+  FulfillmentStatus,
+  Order,
+  OrderLine,
+  PaymentStatus,
+} from "../domain/order";
 
 export interface Clock {
   now(): Date;
@@ -11,6 +17,7 @@ export interface OrderRepository {
   save(order: Order): Promise<Order>;
   findById(id: string): Promise<Order | null>;
   listByUser(userId: string): Promise<Order[]>;
+  listForStaff(query: AdminOrderQuery): Promise<Order[]>;
 }
 
 export interface OrderCart {
@@ -67,4 +74,4 @@ export interface PlaceOrderInput {
   paymentMethodCode: string;
 }
 
-export type { OrderLine, PaymentStatus, FulfillmentStatus };
+export type { AdminOrderQuery, OrderLine, PaymentStatus, FulfillmentStatus };

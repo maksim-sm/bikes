@@ -66,6 +66,10 @@ A `CREATED` / `PENDING` attempt times out after 15 minutes (`expiresAt`).
 `expireDue` and `observeReturn` apply `EXPIRED`. Abandoned checkouts (the
 inventory hold expired first) are closed by `expireOpenForOrders`.
 
+Staff start refunds from `/admin/orders/:id` via `refundAsStaff`, which
+requires `manage_orders` and then calls `refundPayment`. The console shows
+every attempt on the order. There is no public refund HTTP route.
+
 `FAILED`, `EXPIRED`, and `CANCELLED` tell `orders` to release ACTIVE
 reservations. `cancelForOrder` skips holds that are already released or
 expired, so a webhook replay plus a timeout plus `expireDue` still decrement

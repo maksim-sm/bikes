@@ -5,8 +5,12 @@ import {
   type ProviderEvent,
 } from "../domain/payment";
 
-export function createMemoryPaymentRepository(): PaymentRepository {
-  const payments = new Map<string, PaymentAttempt>();
+export function createMemoryPaymentRepository(
+  seed: readonly PaymentAttempt[] = [],
+): PaymentRepository {
+  const payments = new Map<string, PaymentAttempt>(
+    seed.map((payment) => [payment.id, payment]),
+  );
   const events = new Map<string, ProviderEvent>();
   return {
     async listByOrder(orderId) {

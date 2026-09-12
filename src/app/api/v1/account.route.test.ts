@@ -96,6 +96,7 @@ describe("customer account HTTP", () => {
       customerName: "Иван",
       customerPhone: "+375291112233",
       paymentMethodCode: "cash_on_delivery",
+      staffNotes: null,
       shipping: {
         recipientName: "Иван",
         phone: "+375291112233",

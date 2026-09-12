@@ -530,9 +530,10 @@ model Order {
   deliveryMethodCode String @map("delivery_method_code") @db.VarChar(40)
   deliveryMethodName String @map("delivery_method_name") @db.VarChar(160)
 
-  customerEmail String @map("customer_email") @db.VarChar(320)
-  customerName  String @map("customer_name") @db.VarChar(160)
-  customerPhone String @map("customer_phone") @db.VarChar(32)
+  customerEmail String  @map("customer_email") @db.VarChar(320)
+  customerName  String  @map("customer_name") @db.VarChar(160)
+  customerPhone String  @map("customer_phone") @db.VarChar(32)
+  staffNotes    String? @map("staff_notes") @db.Text
 
   shippingRecipientName String @map("shipping_recipient_name") @db.VarChar(160)
   shippingPhone         String @map("shipping_phone") @db.VarChar(32)
