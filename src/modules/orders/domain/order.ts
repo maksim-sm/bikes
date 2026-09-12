@@ -1,11 +1,29 @@
 export type OrderStatus = "PLACED" | "CANCELLED" | "COMPLETED";
 export type PaymentStatus =
+  | "CREATED"
   | "PENDING"
+  | "AUTHORIZED"
   | "SUCCEEDED"
   | "FAILED"
+  | "EXPIRED"
   | "CANCELLED"
+  | "REFUND_PENDING"
   | "REFUNDED"
   | "PARTIALLY_REFUNDED";
+
+export type PaymentProjectionEvent = {
+  type:
+    | "created"
+    | "pending"
+    | "authorized"
+    | "succeeded"
+    | "failed"
+    | "expired"
+    | "cancelled"
+    | "refund_pending"
+    | "refunded"
+    | "partially_refunded";
+};
 export type FulfillmentStatus =
   | "UNFULFILLED"
   | "ASSIGNED"
@@ -72,22 +90,29 @@ export function transitionOrder(
   return action === "cancel" ? "CANCELLED" : "COMPLETED";
 }
 
-export function projectPaymentStatus(event: {
-  type: "succeeded" | "failed" | "cancelled" | "refunded" | "partially_refunded";
-}): PaymentStatus {
-  if (event.type === "succeeded") {
-    return "SUCCEEDED";
+export function projectPaymentStatus(event: PaymentProjectionEvent): PaymentStatus {
+  switch (event.type) {
+    case "created":
+      return "CREATED";
+    case "pending":
+      return "PENDING";
+    case "authorized":
+      return "AUTHORIZED";
+    case "succeeded":
+      return "SUCCEEDED";
+    case "failed":
+      return "FAILED";
+    case "expired":
+      return "EXPIRED";
+    case "cancelled":
+      return "CANCELLED";
+    case "refund_pending":
+      return "REFUND_PENDING";
+    case "refunded":
+      return "REFUNDED";
+    case "partially_refunded":
+      return "PARTIALLY_REFUNDED";
   }
-  if (event.type === "failed") {
-    return "FAILED";
-  }
-  if (event.type === "cancelled") {
-    return "CANCELLED";
-  }
-  if (event.type === "refunded") {
-    return "REFUNDED";
-  }
-  return "PARTIALLY_REFUNDED";
 }
 
 export function projectFulfillmentStatus(event: {

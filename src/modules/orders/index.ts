@@ -17,6 +17,7 @@ export {
   type OrderLine,
   type OrderShipping,
   type OrderStatus,
+  type PaymentProjectionEvent,
   type PaymentStatus,
 } from "./domain/order";
 export {

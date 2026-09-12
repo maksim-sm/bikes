@@ -1,6 +1,6 @@
 # ADR-0013: Independent order, payment, and fulfillment statuses
 
-- Status: Accepted
+- Status: Accepted (amended by [ADR-0023](0023-server-authoritative-payment-state.md))
 - Date: 2026-09-11
 
 ## Context

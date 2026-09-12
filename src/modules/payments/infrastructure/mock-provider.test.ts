@@ -15,7 +15,7 @@ describe("MockPaymentProvider", () => {
     const retry = await provider.createPayment(input);
     expect(retry.paymentId).toBe(first.paymentId);
     expect(await provider.getPaymentStatus({ providerPaymentId: first.paymentId })).toBe(
-      "PENDING",
+      "CREATED",
     );
   });
 

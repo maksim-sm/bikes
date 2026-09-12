@@ -204,7 +204,7 @@ describe("reservation concurrency against PostgreSQL", () => {
       }),
       { "x-mock-signature": "ok" },
     );
-    expect(outcomes).toEqual(["failed"]);
+    expect(outcomes).toEqual(["created", "failed"]);
     await inventory.cancel(hold.id);
     const afterFailure = await inventory.getAvailability(variantId);
     assertSafe(afterFailure);
@@ -255,7 +255,7 @@ describe("reservation concurrency against PostgreSQL", () => {
       }),
       { "x-mock-signature": "ok" },
     );
-    expect(outcomes).toEqual(["succeeded"]);
+    expect(outcomes).toEqual(["created", "succeeded"]);
     await inventory.commit(hold.id);
     const sold = await inventory.getAvailability(variantId);
     assertSafe(sold);

@@ -305,9 +305,10 @@ Constraints:
 - Provider-specific types, SDKs, and field names stay inside
   `modules/payments/infrastructure/`. Nothing outside `payments` may name a
   provider.
-- Payment state is authoritative only after webhook verification. A user
-  returning to the success URL is a hint, not a confirmation; never mark an order
-  paid from a browser redirect.
+- Payment state is server-authoritative (`docs/payments.md` lifecycle).
+  Webhooks and provider polls apply legal transitions. A user returning to
+  the success URL is a hint; `observeReturn` must not take a status from the
+  query string. Never mark an order paid from a browser redirect.
 - Webhook handlers are **idempotent** and verify signatures before doing any
   work. Providers retry, and duplicate delivery must not double-fulfil an order.
 - `verifyWebhook` returns the provider payment id and a normalized status.

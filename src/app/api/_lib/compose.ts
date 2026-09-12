@@ -63,7 +63,11 @@ import {
   type OrderServices,
 } from "@/modules/orders";
 import type { PaymentOrder, PaymentRepository } from "@/modules/payments";
-import { createPaymentServices, MockPaymentProvider } from "@/modules/payments";
+import {
+  createMemoryPaymentRepository,
+  createPaymentServices,
+  MockPaymentProvider,
+} from "@/modules/payments";
 import {
   createFilesystemMediaStore,
   createMediaServices,
@@ -119,26 +123,8 @@ export const emptyOrders: OrderRepository = {
   },
 };
 
-const emptyPayments: PaymentRepository = {
-  async listByOrder() {
-    return [];
-  },
-  async save(payment) {
-    return payment;
-  },
-  async findById() {
-    return null;
-  },
-  async findByProviderPaymentId() {
-    return null;
-  },
-  async findEvent() {
-    return null;
-  },
-  async saveEvent(event) {
-    return event;
-  },
-};
+let paymentRepo = createMemoryPaymentRepository();
+let paymentProvider = new MockPaymentProvider();
 
 const emptyPaymentOrders: PaymentOrder = {
   async amountDueMinor() {
@@ -158,6 +144,8 @@ let cartPromise: Promise<CartRepository> | null = null;
 const composeGlobals = globalThis as unknown as {
   bikesMemoryCart?: CartRepository;
   bikesMemoryOrders?: OrderRepository;
+  bikesMemoryPayments?: PaymentRepository;
+  bikesPaymentProvider?: MockPaymentProvider;
   bikesInventory?: InventoryServices;
   bikesAuthPromise?: Promise<AuthServices>;
 };
@@ -409,6 +397,10 @@ export function resetRepositories(): void {
   cartRepo = createMemoryCartRepository();
   composeGlobals.bikesMemoryCart = cartRepo;
   composeGlobals.bikesMemoryOrders = createMemoryOrderRepository();
+  paymentRepo = createMemoryPaymentRepository();
+  paymentProvider = new MockPaymentProvider();
+  composeGlobals.bikesMemoryPayments = paymentRepo;
+  composeGlobals.bikesPaymentProvider = paymentProvider;
   delete composeGlobals.bikesAuthPromise;
   delete composeGlobals.bikesInventory;
 }
@@ -516,10 +508,30 @@ export async function getAuthServices(): Promise<AuthServices> {
   return composeGlobals.bikesAuthPromise;
 }
 
+function sharedPaymentRepository(): PaymentRepository {
+  if (process.env.VITEST === "true") {
+    return paymentRepo;
+  }
+  composeGlobals.bikesMemoryPayments ??= createMemoryPaymentRepository();
+  return composeGlobals.bikesMemoryPayments;
+}
+
+function sharedPaymentProvider(): MockPaymentProvider {
+  if (process.env.VITEST === "true") {
+    return paymentProvider;
+  }
+  composeGlobals.bikesPaymentProvider ??= new MockPaymentProvider();
+  return composeGlobals.bikesPaymentProvider;
+}
+
+export function getMockPaymentProvider(): MockPaymentProvider {
+  return sharedPaymentProvider();
+}
+
 export function getPaymentServices() {
   return createPaymentServices({
-    payments: emptyPayments,
-    provider: new MockPaymentProvider(),
+    payments: sharedPaymentRepository(),
+    provider: sharedPaymentProvider(),
     orders: emptyPaymentOrders,
   });
 }

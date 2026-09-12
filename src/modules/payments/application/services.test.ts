@@ -28,7 +28,7 @@ function attempt(overrides: Partial<PaymentAttempt> = {}): PaymentAttempt {
     providerPaymentId: "p1",
     amountMinor: 100,
     currency: "BYN",
-    status: "PENDING",
+    status: "CREATED",
     idempotencyKey: paymentAttemptIdempotencyKey("o1", 1),
     ...overrides,
   };
@@ -63,13 +63,13 @@ class RecordingPaymentProvider implements PaymentProvider {
     this.seq += 1;
     const paymentId = `rec-${this.seq}`;
     this.byKey.set(input.idempotencyKey, paymentId);
-    this.status.set(paymentId, "PENDING");
+    this.status.set(paymentId, "CREATED");
     return { paymentId, redirectUrl: `${input.returnUrl}?pid=${paymentId}` };
   }
 
   async getPaymentStatus(input: ProviderPaymentRef): Promise<NormalizedPaymentStatus> {
     this.calls.push("getPaymentStatus");
-    return this.status.get(input.providerPaymentId) ?? "PENDING";
+    return this.status.get(input.providerPaymentId) ?? "CREATED";
   }
 
   async cancelPayment(input: ProviderPaymentRef): Promise<NormalizedPaymentStatus> {
@@ -112,23 +112,23 @@ class RecordingPaymentProvider implements PaymentProvider {
 }
 
 describe("payment rules", () => {
-  it("allows only one pending attempt per order", () => {
-    const pending = attempt();
-    expect(canStartPayment([pending])).toBe(false);
-    expect(applyProviderEvent(pending, "SUCCEEDED")).toBe("SUCCEEDED");
+  it("allows only one open attempt per order", () => {
+    const created = attempt();
+    expect(canStartPayment([created])).toBe(false);
+    expect(applyProviderEvent(created, "SUCCEEDED")).toBe("SUCCEEDED");
   });
 
   it("applies refund statuses only after a succeeded attempt", () => {
-    const pending = attempt();
-    expect(() => applyProviderEvent(pending, "REFUNDED")).toThrow(
-      "payment_not_refundable",
+    const created = attempt();
+    expect(() => applyProviderEvent(created, "REFUNDED")).toThrow(
+      "illegal_payment_transition",
     );
     expect(applyProviderEvent(attempt({ status: "SUCCEEDED" }), "REFUNDED")).toBe(
       "REFUNDED",
     );
-    expect(
+    expect(() =>
       applyProviderEvent(attempt({ status: "REFUNDED" }), "PARTIALLY_REFUNDED"),
-    ).toBe("REFUNDED");
+    ).toThrow("illegal_payment_transition");
   });
 });
 
@@ -191,7 +191,7 @@ describe("payment services", () => {
       orders: orders(),
     });
     const started = await payments.startPayment("o1", "https://store.local/return");
-    expect(await payments.getPaymentStatus(started.paymentId)).toBe("PENDING");
+    expect(await payments.getPaymentStatus(started.paymentId)).toBe("CREATED");
 
     const cancelled = await payments.cancelPayment(started.paymentId);
     expect(cancelled.status).toBe("CANCELLED");
@@ -230,7 +230,7 @@ describe("payment services", () => {
 
     const cancelled = await payments.cancelPayment(started.paymentId);
     expect(cancelled.status).toBe("CANCELLED");
-    expect(applied).toEqual(["cancelled"]);
+    expect(applied).toEqual(["created", "cancelled"]);
 
     const next = await payments.startPayment("o9", "https://store.local/return");
     expect(next.paymentId).toBe("rec-2");
@@ -244,12 +244,65 @@ describe("payment services", () => {
       {},
     );
     expect(paid.status).toBe("SUCCEEDED");
-    expect(applied).toEqual(["cancelled", "succeeded"]);
+    expect(applied).toEqual(["created", "cancelled", "created", "succeeded"]);
 
     const refunded = await payments.refundPayment(next.paymentId, 4500);
     expect(refunded.status).toBe("REFUNDED");
     expect(provider.calls).toContain("refundPayment:refund:rec-2:4500");
-    expect(applied).toEqual(["cancelled", "succeeded", "refunded"]);
+    expect(applied).toEqual(["created", "cancelled", "created", "succeeded", "refunded"]);
+  });
+
+  it("does not let a browser return URL change status by itself", async () => {
+    const provider = new MockPaymentProvider();
+    const payments = createPaymentServices({
+      payments: createMemoryPaymentRepository(),
+      provider,
+      orders: orders(),
+    });
+    const started = await payments.startPayment("o1", "https://store.local/return");
+    const claimed = await payments.observeReturn(started.paymentId);
+    expect(claimed.status).toBe("CREATED");
+
+    provider.markPending(started.paymentId);
+    expect((await payments.observeReturn(started.paymentId)).status).toBe("PENDING");
+    provider.authorize(started.paymentId);
+    expect((await payments.observeReturn(started.paymentId)).status).toBe("AUTHORIZED");
+    provider.succeed(started.paymentId);
+    expect((await payments.observeReturn(started.paymentId)).status).toBe("SUCCEEDED");
+  });
+
+  it("applies expired and refund-pending from the provider, not the browser", async () => {
+    const provider = new MockPaymentProvider();
+    const payments = createPaymentServices({
+      payments: createMemoryPaymentRepository(),
+      provider,
+      orders: orders(),
+    });
+    const first = await payments.startPayment("o1", "https://store.local/return");
+    provider.expire(first.paymentId);
+    expect(await payments.getPaymentStatus(first.paymentId)).toBe("EXPIRED");
+
+    const retry = await payments.startPayment("o1", "https://store.local/return");
+    const paid = await payments.handleWebhook(
+      JSON.stringify({
+        paymentId: retry.paymentId,
+        eventId: "evt-auth-paid",
+        type: "paid",
+      }),
+      { "x-mock-signature": "ok" },
+    );
+    expect(paid.status).toBe("SUCCEEDED");
+    provider.beginRefund(retry.paymentId);
+    expect(await payments.getPaymentStatus(retry.paymentId)).toBe("REFUND_PENDING");
+    const refunded = await payments.handleWebhook(
+      JSON.stringify({
+        paymentId: retry.paymentId,
+        eventId: "evt-refunded",
+        type: "refunded",
+      }),
+      { "x-mock-signature": "ok" },
+    );
+    expect(refunded.status).toBe("REFUNDED");
   });
 });
 

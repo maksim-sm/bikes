@@ -1,7 +1,7 @@
 # Payments
 
 Status: authoritative for the provider-neutral payment port. Companion:
-ADR-0005, ADR-0022, `docs/architecture.md` §8, `docs/checkout.md`.
+ADR-0005, ADR-0022, ADR-0023, `docs/architecture.md` §8, `docs/checkout.md`.
 
 `payments` owns attempts, the provider event log, and refunds. It does not
 write order rows. `orders` decides what a normalized event means for order
@@ -37,7 +37,29 @@ provider JSON to find the attempt.
 | Normalized status  | `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `REFUNDED`, `PARTIALLY_REFUNDED`. |
 
 Money is integer kopeks. A browser return URL is a hint, never confirmation.
-Webhook handlers stay public and authenticate the provider signature.
+`GET /api/v1/payments/:id` calls `observeReturn`, which polls the provider
+and ignores query claims such as `?status=succeeded`. Webhook handlers stay
+public and authenticate the provider signature.
+
+## Lifecycle
+
+`payments.status` is the source of truth. Transitions are explicit; illegal
+moves throw `illegal_payment_transition` and are ignored on webhooks and
+return polls.
+
+| From                                            | To                                                                            |
+| ----------------------------------------------- | ----------------------------------------------------------------------------- |
+| `CREATED`                                       | `PENDING`, `AUTHORIZED`, `SUCCEEDED` (paid), `FAILED`, `EXPIRED`, `CANCELLED` |
+| `PENDING`                                       | `AUTHORIZED`, `SUCCEEDED`, `FAILED`, `EXPIRED`, `CANCELLED`                   |
+| `AUTHORIZED`                                    | `SUCCEEDED` (capture), `FAILED`, `EXPIRED`, `CANCELLED` (void)                |
+| `SUCCEEDED`                                     | `REFUND_PENDING`, `REFUNDED`, `PARTIALLY_REFUNDED`                            |
+| `REFUND_PENDING`                                | `REFUNDED`, `PARTIALLY_REFUNDED`, `SUCCEEDED` (refund failed)                 |
+| `PARTIALLY_REFUNDED`                            | `REFUND_PENDING`, `REFUNDED`                                                  |
+| `FAILED` / `EXPIRED` / `CANCELLED` / `REFUNDED` | terminal                                                                      |
+
+`AUTHORIZED` is a hold. `SUCCEEDED` is paid (captured). Partial refunds exist
+only when the provider reports them. A new attempt is allowed after
+`FAILED`, `EXPIRED`, `CANCELLED`, or `REFUNDED`.
 
 ## Replacing the provider
 

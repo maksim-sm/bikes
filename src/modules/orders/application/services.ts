@@ -47,7 +47,17 @@ export interface OrderServices {
   applyPaymentEvent(
     id: string,
     event: {
-      type: "succeeded" | "failed" | "cancelled" | "refunded" | "partially_refunded";
+      type:
+        | "created"
+        | "pending"
+        | "authorized"
+        | "succeeded"
+        | "failed"
+        | "expired"
+        | "cancelled"
+        | "refund_pending"
+        | "refunded"
+        | "partially_refunded";
     },
   ): Promise<Order>;
   applyFulfillmentEvent(

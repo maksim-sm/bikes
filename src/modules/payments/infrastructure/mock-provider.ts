@@ -49,7 +49,7 @@ export class MockPaymentProvider implements PaymentProvider {
       orderId: input.orderId,
       amountMinor: input.amountMinor,
       currency: input.currency,
-      status: "PENDING",
+      status: "CREATED",
       refundedMinor: 0,
       redirectUrl: url.toString(),
     };
@@ -64,8 +64,12 @@ export class MockPaymentProvider implements PaymentProvider {
 
   async cancelPayment(input: ProviderPaymentRef): Promise<NormalizedPaymentStatus> {
     const charge = this.require(input.providerPaymentId);
-    if (charge.status !== "PENDING") {
-      throw new Error("payment_not_pending");
+    if (
+      charge.status !== "CREATED" &&
+      charge.status !== "PENDING" &&
+      charge.status !== "AUTHORIZED"
+    ) {
+      throw new Error("payment_not_cancellable");
     }
     charge.status = "CANCELLED";
     return charge.status;
@@ -127,10 +131,25 @@ export class MockPaymentProvider implements PaymentProvider {
     return normalizePaymentStatus(rawStatus);
   }
 
-  /** Test helper: mark a created charge as paid without a webhook. */
+  /** Test helpers: move a charge without pretending the browser did it. */
+  markPending(providerPaymentId: string): void {
+    this.require(providerPaymentId).status = "PENDING";
+  }
+
+  authorize(providerPaymentId: string): void {
+    this.require(providerPaymentId).status = "AUTHORIZED";
+  }
+
   succeed(providerPaymentId: string): void {
-    const charge = this.require(providerPaymentId);
-    charge.status = "SUCCEEDED";
+    this.require(providerPaymentId).status = "SUCCEEDED";
+  }
+
+  expire(providerPaymentId: string): void {
+    this.require(providerPaymentId).status = "EXPIRED";
+  }
+
+  beginRefund(providerPaymentId: string): void {
+    this.require(providerPaymentId).status = "REFUND_PENDING";
   }
 
   private require(providerPaymentId: string): MockCharge {
