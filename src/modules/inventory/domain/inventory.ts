@@ -42,6 +42,7 @@ export interface Movement {
   onHandAfter: number;
   reservedAfter: number;
   note: string | null;
+  actorUserId: string | null;
   createdAt: Date;
 }
 

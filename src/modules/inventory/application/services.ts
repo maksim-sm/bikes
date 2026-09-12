@@ -1,5 +1,5 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
-import { requireInventoryRole, type Principal } from "@/modules/identity";
+import { actorUserId, requireInventoryRole, type Principal } from "@/modules/identity";
 import {
   assertPositiveQuantity,
   available,
@@ -14,6 +14,7 @@ import type { Clock, InventoryRepository } from "./ports";
 
 const DEFAULT_HOLD_MS = 15 * 60 * 1000;
 const CONFIRMED_HOLD_MS = 30 * 24 * 60 * 60 * 1000;
+const DEFAULT_RECENT_MOVEMENTS = 50;
 
 export interface StockSnapshot {
   onHand: number;
@@ -21,9 +22,21 @@ export interface StockSnapshot {
   available: number;
 }
 
+export interface StockRow extends StockSnapshot {
+  variantId: string;
+}
+
+export interface StaffMovement extends Movement {
+  variantId: string;
+}
+
 export interface InventoryServices {
   getAvailability(variantId: string): Promise<StockSnapshot>;
+  getStaffStock(principal: Principal, variantId: string): Promise<StockRow>;
+  listStock(principal: Principal): Promise<StockRow[]>;
   listMovements(variantId: string): Promise<Movement[]>;
+  listStaffMovements(principal: Principal, variantId: string): Promise<StaffMovement[]>;
+  listRecentMovements(principal: Principal, limit?: number): Promise<StaffMovement[]>;
   receiveStock(
     principal: Principal,
     input: { variantId: string; quantity: number; note?: string },
@@ -94,6 +107,7 @@ export function createInventoryServices(deps: {
         type,
         quantity: input.quantity,
         note: sanitizeMovementNote(input.note),
+        actorUserId: actorUserId(principal),
         now: deps.clock.now(),
       });
     } catch (error) {
@@ -112,9 +126,43 @@ export function createInventoryServices(deps: {
       return snapshot(variantId);
     },
 
+    async getStaffStock(principal, variantId) {
+      requireInventoryRole(principal);
+      const item = await requireItem(deps.inventory, variantId);
+      return toStockRow(item);
+    },
+
+    async listStock(principal) {
+      requireInventoryRole(principal);
+      const items = await deps.inventory.listItems();
+      return items.map(toStockRow);
+    },
+
     async listMovements(variantId) {
       const item = await requireItem(deps.inventory, variantId);
       return deps.inventory.listMovements(item.id);
+    },
+
+    async listStaffMovements(principal, variantId) {
+      requireInventoryRole(principal);
+      const item = await requireItem(deps.inventory, variantId);
+      const rows = await deps.inventory.listMovements(item.id);
+      return rows.map((row) => ({ ...row, variantId: item.variantId }));
+    },
+
+    async listRecentMovements(principal, limit = DEFAULT_RECENT_MOVEMENTS) {
+      requireInventoryRole(principal);
+      const take =
+        Number.isInteger(limit) && limit > 0 ? limit : DEFAULT_RECENT_MOVEMENTS;
+      const [items, rows] = await Promise.all([
+        deps.inventory.listItems(),
+        deps.inventory.listRecentMovements(take),
+      ]);
+      const variantByItem = new Map(items.map((item) => [item.id, item.variantId]));
+      return rows.map((row) => ({
+        ...row,
+        variantId: variantByItem.get(row.inventoryItemId) ?? row.inventoryItemId,
+      }));
     },
 
     async receiveStock(principal, input) {
@@ -225,6 +273,19 @@ export function createInventoryServices(deps: {
       }
       return due.length;
     },
+  };
+}
+
+function toStockRow(item: {
+  variantId: string;
+  onHand: number;
+  reserved: number;
+}): StockRow {
+  return {
+    variantId: item.variantId,
+    onHand: item.onHand,
+    reserved: item.reserved,
+    available: item.onHand - item.reserved,
   };
 }
 

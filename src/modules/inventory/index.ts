@@ -29,6 +29,8 @@ export type { Clock, InventoryRepository } from "./application/ports";
 export {
   createInventoryServices,
   type InventoryServices,
+  type StaffMovement,
+  type StockRow,
   type StockSnapshot,
 } from "./application/services";
 export { createMemoryInventoryRepository } from "./infrastructure/memory-inventory";

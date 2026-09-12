@@ -5,7 +5,7 @@ import {
   UnauthenticatedError,
   ValidationError,
 } from "@/lib/errors";
-import { requireAuthenticated, requireCustomer } from "./authorization";
+import { requireAuthenticated, requireCustomer, requireStaff } from "./authorization";
 import {
   EMAIL_VERIFY_TTL_MS,
   PASSWORD_RESET_TTL_MS,
@@ -79,6 +79,10 @@ export interface AuthServices {
   }): Promise<{ accepted: true }>;
   resolve(rawToken: string | null): Promise<Principal>;
   getAccount(principal: Principal): Promise<{ userId: string; email: string }>;
+  lookupEmails(
+    principal: Principal,
+    userIds: readonly string[],
+  ): Promise<Array<{ userId: string; email: string }>>;
   changePassword(input: {
     principal: Principal;
     currentPassword: string;
@@ -354,6 +358,15 @@ export function createAuthServices(deps: {
         throw new NotFoundError("account not found", { userId: authenticated.userId });
       }
       return { userId: user.id, email: user.email };
+    },
+
+    async lookupEmails(principal, userIds) {
+      requireStaff(principal);
+      const unique = [...new Set(userIds.filter((id) => id.length > 0))];
+      const found = await Promise.all(unique.map((id) => deps.users.findById(id)));
+      return found.flatMap((user) =>
+        user ? [{ userId: user.id, email: user.email }] : [],
+      );
     },
 
     async changePassword(input) {

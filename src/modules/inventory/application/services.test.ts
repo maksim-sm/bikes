@@ -204,4 +204,37 @@ describe("inventory services", () => {
       { onHand: 3, reserved: 0, available: 3 },
     );
   });
+
+  it("lets inventory staff list stock, history, and the actor on a write", async () => {
+    const inventory = services(2);
+    await expect(inventory.listStock(customerPrincipal("u1"))).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
+    await expect(
+      inventory.listRecentMovements(staffPrincipal("ops", ["order_management"])),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    expect(await inventory.listStock(clerk)).toEqual([
+      { variantId: "v1", onHand: 2, reserved: 0, available: 2 },
+    ]);
+    await inventory.receiveStock(clerk, {
+      variantId: "v1",
+      quantity: 1,
+      note: "приход с ворот",
+    });
+    const history = await inventory.listStaffMovements(clerk, "v1");
+    expect(history).toEqual([
+      expect.objectContaining({
+        type: "RECEIPT",
+        quantity: 1,
+        note: "приход с ворот",
+        actorUserId: "inv",
+        variantId: "v1",
+        onHandAfter: 3,
+        reservedAfter: 0,
+      }),
+    ]);
+    expect((await inventory.listRecentMovements(clerk)).map((row) => row.type)).toEqual([
+      "RECEIPT",
+    ]);
+  });
 });

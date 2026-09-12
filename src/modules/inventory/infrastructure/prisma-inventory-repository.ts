@@ -44,6 +44,13 @@ function toReservation(row: {
   };
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function actorUserIdOrNull(value: string | null): string | null {
+  return value !== null && UUID_RE.test(value) ? value : null;
+}
+
 function toMovement(row: {
   id: string;
   inventoryItemId: string;
@@ -53,6 +60,7 @@ function toMovement(row: {
   onHandAfter: number;
   reservedAfter: number;
   note: string | null;
+  actorUserId: string | null;
   createdAt: Date;
 }): Movement {
   return {
@@ -64,6 +72,7 @@ function toMovement(row: {
     onHandAfter: row.onHandAfter,
     reservedAfter: row.reservedAfter,
     note: row.note,
+    actorUserId: row.actorUserId,
     createdAt: row.createdAt,
   };
 }
@@ -138,14 +147,28 @@ export function createPrismaInventoryRepository(
           onHandAfter: 0,
           reservedAfter: 0,
           note: input.note,
+          actorUserId: actorUserIdOrNull(input.actorUserId),
         },
       });
       return toMovement(row);
+    },
+    async listItems() {
+      const rows = await client.inventoryItem.findMany({
+        orderBy: { variantId: "asc" },
+      });
+      return rows.map(toItem);
     },
     async listMovements(inventoryItemId) {
       const rows = await client.inventoryMovement.findMany({
         where: { inventoryItemId },
         orderBy: { createdAt: "asc" },
+      });
+      return rows.map(toMovement);
+    },
+    async listRecentMovements(limit) {
+      const rows = await client.inventoryMovement.findMany({
+        orderBy: { createdAt: "desc" },
+        take: limit,
       });
       return rows.map(toMovement);
     },

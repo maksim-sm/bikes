@@ -106,14 +106,20 @@ triggers stay the serialisation point.
 | `commitForOrder` | Commit every ACTIVE hold for that order.                     | `COMMIT` per hold               |
 | `expireDue`      | Worker: ACTIVE rows past `expires_at` become EXPIRED.        | `EXPIRE` (reservation trigger)  |
 
-`listMovements(variantId)` reads the append-only ledger.
+`listMovements(variantId)` reads the append-only ledger. Staff listing goes
+through `listStock`, `getStaffStock`, `listStaffMovements`, and
+`listRecentMovements` — those require `manage_inventory`. The admin console
+is `/admin/inventory` (`docs/admin.md`).
 
 ## Movements
 
 `inventory_movements` is append-only. Application code may insert **RECEIPT**,
 **ADJUSTMENT**, and **RETURN** only. **RESERVE**, **RELEASE**, **EXPIRE**, and
 **COMMIT** are written by the reservation AFTER trigger so the ledger matches
-the counters. Each row stores `on_hand_after` and `reserved_after`.
+the counters. Each row stores `on_hand_after` and `reserved_after`. External
+writes also store a free-text **reason** (`note`, max 240) and
+`actor_user_id` of the staff principal. Reservation-trigger rows leave the
+actor null — those are system movements.
 
 ## What application code must not do
 

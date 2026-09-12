@@ -34,7 +34,7 @@ exist for auth tables, catalog listing, inventory, media, production
 carts, customer profiles/addresses, and orders. Local demo catalogue and cart stay in-memory. Integration and
 end-to-end test tiers are still targets. Storefront product, catalog, cart,
 and checkout pages exist; staff can manage the catalogue, browse orders,
-and assign shipments under `/admin` (`docs/admin.md`). Customers manage profile, addresses, wishlist, orders,
+assign shipments, and adjust stock under `/admin` (`docs/admin.md`). Customers manage profile, addresses, wishlist, orders,
 payment/delivery status, and sessions under `/account` (`docs/account.md`).
 Cart and
 checkout totals are recalculated server-side (`docs/cart.md`,

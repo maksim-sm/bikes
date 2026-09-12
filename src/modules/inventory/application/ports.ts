@@ -28,9 +28,12 @@ export interface InventoryRepository {
     type: ExternalMovementType;
     quantity: number;
     note: string | null;
+    actorUserId: string | null;
     now: Date;
   }): Promise<Movement>;
+  listItems(): Promise<InventoryItem[]>;
   listMovements(inventoryItemId: string): Promise<Movement[]>;
+  listRecentMovements(limit: number): Promise<Movement[]>;
   listInStockVariantIds(): Promise<string[]>;
   listAvailabilityByVariantIds(
     variantIds: readonly string[],

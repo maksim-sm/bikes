@@ -7,18 +7,19 @@ excluded from indexing.
 
 ## Surfaces
 
-| Path                  | Capability           | Purpose                                       |
-| --------------------- | -------------------- | --------------------------------------------- |
-| `/admin/login`        | —                    | Staff sign-in                                 |
-| `/admin`              | any admin capability | Redirect to the role-appropriate home         |
-| `/admin/products`     | `manage_catalog`     | Catalogue list                                |
-| `/admin/products/new` | `manage_catalog`     | Create a bicycle                              |
-| `/admin/products/:id` | `manage_catalog`     | Edit, publish, unpublish                      |
-| `/admin/orders`       | `manage_orders`      | Search, filters, status, payment, notes       |
-| `/admin/orders/:id`   | `manage_orders`      | Contact, payments, refund, delivery, notes    |
-| `/admin/deliveries`   | `manage_orders`      | Methods, assign, tracking, ship, deliver      |
-| `/admin/inventory`    | `manage_inventory`   | Warehouse entry (operations stay in services) |
-| `/admin/forbidden`    | signed-in staff      | Wrong capability for the requested page       |
+| Path                          | Capability           | Purpose                                      |
+| ----------------------------- | -------------------- | -------------------------------------------- |
+| `/admin/login`                | —                    | Staff sign-in                                |
+| `/admin`                      | any admin capability | Redirect to the role-appropriate home        |
+| `/admin/products`             | `manage_catalog`     | Catalogue list                               |
+| `/admin/products/new`         | `manage_catalog`     | Create a bicycle                             |
+| `/admin/products/:id`         | `manage_catalog`     | Edit, publish, unpublish                     |
+| `/admin/orders`               | `manage_orders`      | Search, filters, status, payment, notes      |
+| `/admin/orders/:id`           | `manage_orders`      | Contact, payments, refund, delivery, notes   |
+| `/admin/deliveries`           | `manage_orders`      | Methods, assign, tracking, ship, deliver     |
+| `/admin/inventory`            | `manage_inventory`   | Stock list, search, recent movements         |
+| `/admin/inventory/:variantId` | `manage_inventory`   | Counters, receive / adjust / return, history |
+| `/admin/forbidden`            | signed-in staff      | Wrong capability for the requested page      |
 
 Demo staff: `staff@bikes.local` / `StaffPass12` (admin title).
 
@@ -49,3 +50,9 @@ anonymous and the row is revoked.
 Admin writes pass `{ actorUserId, requestId }` into `audit.record` after
 the domain service succeeds. Rows live in `audit_logs`. The console does
 not yet list them.
+
+Inventory receive, adjust, and return also persist the actor and reason on
+the movement row itself. Reservation-trigger movements (reserve, release,
+expire, commit) have no staff actor. Catalogue names and SKUs are resolved
+at the app boundary via `catalog.listAll()` — inventory staff do not need
+`manage_catalog`, and catalog SQL never joins `inventory_items`.
