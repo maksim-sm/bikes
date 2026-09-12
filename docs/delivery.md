@@ -35,9 +35,10 @@ The quoted cost is captured on the order at placement and is never recomputed.
 
 ## Estimated text
 
-Zones carry `estimatedDays` (sort / API) and `estimatedText` (the sentence
-shown on the product page, checkout radios, and quotes DTO). Copy lives in
-`src/lib/i18n/messages/ru.ts` for the demo catalogue.
+Zones carry `estimatedDays` (sort / API; `0` is same-day pickup) and
+`estimatedText` (the sentence shown on the product page, checkout radios,
+and quotes DTO). Copy lives in `src/lib/i18n/messages/ru.ts` for the demo
+catalogue.
 
 ## Admin assignment
 

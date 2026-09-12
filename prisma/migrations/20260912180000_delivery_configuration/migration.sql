@@ -15,6 +15,12 @@ ALTER TABLE "delivery_zones"
 
 ALTER TABLE "delivery_zones" ALTER COLUMN "estimated_text" DROP DEFAULT;
 
+ALTER TABLE "delivery_zones" DROP CONSTRAINT "delivery_zones_estimated_days_positive_chk";
+
+ALTER TABLE "delivery_zones"
+  ADD CONSTRAINT "delivery_zones_estimated_days_nonnegative_chk"
+  CHECK ("estimated_days" >= 0);
+
 INSERT INTO "delivery_methods" (
   "id",
   "code",

@@ -49,6 +49,8 @@ describe("checkout domain", () => {
 
   it("accepts only known payment methods", () => {
     expect(assertCheckoutPayment("cash_on_delivery")).toBe("cash_on_delivery");
-    expect(() => assertCheckoutPayment("forged-free")).toThrow("checkout_payment_invalid");
+    expect(() => assertCheckoutPayment("forged-free")).toThrow(
+      "checkout_payment_invalid",
+    );
   });
 });
