@@ -14,6 +14,8 @@ const method: DeliveryMethodRecord = {
   code: "minsk-courier",
   name: "Курьер по Минску",
   isActive: true,
+  kind: "courier",
+  pickup: null,
 };
 
 const zones: DeliveryZone[] = [

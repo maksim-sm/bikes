@@ -92,6 +92,7 @@ describe("customer resource isolation", () => {
       customerEmail: "owner@example.by",
       customerName: "Иван",
       customerPhone: "+375291112233",
+      paymentMethodCode: "cash_on_delivery",
       shipping: {
         recipientName: "Иван",
         phone: "+375291112233",

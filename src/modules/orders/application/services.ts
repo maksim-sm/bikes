@@ -14,6 +14,7 @@ import { lineTotalMinor } from "@/modules/pricing";
 import {
   assertCheckoutCustomer,
   assertCheckoutDestination,
+  assertCheckoutPayment,
   checkoutTotals,
 } from "../domain/checkout";
 import {
@@ -97,9 +98,11 @@ export function createOrderServices(deps: {
   async function placeOrder(input: PlaceOrderInput): Promise<Order> {
     let customer;
     let destination;
+    let paymentMethodCode;
     try {
       customer = assertCheckoutCustomer(input);
       destination = assertCheckoutDestination(input.destination);
+      paymentMethodCode = assertCheckoutPayment(input.paymentMethodCode);
     } catch (error) {
       mapCheckoutValidation(error);
     }
@@ -168,6 +171,7 @@ export function createOrderServices(deps: {
       customerEmail: customer.customerEmail,
       customerName: customer.customerName,
       customerPhone: customer.customerPhone,
+      paymentMethodCode,
       shipping: {
         recipientName: destination.recipientName,
         phone: destination.phone,

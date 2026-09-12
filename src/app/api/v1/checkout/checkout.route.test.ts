@@ -83,6 +83,7 @@ describe("checkout HTTP", () => {
             postalCode: "220000",
           },
           deliveryMethodCode: "minsk-courier",
+          paymentMethodCode: "cash_on_delivery",
           totalMinor: 1,
           subtotalMinor: 1,
           deliveryCostMinor: 1,
@@ -130,6 +131,7 @@ describe("checkout HTTP", () => {
           postalCode: "220000",
         },
         deliveryMethodCode: "minsk-courier",
+        paymentMethodCode: "cash_on_delivery",
       }),
     );
     expect(empty.status).toBe(400);
@@ -157,11 +159,52 @@ describe("checkout HTTP", () => {
             postalCode: "220000",
           },
           deliveryMethodCode: "minsk-courier",
+          paymentMethodCode: "cash_on_delivery",
         },
         guestCookie,
       ),
     );
     expect(invalid.status).toBe(400);
+  });
+
+  it("quotes pickup at zero and still ignores a client total", async () => {
+    seedDemoCommerce();
+    const added = await addCartItem(
+      jsonRequest("/api/v1/cart/items", {
+        variantId: "v-emonda-l-red",
+        quantity: 1,
+      }),
+    );
+    const guestCookie = (added.headers.get("set-cookie") ?? "").split(";")[0]!;
+    const placed = await checkout(
+      jsonRequest(
+        "/api/v1/checkout",
+        {
+          customerEmail: "ira@example.by",
+          customerName: "Ира",
+          customerPhone: "+375291112233",
+          destination: {
+            recipientName: "Ира",
+            phone: "+375291112233",
+            region: "Минск",
+            city: "Минск",
+            street: "ignored-by-quote",
+            postalCode: "000000",
+          },
+          deliveryMethodCode: "minsk-pickup",
+          paymentMethodCode: "card_on_delivery",
+          totalMinor: 1,
+        },
+        guestCookie,
+      ),
+    );
+    const body = (await placed.json()) as {
+      data: { totalMinor: number; deliveryCostMinor: number; deliveryMethodCode: string };
+    };
+    expect(placed.status).toBe(201);
+    expect(body.data.deliveryMethodCode).toBe("minsk-pickup");
+    expect(body.data.deliveryCostMinor).toBe(0);
+    expect(body.data.totalMinor).toBe(359900);
   });
 
   it("quotes delivery from the server, not the browser", async () => {
@@ -174,8 +217,19 @@ describe("checkout HTTP", () => {
       data: { quotes: Array<{ methodCode: string; costMinor: number }> };
     };
     expect(quoted.status).toBe(200);
-    expect(body.data.quotes).toEqual([
-      expect.objectContaining({ methodCode: "minsk-courier", costMinor: 2500 }),
-    ]);
+    expect(body.data.quotes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          methodCode: "minsk-courier",
+          costMinor: 2500,
+          kind: "courier",
+        }),
+        expect.objectContaining({
+          methodCode: "minsk-pickup",
+          costMinor: 0,
+          kind: "pickup",
+        }),
+      ]),
+    );
   });
 });
