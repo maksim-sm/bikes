@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { getCatalogServices, getCartServices } from "@/app/api/_lib/compose";
+import { getCartServices } from "@/app/api/_lib/compose";
 import { formatPrice, t } from "@/lib/i18n";
 import { ButtonLink, Container, Stack } from "@/ui";
-import { getOrCreateGuestActor } from "../_lib/guest-cart";
+import { resolveCartActor } from "../_lib/cart-actor";
+import { CartEditor } from "./cart-editor";
 import styles from "./cart.module.css";
 
 export const dynamic = "force-dynamic";
@@ -17,23 +18,8 @@ interface PageProps {
 
 export default async function CartPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const actor = await getOrCreateGuestActor();
-  const cart = await getCartServices().getCart(actor);
-  const catalog = await getCatalogServices();
-  const { items: products } = await catalog.listPublishedProducts({
-    page: 1,
-    pageSize: 50,
-    sort: { field: "name", direction: "asc" },
-    filters: {},
-  });
-
-  const lines = cart.items.map((line) => {
-    const product = products.find((item) =>
-      item.variants.some((variant) => variant.id === line.variantId),
-    );
-    const variant = product?.variants.find((item) => item.id === line.variantId);
-    return { line, product, variant };
-  });
+  const actor = await resolveCartActor();
+  const view = await (await getCartServices()).getCartView(actor);
 
   return (
     <Container>
@@ -45,7 +31,7 @@ export default async function CartPage({ searchParams }: PageProps) {
               {t.cart.added}
             </p>
           ) : null}
-          {lines.length === 0 ? (
+          {view.items.length === 0 ? (
             <Stack space={4}>
               <p>{t.cart.empty}</p>
               <div>
@@ -55,27 +41,17 @@ export default async function CartPage({ searchParams }: PageProps) {
               </div>
             </Stack>
           ) : (
-            <ul className={styles.list}>
-              {lines.map(({ line, product, variant }) => (
-                <li key={line.variantId} className={styles.line}>
-                  <p>
-                    {product?.brandName} {product?.name}
-                  </p>
-                  {variant ? (
-                    <p>
-                      {t.product.frameSize}: {variant.frameSize}, {t.product.color}:{" "}
-                      {variant.color}
-                    </p>
-                  ) : null}
-                  <p>
-                    {t.cart.quantity}: {line.quantity}
-                    {variant
-                      ? ` · ${formatPrice(variant.listPriceMinor * line.quantity)}`
-                      : null}
-                  </p>
-                </li>
-              ))}
-            </ul>
+            <Stack space={5}>
+              <CartEditor items={view.items} />
+              <p className={styles.subtotal}>
+                {t.cart.subtotal}: {formatPrice(view.subtotalMinor)}
+              </p>
+              <div>
+                <ButtonLink href="/catalog" variant="secondary">
+                  {t.cart.continueShopping}
+                </ButtonLink>
+              </div>
+            </Stack>
           )}
         </Stack>
       </div>

@@ -1,8 +1,13 @@
+import { NotFoundError } from "@/lib/errors";
 import type { Cart, CartActor } from "../domain/cart";
 import type { CartRepository } from "../application/ports";
 
 function actorKey(actor: CartActor): string {
   return actor.kind === "guest" ? `guest:${actor.guestToken}` : `user:${actor.userId}`;
+}
+
+function cartKey(cart: Cart): string {
+  return cart.userId ? `user:${cart.userId}` : `guest:${cart.guestToken}`;
 }
 
 export function createMemoryCartRepository(): CartRepository {
@@ -24,9 +29,30 @@ export function createMemoryCartRepository(): CartRepository {
       return cart;
     },
     async save(cart) {
-      const key = cart.userId ? `user:${cart.userId}` : `guest:${cart.guestToken}`;
-      carts.set(key, cart);
+      for (const [key, existing] of carts) {
+        if (existing.id === cart.id && key !== cartKey(cart)) {
+          carts.delete(key);
+        }
+      }
+      carts.set(cartKey(cart), cart);
       return cart;
+    },
+    async delete(cart) {
+      for (const [key, existing] of carts) {
+        if (existing.id === cart.id) {
+          carts.delete(key);
+        }
+      }
+    },
+    async transferToCustomer(cartId, userId) {
+      const found = [...carts.entries()].find(([, cart]) => cart.id === cartId);
+      if (!found) {
+        throw new NotFoundError("cart not found", { cartId });
+      }
+      carts.delete(found[0]);
+      const next: Cart = { ...found[1], userId, guestToken: null };
+      carts.set(`user:${userId}`, next);
+      return next;
     },
   };
 }

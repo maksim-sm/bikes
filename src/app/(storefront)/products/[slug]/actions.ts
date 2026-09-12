@@ -3,7 +3,7 @@
 import { getCartServices } from "@/app/api/_lib/compose";
 import { isAppError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
-import { getOrCreateGuestActor } from "../../_lib/guest-cart";
+import { resolveCartActor } from "../../_lib/cart-actor";
 
 export type AddToCartState = {
   ok: boolean;
@@ -19,8 +19,8 @@ export async function addToCartAction(
     return { ok: false, message: t.product.pickVariant };
   }
   try {
-    const actor = await getOrCreateGuestActor();
-    await getCartServices().addItem(actor, variantId, 1);
+    const actor = await resolveCartActor();
+    await (await getCartServices()).addItem(actor, variantId, 1);
     return { ok: true, message: t.product.addedToCart };
   } catch (error) {
     if (isAppError(error) && error.code === "conflict") {

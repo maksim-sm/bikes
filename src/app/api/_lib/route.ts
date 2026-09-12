@@ -9,7 +9,7 @@ import {
   toHttpError,
   type PageMeta,
 } from "@/lib/http";
-import { serializeCookie, type SessionCookie } from "@/modules/identity";
+import { serializeCookie, type HttpOnlyCookie } from "@/modules/identity";
 import type { Principal } from "@/modules/identity";
 import {
   enforcePolicy,
@@ -32,7 +32,7 @@ export interface HandlerResult<T> {
   data: T;
   meta?: PageMeta;
   status?: number;
-  cookies?: SessionCookie[];
+  cookies?: HttpOnlyCookie[];
 }
 
 /**
@@ -104,7 +104,7 @@ export function json(
   status: number,
   body: unknown,
   requestId: string,
-  cookies: SessionCookie[] = [],
+  cookies: HttpOnlyCookie[] = [],
 ): Response {
   const headers = new Headers({
     [REQUEST_ID_HEADER]: requestId,

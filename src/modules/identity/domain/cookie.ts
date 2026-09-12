@@ -1,13 +1,17 @@
 import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from "./auth";
 
-export interface SessionCookie {
-  name: typeof SESSION_COOKIE_NAME;
+export interface HttpOnlyCookie {
+  name: string;
   value: string;
   path: "/";
   httpOnly: true;
   sameSite: "lax";
   secure: boolean;
   maxAge: number;
+}
+
+export interface SessionCookie extends HttpOnlyCookie {
+  name: typeof SESSION_COOKIE_NAME;
 }
 
 export function sessionCookie(
@@ -30,7 +34,7 @@ export function clearedSessionCookie(secure: boolean): SessionCookie {
   return sessionCookie("", secure, 0);
 }
 
-export function serializeCookie(cookie: SessionCookie): string {
+export function serializeCookie(cookie: HttpOnlyCookie): string {
   const parts = [
     `${cookie.name}=${cookie.value}`,
     `Path=${cookie.path}`,

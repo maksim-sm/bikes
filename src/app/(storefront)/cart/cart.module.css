@@ -21,3 +21,16 @@
   background: var(--color-success-subtle);
   color: var(--color-success);
 }
+
+.error {
+  color: var(--color-danger);
+}
+
+.controls {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.subtotal {
+  font-weight: var(--weight-bold);
+}

@@ -144,7 +144,7 @@ webhook bodies.
 | GET    | `/api/health`                         | public   | Process liveness                     |
 | GET    | `/api/v1/session`                     | public   | Resolved principal                   |
 | POST   | `/api/v1/auth/register`               | public   | Register (always same shape)         |
-| POST   | `/api/v1/auth/login`                  | public   | Login; sets httpOnly cookie          |
+| POST   | `/api/v1/auth/login`                  | public   | Login; merge guest cart; set cookie  |
 | POST   | `/api/v1/auth/logout`                 | public   | Revoke session; clear cookie         |
 | POST   | `/api/v1/auth/email/verify`           | public   | Confirm email with mailed token      |
 | POST   | `/api/v1/auth/email/resend`           | public   | Resend verification (opaque)         |
@@ -154,6 +154,7 @@ webhook bodies.
 | GET    | `/api/v1/products/:slug`              | public   | Published product detail             |
 | GET    | `/api/v1/categories`                  | public   | Category tree for discovery          |
 | GET    | `/api/v1/brands`                      | public   | Brands for discovery                 |
+| GET    | `/api/v1/cart`                        | public   | Cart view; server-side totals        |
 | GET    | `/api/v1/orders/:id`                  | customer | Order DTO (ownership in service)     |
 | GET    | `/api/v1/customers/:userId/profile`   | customer | Profile DTO (self or manager/admin)  |
 | GET    | `/api/v1/customers/:userId/addresses` | customer | Address DTOs (self or manager/admin) |

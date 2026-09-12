@@ -52,7 +52,8 @@ and served from `/api/media/…`; unknown demo keys still render placeholders.
 
 Variant size and color are real radio groups. The selected option is marked
 with a thicker border **and** the visible word «выбрано»; color is never the
-only cue. Add-to-cart is a server action on a guest `bikes_guest` cookie.
+only cue. Add-to-cart is a server action on the signed-in cart, or on a
+guest `bikes_guest` cookie when there is no session. See `docs/cart.md`.
 
 ## Staff catalogue
 
