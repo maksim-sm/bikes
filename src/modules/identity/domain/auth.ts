@@ -1,3 +1,6 @@
+import { customerPrincipal, staffPrincipal, type Principal } from "./principal";
+import type { StaffRole } from "./roles";
+
 export const SESSION_COOKIE_NAME = "bikes_session";
 export const MIN_PASSWORD_LENGTH = 10;
 export const MAX_PASSWORD_LENGTH = 128;
@@ -12,6 +15,7 @@ export interface AuthUser {
   email: string;
   passwordHash: string;
   role: AuthUserRole;
+  staffRoles: StaffRole[];
   emailVerifiedAt: Date | null;
   disabledAt: Date | null;
 }
@@ -72,4 +76,11 @@ export function canAuthenticate(
 
 export function principalTypeForRole(role: AuthUserRole): "customer" | "staff" {
   return role === "STAFF" ? "staff" : "customer";
+}
+
+export function principalForUser(user: AuthUser): Principal {
+  if (user.role === "STAFF") {
+    return staffPrincipal(user.id, user.staffRoles);
+  }
+  return customerPrincipal(user.id);
 }

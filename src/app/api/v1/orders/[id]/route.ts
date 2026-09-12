@@ -1,6 +1,5 @@
 import { withRoute } from "@/app/api/_lib/route";
 import { getOrderRepository } from "@/app/api/_lib/compose";
-import { actorUserId, isStaff } from "@/modules/identity";
 import { createOrderServices, type Order } from "@/modules/orders";
 
 export const dynamic = "force-dynamic";
@@ -68,10 +67,6 @@ export const GET = withRoute("customer", async (ctx) => {
     },
     clock: { now: () => new Date() },
   });
-  const loaded = await services.getOrder(
-    id,
-    actorUserId(ctx.principal),
-    isStaff(ctx.principal),
-  );
+  const loaded = await services.getOrder(id, ctx.principal);
   return { data: toOrderDto(loaded) };
 });

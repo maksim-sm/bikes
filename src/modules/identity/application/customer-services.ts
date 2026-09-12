@@ -6,24 +6,39 @@ import {
   type Address,
   type CustomerProfile,
 } from "../domain/customer";
+import type { Principal } from "../domain/principal";
+import {
+  assertCanReadCustomerResource,
+  assertCanWriteCustomerResource,
+} from "./authorization";
 import type { CustomerRepository } from "./ports";
 
 export interface CustomerServices {
-  getProfile(userId: string): Promise<CustomerProfile>;
+  getProfile(principal: Principal, userId: string): Promise<CustomerProfile>;
   updateProfile(
+    principal: Principal,
     userId: string,
     input: { firstName: string; lastName: string; phone: string | null },
   ): Promise<CustomerProfile>;
-  listAddresses(userId: string): Promise<Address[]>;
-  addAddress(userId: string, input: Omit<Address, "id" | "userId">): Promise<Address[]>;
-  setDefaultAddress(userId: string, addressId: string): Promise<Address[]>;
+  listAddresses(principal: Principal, userId: string): Promise<Address[]>;
+  addAddress(
+    principal: Principal,
+    userId: string,
+    input: Omit<Address, "id" | "userId">,
+  ): Promise<Address[]>;
+  setDefaultAddress(
+    principal: Principal,
+    userId: string,
+    addressId: string,
+  ): Promise<Address[]>;
 }
 
 export function createCustomerServices(deps: {
   customers: CustomerRepository;
 }): CustomerServices {
   return {
-    async getProfile(userId) {
+    async getProfile(principal, userId) {
+      assertCanReadCustomerResource(principal, userId);
       const profile = await deps.customers.getProfile(userId);
       if (!profile) {
         throw new NotFoundError("customer profile not found", { userId });
@@ -31,7 +46,8 @@ export function createCustomerServices(deps: {
       return profile;
     },
 
-    async updateProfile(userId, input) {
+    async updateProfile(principal, userId, input) {
+      assertCanWriteCustomerResource(principal, userId);
       try {
         assertProfileNames(input.firstName, input.lastName);
       } catch {
@@ -45,11 +61,13 @@ export function createCustomerServices(deps: {
       });
     },
 
-    async listAddresses(userId) {
+    async listAddresses(principal, userId) {
+      assertCanReadCustomerResource(principal, userId);
       return deps.customers.listAddresses(userId);
     },
 
-    async addAddress(userId, input) {
+    async addAddress(principal, userId, input) {
+      assertCanWriteCustomerResource(principal, userId);
       const current = await deps.customers.listAddresses(userId);
       const created: Address = {
         ...input,
@@ -59,7 +77,8 @@ export function createCustomerServices(deps: {
       return deps.customers.saveAddresses(userId, prepareNewAddress(current, created));
     },
 
-    async setDefaultAddress(userId, addressId) {
+    async setDefaultAddress(principal, userId, addressId) {
+      assertCanWriteCustomerResource(principal, userId);
       const current = await deps.customers.listAddresses(userId);
       try {
         return deps.customers.saveAddresses(

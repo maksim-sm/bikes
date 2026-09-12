@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ConflictError, ForbiddenError } from "@/lib/errors";
+import { customerPrincipal, staffPrincipal } from "@/modules/identity";
 import type { Cart } from "@/modules/cart";
 import type { Product } from "@/modules/catalog";
 import { formatOrderNumber, transitionOrder } from "../domain/order";
@@ -147,7 +148,7 @@ describe("order services", () => {
       deliveryMethodCode: "minsk-courier",
     });
     await services.applyPaymentEvent(placed.id, { type: "succeeded" });
-    const cancelled = await services.cancelOrder(placed.id, "user-1", false);
+    const cancelled = await services.cancelOrder(placed.id, customerPrincipal("user-1"));
     expect(cancelled.status).toBe("CANCELLED");
     expect(cancelled.paymentStatus).toBe("SUCCEEDED");
   });
@@ -170,9 +171,17 @@ describe("order services", () => {
       },
       deliveryMethodCode: "minsk-courier",
     });
-    await expect(services.getOrder(placed.id, "user-2", false)).rejects.toBeInstanceOf(
-      ForbiddenError,
+    await expect(
+      services.getOrder(placed.id, customerPrincipal("user-2")),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(
+      services.getOrder(placed.id, staffPrincipal("inv", ["inventory"])),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    const asOps = await services.getOrder(
+      placed.id,
+      staffPrincipal("ops", ["order_management"]),
     );
+    expect(asOps.userId).toBe("user-1");
   });
 
   it("refuses a second cancel", async () => {
@@ -193,9 +202,9 @@ describe("order services", () => {
       },
       deliveryMethodCode: "minsk-courier",
     });
-    await services.cancelOrder(placed.id, "user-1", false);
-    await expect(services.cancelOrder(placed.id, "user-1", false)).rejects.toBeInstanceOf(
-      ConflictError,
-    );
+    await services.cancelOrder(placed.id, customerPrincipal("user-1"));
+    await expect(
+      services.cancelOrder(placed.id, customerPrincipal("user-1")),
+    ).rejects.toBeInstanceOf(ConflictError);
   });
 });

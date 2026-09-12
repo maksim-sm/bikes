@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ConflictError } from "@/lib/errors";
+import { ConflictError, ForbiddenError } from "@/lib/errors";
+import { customerPrincipal, staffPrincipal } from "@/modules/identity";
 import {
   applyCommit,
   applyRelease,
@@ -129,5 +130,27 @@ describe("inventory services", () => {
       reserved: 0,
       available: 1,
     });
+  });
+
+  it("lets only the inventory role receive stock", async () => {
+    const inventory = createInventoryServices({
+      inventory: memoryInventory({ id: "i1", variantId: "v1", onHand: 1, reserved: 0 }),
+      clock: { now: () => now },
+    });
+    await expect(
+      inventory.receiveStock(customerPrincipal("u1"), { variantId: "v1", quantity: 2 }),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(
+      inventory.receiveStock(staffPrincipal("ops", ["order_management"]), {
+        variantId: "v1",
+        quantity: 2,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    expect(
+      await inventory.receiveStock(staffPrincipal("inv", ["inventory"]), {
+        variantId: "v1",
+        quantity: 2,
+      }),
+    ).toEqual({ onHand: 3, reserved: 0, available: 3 });
   });
 });

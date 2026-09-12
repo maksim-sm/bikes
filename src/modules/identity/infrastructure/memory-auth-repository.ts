@@ -22,6 +22,7 @@ export function createMemoryUserAccounts(): UserAccountRepository {
         email: input.email,
         passwordHash: input.passwordHash,
         role: input.role,
+        staffRoles: [],
         emailVerifiedAt: null,
         disabledAt: null,
       };

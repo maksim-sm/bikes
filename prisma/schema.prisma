@@ -29,6 +29,15 @@ enum UserRole {
   @@map("user_role")
 }
 
+enum StaffRole {
+  ADMIN
+  MANAGER
+  INVENTORY
+  ORDER_MANAGEMENT
+
+  @@map("staff_role")
+}
+
 enum AuthTokenType {
   EMAIL_VERIFY
   PASSWORD_RESET
@@ -144,9 +153,23 @@ model User {
   auditLogs  AuditLog[]
   sessions   AuthSession[]
   authTokens AuthToken[]
+  staffRoles UserStaffRole[]
 
   @@index([role], map: "users_role_idx")
   @@map("users")
+}
+
+/// Staff job titles. Customers have none. A staff user may hold several.
+model UserStaffRole {
+  userId    String    @map("user_id") @db.Uuid
+  role      StaffRole
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, role])
+  @@index([role], map: "user_staff_roles_role_idx")
+  @@map("user_staff_roles")
 }
 
 /// Opaque session: the cookie holds the raw token; only `token_hash` is stored.

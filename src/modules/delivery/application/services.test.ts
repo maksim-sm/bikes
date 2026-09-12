@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { ForbiddenError } from "@/lib/errors";
+import { customerPrincipal, staffPrincipal } from "@/modules/identity";
 import {
   matchZone,
   quoteMethod,
@@ -82,12 +84,20 @@ describe("delivery services", () => {
       city: "Минск",
     });
     expect(quote?.costMinor).toBe(2500);
-    const assigned = await delivery.assignShipment({
+    const ops = staffPrincipal("ops", ["order_management"]);
+    await expect(
+      delivery.assignShipment(customerPrincipal("user-1"), {
+        orderId: "o1",
+        methodCode: "minsk-courier",
+        costMinor: 2500,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    const assigned = await delivery.assignShipment(ops, {
       orderId: "o1",
       methodCode: "minsk-courier",
       costMinor: 2500,
     });
-    const shipped = await delivery.markShipped("o1", "BY123");
+    const shipped = await delivery.markShipped(ops, "o1", "BY123");
     expect(assigned.status).toBe("ASSIGNED");
     expect(shipped.status).toBe("SHIPPED");
     expect(shipped.trackingNumber).toBe("BY123");

@@ -77,20 +77,28 @@ token is never included in JSON.
 Missing or unknown cookies are `anonymous`. `withRoute(policy, handler)`
 applies the check before the handler runs:
 
-| Policy     | Who may proceed                 |
-| ---------- | ------------------------------- |
-| `public`   | Anyone, including anonymous     |
-| `customer` | Authenticated customer or staff |
-| `staff`    | Staff only                      |
+| Policy             | Who may proceed                                  |
+| ------------------ | ------------------------------------------------ |
+| `public`           | Anyone, including anonymous                      |
+| `anonymous`        | Only an anonymous caller                         |
+| `customer`         | Authenticated customer or staff                  |
+| `customer_only`    | Customer accounts only                           |
+| `staff`            | Any staff principal                              |
+| `admin`            | Admin title                                      |
+| `manager`          | Manager title (admin implies)                    |
+| `inventory`        | Inventory title (admin and manager imply)        |
+| `order_management` | Order-management title (admin and manager imply) |
 
 Payment webhooks are `public` and authenticate the **provider** (signature),
 not a customer session.
 
 ## Authorization checks
 
-Coarse policy is the route (`staff` vs `customer`). Ownership is still
-enforced in the service (an order id in the URL is not a permission). Staff
-may read across customers; customers may not.
+Coarse policy is the route. Ownership is still enforced in the service (an
+id in the URL is not a permission). A customer cannot read another
+customer's order, address, wishlist, or profile. Order-management staff may
+read any order. Only admin and manager may read another customer's profile,
+addresses, or wishlist. See ADR-0017.
 
 ## Pagination
 
@@ -127,21 +135,24 @@ webhook bodies.
 
 ## Resources (v1)
 
-| Method | Path                           | Policy   | Purpose                           |
-| ------ | ------------------------------ | -------- | --------------------------------- |
-| GET    | `/api/health`                  | public   | Process liveness                  |
-| GET    | `/api/v1/session`              | public   | Resolved principal                |
-| POST   | `/api/v1/auth/register`        | public   | Register (always same shape)      |
-| POST   | `/api/v1/auth/login`           | public   | Login; sets httpOnly cookie       |
-| POST   | `/api/v1/auth/logout`          | public   | Revoke session; clear cookie      |
-| POST   | `/api/v1/auth/email/verify`    | public   | Confirm email with mailed token   |
-| POST   | `/api/v1/auth/email/resend`    | public   | Resend verification (opaque)      |
-| POST   | `/api/v1/auth/password/forgot` | public   | Request reset (opaque)            |
-| POST   | `/api/v1/auth/password/reset`  | public   | Set new password; revoke sessions |
-| GET    | `/api/v1/products`             | public   | Published catalogue, paginated    |
-| GET    | `/api/v1/products/:slug`       | public   | Published product detail          |
-| GET    | `/api/v1/orders/:id`           | customer | Order DTO (ownership in service)  |
-| POST   | `/api/v1/payments/webhooks`    | public   | Provider webhook (signature)      |
+| Method | Path                                  | Policy   | Purpose                              |
+| ------ | ------------------------------------- | -------- | ------------------------------------ |
+| GET    | `/api/health`                         | public   | Process liveness                     |
+| GET    | `/api/v1/session`                     | public   | Resolved principal                   |
+| POST   | `/api/v1/auth/register`               | public   | Register (always same shape)         |
+| POST   | `/api/v1/auth/login`                  | public   | Login; sets httpOnly cookie          |
+| POST   | `/api/v1/auth/logout`                 | public   | Revoke session; clear cookie         |
+| POST   | `/api/v1/auth/email/verify`           | public   | Confirm email with mailed token      |
+| POST   | `/api/v1/auth/email/resend`           | public   | Resend verification (opaque)         |
+| POST   | `/api/v1/auth/password/forgot`        | public   | Request reset (opaque)               |
+| POST   | `/api/v1/auth/password/reset`         | public   | Set new password; revoke sessions    |
+| GET    | `/api/v1/products`                    | public   | Published catalogue, paginated       |
+| GET    | `/api/v1/products/:slug`              | public   | Published product detail             |
+| GET    | `/api/v1/orders/:id`                  | customer | Order DTO (ownership in service)     |
+| GET    | `/api/v1/customers/:userId/profile`   | customer | Profile DTO (self or manager/admin)  |
+| GET    | `/api/v1/customers/:userId/addresses` | customer | Address DTOs (self or manager/admin) |
+| GET    | `/api/v1/customers/:userId/wishlist`  | customer | Wishlist DTO (self or manager/admin) |
+| POST   | `/api/v1/payments/webhooks`           | public   | Provider webhook (signature)         |
 
 New external endpoints are Route Handlers that reuse `withRoute` and a DTO.
 They are not added “because REST”.

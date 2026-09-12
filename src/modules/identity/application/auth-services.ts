@@ -13,7 +13,7 @@ import {
   isSessionActive,
   isTokenActive,
   normalizeEmail,
-  principalTypeForRole,
+  principalForUser,
   type AuthUser,
 } from "../domain/auth";
 import {
@@ -191,10 +191,7 @@ export function createAuthServices(deps: {
         throw new ConflictError("email not verified");
       }
       const cookie = await issueSession(user, input.secureCookie);
-      const principal: Principal = {
-        type: principalTypeForRole(user.role),
-        userId: user.id,
-      };
+      const principal = principalForUser(user);
       deps.log.record("auth.login.success", {
         requestId: input.requestId,
         userId: user.id,
@@ -318,7 +315,7 @@ export function createAuthServices(deps: {
       if (!user || canAuthenticate(user, deps.clock.now()) !== "ok") {
         return { type: "anonymous" };
       }
-      return { type: principalTypeForRole(user.role), userId: user.id };
+      return principalForUser(user);
     },
   };
 }

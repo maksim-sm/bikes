@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ConflictError, NotFoundError } from "@/lib/errors";
+import { ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
+import { customerPrincipal } from "../domain/principal";
 import { addProduct, type Wishlist } from "../domain/wishlist";
 import type { WishlistRepository } from "./ports";
 import { createWishlistServices } from "./wishlist-services";
@@ -39,10 +40,16 @@ describe("wishlist services", () => {
         },
       },
     });
-    await wishlist.addProduct("u1", "p1");
-    await expect(wishlist.addProduct("u1", "p1")).rejects.toBeInstanceOf(ConflictError);
-    await expect(wishlist.addProduct("u1", "missing")).rejects.toBeInstanceOf(
+    const self = customerPrincipal("u1");
+    await wishlist.addProduct(self, "u1", "p1");
+    await expect(wishlist.addProduct(self, "u1", "p1")).rejects.toBeInstanceOf(
+      ConflictError,
+    );
+    await expect(wishlist.addProduct(self, "u1", "missing")).rejects.toBeInstanceOf(
       NotFoundError,
     );
+    await expect(
+      wishlist.getWishlist(customerPrincipal("u2"), "u1"),
+    ).rejects.toBeInstanceOf(ForbiddenError);
   });
 });

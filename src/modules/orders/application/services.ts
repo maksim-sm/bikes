@@ -5,6 +5,11 @@ import {
   ValidationError,
 } from "@/lib/errors";
 import { findActiveVariant } from "@/modules/catalog";
+import {
+  assertCanReadOrder,
+  requireOrderManagementRole,
+  type Principal,
+} from "@/modules/identity";
 import { lineTotalMinor, orderTotalMinor, sumMinor } from "@/modules/pricing";
 import {
   formatOrderNumber,
@@ -28,9 +33,9 @@ import type {
 
 export interface OrderServices {
   placeOrder(input: PlaceOrderInput): Promise<Order>;
-  getOrder(id: string, actorUserId: string | null, isStaff: boolean): Promise<Order>;
-  cancelOrder(id: string, actorUserId: string | null, isStaff: boolean): Promise<Order>;
-  completeOrder(id: string): Promise<Order>;
+  getOrder(id: string, principal: Principal): Promise<Order>;
+  cancelOrder(id: string, principal: Principal): Promise<Order>;
+  completeOrder(id: string, principal: Principal): Promise<Order>;
   applyPaymentEvent(
     id: string,
     event: {
@@ -39,6 +44,7 @@ export interface OrderServices {
   ): Promise<Order>;
   applyFulfillmentEvent(
     id: string,
+    principal: Principal,
     event: { type: "assigned" | "shipped" | "delivered" | "failed" | "cancelled" },
   ): Promise<Order>;
 }
@@ -57,17 +63,6 @@ export function createOrderServices(deps: {
       throw new NotFoundError("order not found", { orderId: id });
     }
     return order;
-  }
-
-  function assertOwner(order: Order, actorUserId: string | null, isStaff: boolean): void {
-    if (isStaff) {
-      return;
-    }
-    if (order.userId === null || actorUserId === null || order.userId !== actorUserId) {
-      throw new ForbiddenError("order does not belong to the caller", {
-        orderId: order.id,
-      });
-    }
   }
 
   return {
@@ -140,15 +135,15 @@ export function createOrderServices(deps: {
       return saved;
     },
 
-    async getOrder(id, actorUserId, isStaff) {
+    async getOrder(id, principal) {
       const order = await load(id);
-      assertOwner(order, actorUserId, isStaff);
+      assertCanReadOrder(principal, order.userId, order.id);
       return order;
     },
 
-    async cancelOrder(id, actorUserId, isStaff) {
+    async cancelOrder(id, principal) {
       const order = await load(id);
-      assertOwner(order, actorUserId, isStaff);
+      assertCanReadOrder(principal, order.userId, order.id);
       try {
         order.status = transitionOrder(order.status, "cancel");
       } catch {
@@ -157,7 +152,8 @@ export function createOrderServices(deps: {
       return deps.orders.save(order);
     },
 
-    async completeOrder(id) {
+    async completeOrder(id, principal) {
+      requireOrderManagementRole(principal);
       const order = await load(id);
       try {
         order.status = transitionOrder(order.status, "complete");
@@ -173,7 +169,8 @@ export function createOrderServices(deps: {
       return deps.orders.save({ ...order, paymentStatus });
     },
 
-    async applyFulfillmentEvent(id, event) {
+    async applyFulfillmentEvent(id, principal, event) {
+      requireOrderManagementRole(principal);
       const order = await load(id);
       const fulfillmentStatus: FulfillmentStatus = projectFulfillmentStatus(event);
       return deps.orders.save({ ...order, fulfillmentStatus });

@@ -17,6 +17,12 @@ describe("principal parsing", () => {
     expect(parseBearerPrincipal("staff:staff-1")).toEqual({
       type: "staff",
       userId: "staff-1",
+      roles: [],
+    });
+    expect(parseBearerPrincipal("staff:staff-1:inventory")).toEqual({
+      type: "staff",
+      userId: "staff-1",
+      roles: ["inventory"],
     });
   });
 });
@@ -29,7 +35,9 @@ describe("session services", () => {
     expect(() => sessions.requireAuthenticated(guest)).toThrow(UnauthenticatedError);
     const customer = await sessions.resolve("customer:user-1");
     expect(() => sessions.requireStaff(customer)).toThrow(ForbiddenError);
-    const staff = await sessions.resolve("staff:staff-1");
+    const staff = await sessions.resolve("staff:staff-1:admin");
     expect(sessions.requireStaff(staff).type).toBe("staff");
+    expect(sessions.requireAdmin(staff).roles).toEqual(["admin"]);
+    expect(() => sessions.requireInventoryRole(customer)).toThrow(ForbiddenError);
   });
 });

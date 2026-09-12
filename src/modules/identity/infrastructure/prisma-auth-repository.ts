@@ -1,10 +1,21 @@
 import { prisma } from "@/lib/db";
 import type { AuthUser, StoredAuthToken, StoredSession } from "../domain/auth";
+import type { StaffRole } from "../domain/roles";
 import type {
   AuthTokenRepository,
   SessionRepository,
   UserAccountRepository,
 } from "../application/auth-ports";
+
+const fromPrismaRole: Record<
+  "ADMIN" | "MANAGER" | "INVENTORY" | "ORDER_MANAGEMENT",
+  StaffRole
+> = {
+  ADMIN: "admin",
+  MANAGER: "manager",
+  INVENTORY: "inventory",
+  ORDER_MANAGEMENT: "order_management",
+};
 
 function toUser(row: {
   id: string;
@@ -13,12 +24,14 @@ function toUser(row: {
   role: "CUSTOMER" | "STAFF";
   emailVerifiedAt: Date | null;
   disabledAt: Date | null;
+  staffRoles: Array<{ role: keyof typeof fromPrismaRole }>;
 }): AuthUser {
   return {
     id: row.id,
     email: row.email,
     passwordHash: row.passwordHash,
     role: row.role,
+    staffRoles: row.staffRoles.map((assignment) => fromPrismaRole[assignment.role]),
     emailVerifiedAt: row.emailVerifiedAt,
     disabledAt: row.disabledAt,
   };
@@ -27,11 +40,17 @@ function toUser(row: {
 export function createPrismaUserAccounts(): UserAccountRepository {
   return {
     async findByEmail(email) {
-      const row = await prisma.user.findUnique({ where: { email } });
+      const row = await prisma.user.findUnique({
+        where: { email },
+        include: { staffRoles: true },
+      });
       return row ? toUser(row) : null;
     },
     async findById(id) {
-      const row = await prisma.user.findUnique({ where: { id } });
+      const row = await prisma.user.findUnique({
+        where: { id },
+        include: { staffRoles: true },
+      });
       return row ? toUser(row) : null;
     },
     async create(input) {
@@ -41,6 +60,7 @@ export function createPrismaUserAccounts(): UserAccountRepository {
           passwordHash: input.passwordHash,
           role: input.role,
         },
+        include: { staffRoles: true },
       });
       return toUser(row);
     },
@@ -52,6 +72,7 @@ export function createPrismaUserAccounts(): UserAccountRepository {
           emailVerifiedAt: user.emailVerifiedAt,
           disabledAt: user.disabledAt,
         },
+        include: { staffRoles: true },
       });
       return toUser(row);
     },

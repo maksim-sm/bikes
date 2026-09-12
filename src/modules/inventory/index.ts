@@ -8,6 +8,7 @@
 
 export {
   applyCommit,
+  applyReceipt,
   applyRelease,
   applyReserve,
   available,

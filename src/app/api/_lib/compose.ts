@@ -1,5 +1,17 @@
 import type { CatalogRepository } from "@/modules/catalog";
-import { createMemoryAuthServices, type AuthServices } from "@/modules/identity";
+import {
+  createCustomerServices,
+  createMemoryAuthServices,
+  createMemoryCustomerRepository,
+  createMemoryWishlistRepository,
+  createWishlistServices,
+  type AuthServices,
+  type CustomerRepository,
+  type CustomerServices,
+  type WishlistCatalog,
+  type WishlistRepository,
+  type WishlistServices,
+} from "@/modules/identity";
 import type { OrderRepository } from "@/modules/orders";
 import type { PaymentOrder, PaymentRepository } from "@/modules/payments";
 import { createPaymentServices, MockPaymentProvider } from "@/modules/payments";
@@ -52,6 +64,13 @@ const emptyPaymentOrders: PaymentOrder = {
 
 let catalogRepo: CatalogRepository = emptyCatalog;
 let orderRepo: OrderRepository = emptyOrders;
+let customerRepo: CustomerRepository = createMemoryCustomerRepository();
+let wishlistRepo: WishlistRepository = createMemoryWishlistRepository();
+let wishlistCatalog: WishlistCatalog = {
+  async productExists() {
+    return false;
+  },
+};
 let authOverride: AuthServices | null = null;
 let authPromise: Promise<AuthServices> | null = null;
 
@@ -75,8 +94,31 @@ export function setOrderRepository(repository: OrderRepository): void {
 export function resetRepositories(): void {
   catalogRepo = emptyCatalog;
   orderRepo = emptyOrders;
+  customerRepo = createMemoryCustomerRepository();
+  wishlistRepo = createMemoryWishlistRepository();
+  wishlistCatalog = {
+    async productExists() {
+      return false;
+    },
+  };
   authOverride = null;
   authPromise = null;
+}
+
+export function setCustomerRepository(repository: CustomerRepository): void {
+  customerRepo = repository;
+}
+
+export function setWishlistRepository(repository: WishlistRepository): void {
+  wishlistRepo = repository;
+}
+
+export function getCustomerServices(): CustomerServices {
+  return createCustomerServices({ customers: customerRepo });
+}
+
+export function getWishlistServices(): WishlistServices {
+  return createWishlistServices({ wishlists: wishlistRepo, catalog: wishlistCatalog });
 }
 
 export function setAuthServices(services: AuthServices): void {

@@ -1,4 +1,5 @@
 import { ConflictError, NotFoundError } from "@/lib/errors";
+import { requireOrderManagementRole, type Principal } from "@/modules/identity";
 import {
   nextShipmentStatus,
   quoteMethod,
@@ -10,14 +11,21 @@ import type { DeliveryRepository, ShipmentRecord, ShipmentRepository } from "./p
 export interface DeliveryServices {
   quote(methodCode: string, destination: Destination): Promise<DeliveryQuote | null>;
   listQuotes(destination: Destination): Promise<DeliveryQuote[]>;
-  assignShipment(input: {
-    orderId: string;
-    methodCode: string;
-    costMinor: number;
-  }): Promise<ShipmentRecord>;
-  markShipped(orderId: string, trackingNumber: string): Promise<ShipmentRecord>;
-  markDelivered(orderId: string): Promise<ShipmentRecord>;
-  markFailed(orderId: string): Promise<ShipmentRecord>;
+  assignShipment(
+    principal: Principal,
+    input: {
+      orderId: string;
+      methodCode: string;
+      costMinor: number;
+    },
+  ): Promise<ShipmentRecord>;
+  markShipped(
+    principal: Principal,
+    orderId: string,
+    trackingNumber: string,
+  ): Promise<ShipmentRecord>;
+  markDelivered(principal: Principal, orderId: string): Promise<ShipmentRecord>;
+  markFailed(principal: Principal, orderId: string): Promise<ShipmentRecord>;
 }
 
 export function createDeliveryServices(deps: {
@@ -55,7 +63,8 @@ export function createDeliveryServices(deps: {
       return quotes;
     },
 
-    async assignShipment(input) {
+    async assignShipment(principal, input) {
+      requireOrderManagementRole(principal);
       const existing = await deps.shipments.findByOrder(input.orderId);
       if (existing) {
         throw new ConflictError("order already has a shipment", {
@@ -72,7 +81,8 @@ export function createDeliveryServices(deps: {
       });
     },
 
-    async markShipped(orderId, trackingNumber) {
+    async markShipped(principal, orderId, trackingNumber) {
+      requireOrderManagementRole(principal);
       const shipment = await loadShipment(orderId);
       try {
         return deps.shipments.save({
@@ -85,7 +95,8 @@ export function createDeliveryServices(deps: {
       }
     },
 
-    async markDelivered(orderId) {
+    async markDelivered(principal, orderId) {
+      requireOrderManagementRole(principal);
       const shipment = await loadShipment(orderId);
       try {
         return deps.shipments.save({
@@ -97,7 +108,8 @@ export function createDeliveryServices(deps: {
       }
     },
 
-    async markFailed(orderId) {
+    async markFailed(principal, orderId) {
+      requireOrderManagementRole(principal);
       const shipment = await loadShipment(orderId);
       try {
         return deps.shipments.save({

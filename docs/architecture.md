@@ -14,7 +14,8 @@ built on and the toolchain measured on the machine. `docs/adr/` records the
 decisions behind it — when an ADR and this document disagree, the most recent
 accepted ADR is correct and this document needs updating.
 `docs/inventory.md` defines on-hand, reserved, available, expiration, release,
-and commit. `docs/api.md` is the external HTTP contract.
+and commit. `docs/api.md` is the external HTTP contract. `docs/auth.md`
+defines principals, staff titles, and customer isolation.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -245,8 +246,10 @@ Route Handlers additionally:
 ## 7. Authentication and authorization boundary
 
 `identity` owns users, credentials, sessions, roles, customer profiles,
-addresses, and wishlists. Roles are `customer` and `staff`; add a third only
-when a real permission diverges.
+addresses, and wishlists. Callers are `anonymous` or an authenticated
+`customer` / `staff` principal. Staff job titles (`admin`, `manager`,
+`inventory`, `order_management`) live on `user_staff_roles` (ADR-0017). Use
+the helpers in `identity` — do not invent a second permission matrix.
 
 - Session establishment and verification live in `identity`. No other module
   reads session cookies or tokens.
@@ -255,10 +258,11 @@ when a real permission diverges.
   ambient request state — a service that reaches for the current session cannot
   be tested or called from a background job.
 - **Authorization** (may they do this) is enforced in two places, deliberately:
-  route-level checks in `app/` for coarse access, such as gating `admin/`
-  entirely behind the `staff` role, and ownership checks inside domain services
-  for anything user-scoped. A service that loads an order by id must verify the
-  requesting user owns it; the URL is not a permission.
+  route-level checks in `app/` (`withRoute` policies, including staff titles)
+  and ownership checks inside services for anything user-scoped. A customer
+  must not read another customer's order, address, wishlist, or profile. A
+  service that loads an order by id must verify the principal; the URL is not
+  a permission.
 - Passwords, if used, are hashed with a modern memory-hard algorithm. Sessions
   are httpOnly, `Secure`, and `SameSite=Lax` cookies.
 - The admin area is never exposed through the same navigation as the storefront

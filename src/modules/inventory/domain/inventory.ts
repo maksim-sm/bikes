@@ -45,6 +45,13 @@ export function nextReservationStatus(
   return "EXPIRED";
 }
 
+export function applyReceipt(item: InventoryItem, quantity: number): InventoryItem {
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    throw new Error("quantity_invalid");
+  }
+  return { ...item, onHand: item.onHand + quantity };
+}
+
 export function applyReserve(item: InventoryItem, quantity: number): InventoryItem {
   if (!canReserve(item, quantity)) {
     throw new Error("insufficient_available");

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parseWithSchema } from "@/lib/http";
+import { toPrincipalDto } from "@/app/api/_lib/auth";
 import { withRoute } from "@/app/api/_lib/route";
 import { getAuthServices } from "@/app/api/_lib/compose";
 import { clientRateKey, usesSecureCookies } from "@/app/api/_lib/csrf";
@@ -22,10 +23,7 @@ export const POST = withRoute("public", async (ctx) => {
     secureCookie: usesSecureCookies(),
   });
   return {
-    data: {
-      type: result.principal.type,
-      userId: result.principal.type === "anonymous" ? null : result.principal.userId,
-    },
+    data: toPrincipalDto(result.principal),
     cookies: [result.cookie],
   };
 });

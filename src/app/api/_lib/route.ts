@@ -11,10 +11,15 @@ import {
 } from "@/lib/http";
 import { serializeCookie, type SessionCookie } from "@/modules/identity";
 import type { Principal } from "@/modules/identity";
-import { enforcePolicy, principalUserId, resolvePrincipal } from "./auth";
+import {
+  enforcePolicy,
+  principalUserId,
+  resolvePrincipal,
+  type AuthPolicy,
+} from "./auth";
 import { assertSameOrigin } from "./csrf";
 
-export type AuthPolicy = "public" | "customer" | "staff";
+export type { AuthPolicy } from "./auth";
 
 export interface HttpContext {
   request: Request;
