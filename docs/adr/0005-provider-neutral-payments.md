@@ -1,6 +1,6 @@
 # ADR-0005: Provider-neutral payment abstraction
 
-- Status: Accepted
+- Status: Accepted (amended by [ADR-0022](0022-payment-provider-operations.md))
 - Date: 2026-09-11
 
 ## Context
@@ -80,8 +80,9 @@ interface permits it; nothing is built for it until a second provider exists.
 - The interface will need at least one revision once a real provider is
   integrated. That is expected; the value is that the revision touches
   `payments` and `orders` only.
-- Refunds, partial captures, and settlement reporting are not in the interface
-  yet and will extend it.
+- Refunds, cancels, status reads, and status normalization now extend the
+  interface (ADR-0022). Partial captures and settlement reporting are still
+  out of scope.
 - A mock provider that diverges from real provider behaviour can give false
   confidence in tests. Mitigated by treating the first real integration as a
   point where the mock is corrected to match.

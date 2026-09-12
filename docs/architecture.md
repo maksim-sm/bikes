@@ -18,6 +18,7 @@ and commit. `docs/api.md` is the external HTTP contract. `docs/auth.md`
 defines principals, staff titles, and customer isolation. `docs/catalog.md`
 defines storefront listing filters (PostgreSQL, not Elasticsearch).
 `docs/checkout.md` defines server-controlled order placement.
+`docs/payments.md` defines the replaceable payment provider port.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -280,19 +281,18 @@ Belarusian payment integration is unsettled (bePaid, WebPay, and ERIP are all
 plausible and have different redirect and callback models), so `orders` must not
 know which provider is in use.
 
-`orders` defines the interface it needs; `payments` implements it:
+`orders` depends on events `payments` reports; it does not name a provider.
+Every adapter implements the same port (`docs/payments.md`, ADR-0022):
 
 ```ts
-// modules/payments/types.ts
 export interface PaymentProvider {
-  createPayment(input: {
-    orderId: string;
-    amountMinor: number; // integer minor units, never floats
-    currency: "BYN";
-    returnUrl: string;
-  }): Promise<{ paymentId: string; redirectUrl: string }>;
-
-  verifyWebhook(rawBody: string, headers: Headers): Promise<PaymentEvent>;
+  readonly name: string;
+  createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult>;
+  getPaymentStatus(input: { providerPaymentId: string }): Promise<NormalizedPaymentStatus>;
+  cancelPayment(input: { providerPaymentId: string }): Promise<NormalizedPaymentStatus>;
+  refundPayment(input: RefundPaymentInput): Promise<NormalizedPaymentStatus>;
+  verifyWebhook(rawBody: string, headers: Headers): Promise<VerifiedProviderEvent>;
+  normalizeStatus(rawStatus: string): NormalizedPaymentStatus;
 }
 ```
 
@@ -301,17 +301,22 @@ Constraints:
 - Money is stored and passed as **integer minor units** (kopeks). Floating-point
   arithmetic on money is prohibited everywhere in the codebase.
 - Provider-specific types, SDKs, and field names stay inside
-  `modules/payments/providers/<name>.ts`. Nothing outside `payments` may name a
+  `modules/payments/infrastructure/`. Nothing outside `payments` may name a
   provider.
 - Payment state is authoritative only after webhook verification. A user
   returning to the success URL is a hint, not a confirmation; never mark an order
   paid from a browser redirect.
 - Webhook handlers are **idempotent** and verify signatures before doing any
   work. Providers retry, and duplicate delivery must not double-fulfil an order.
+- `verifyWebhook` returns the provider payment id and a normalized status.
+  `payments` does not parse provider JSON to find the attempt.
+- Create and refund calls carry an **idempotency key** so a retry does not
+  charge or refund twice.
 - `payments` records its own transaction log; it does not write order rows. It
   reports events to `orders`, which decides what an event means for order status.
 - A `MockPaymentProvider` exists from the first scaffold so that checkout can be
-  built and tested before a provider is chosen.
+  built and tested before a provider is chosen. Compose swaps the adapter;
+  services stay the same.
 
 ## 9. Delivery abstraction
 

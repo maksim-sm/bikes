@@ -1,7 +1,7 @@
 # Checkout
 
 Status: authoritative for placing an order. Companion: ADR-0021,
-`docs/cart.md`, `docs/inventory.md`, `docs/api.md`.
+`docs/cart.md`, `docs/inventory.md`, `docs/api.md`, `docs/payments.md`.
 
 Checkout is a server-controlled use case on the `orders` module. The browser
 may send cart identity (via cookies), a delivery method code, and customer
@@ -56,7 +56,8 @@ total.
 - contact name, email, and phone;
 - a server-quoted delivery method (courier or pickup);
 - a delivery address, or the shop pickup point when self-collection is chosen;
-- a payment method (cash or card on receipt, or a bank transfer);
+- a payment method (cash or card on receipt, or a bank transfer — collection
+  through a payment provider is a later swap of `PaymentProvider`);
 - consent, with links to `/legal/terms` and `/legal/privacy`.
 
 Field errors stay on the control. Cart, stock, and delivery conflicts stay

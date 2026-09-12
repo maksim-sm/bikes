@@ -583,7 +583,8 @@ model OrderItem {
 // ===========================================================================
 // payments
 // Owns: payment attempts, the webhook/event log, and refunds.
-// Does not write order rows. Idempotency is on (provider, provider_event_id).
+// Does not write order rows. Webhook idempotency is on
+// (provider, provider_event_id). Create/refund retries use idempotency_key.
 // ===========================================================================
 
 model Payment {
@@ -592,6 +593,7 @@ model Payment {
 
   provider            String  @db.VarChar(40)
   providerPaymentId   String? @map("provider_payment_id") @db.VarChar(120)
+  idempotencyKey      String? @map("idempotency_key") @db.VarChar(160)
   amountMinor         Int     @map("amount_minor")
   currency            String  @default("BYN") @db.Char(3)
   status              PaymentStatus @default(PENDING)
@@ -604,6 +606,7 @@ model Payment {
   refunds Refund[]
 
   @@unique([provider, providerPaymentId], map: "payments_provider_provider_payment_id_key")
+  @@unique([provider, idempotencyKey], map: "payments_provider_idempotency_key_key")
   @@index([orderId, createdAt], map: "payments_order_id_created_at_idx")
   @@index([status, createdAt], map: "payments_status_created_at_idx")
   @@map("payments")

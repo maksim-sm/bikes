@@ -129,6 +129,9 @@ const emptyPayments: PaymentRepository = {
   async findById() {
     return null;
   },
+  async findByProviderPaymentId() {
+    return null;
+  },
   async findEvent() {
     return null;
   },

@@ -7,11 +7,9 @@ import { PrismaClient } from "../../../generated/prisma/client";
 import { ConflictError } from "@/lib/errors";
 import { staffPrincipal } from "@/modules/identity";
 import {
+  createMemoryPaymentRepository,
   createPaymentServices,
   MockPaymentProvider,
-  type Payment,
-  type PaymentEvent,
-  type PaymentRepository,
 } from "@/modules/payments";
 import { createPrismaInventoryRepository } from "../infrastructure/prisma-inventory-repository";
 import {
@@ -183,7 +181,7 @@ describe("reservation concurrency against PostgreSQL", () => {
     const hold = await inventory.reserve({ variantId, quantity: 1 });
     const outcomes: string[] = [];
     const payments = createPaymentServices({
-      payments: memoryPayments(),
+      payments: createMemoryPaymentRepository(),
       provider: new MockPaymentProvider(),
       orders: {
         async amountDueMinor() {
@@ -237,7 +235,7 @@ describe("reservation concurrency against PostgreSQL", () => {
     const hold = await inventory.reserve({ variantId, quantity: 1 });
     const outcomes: string[] = [];
     const payments = createPaymentServices({
-      payments: memoryPayments(),
+      payments: createMemoryPaymentRepository(),
       provider: new MockPaymentProvider(),
       orders: {
         async amountDueMinor() {
@@ -270,27 +268,3 @@ describe("reservation concurrency against PostgreSQL", () => {
     );
   });
 });
-
-function memoryPayments(): PaymentRepository {
-  const payments = new Map<string, Payment>();
-  const events = new Map<string, PaymentEvent>();
-  return {
-    async listByOrder(orderId) {
-      return [...payments.values()].filter((row) => row.orderId === orderId);
-    },
-    async save(payment) {
-      payments.set(payment.id, payment);
-      return payment;
-    },
-    async findById(id) {
-      return payments.get(id) ?? null;
-    },
-    async findEvent(provider, providerEventId) {
-      return events.get(`${provider}:${providerEventId}`) ?? null;
-    },
-    async saveEvent(event) {
-      events.set(`${event.provider}:${event.providerEventId}`, event);
-      return event;
-    },
-  };
-}

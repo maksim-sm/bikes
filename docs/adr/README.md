@@ -24,7 +24,7 @@ Rules:
 | [0002](0002-nextjs-app-router.md)             | Next.js App Router                              | Accepted                                                    |
 | [0003](0003-postgresql.md)                    | PostgreSQL                                      | Accepted                                                    |
 | [0004](0004-prisma.md)                        | Prisma as ORM, pinned to stable                 | Accepted                                                    |
-| [0005](0005-provider-neutral-payments.md)     | Provider-neutral payment abstraction            | Accepted                                                    |
+| [0005](0005-provider-neutral-payments.md)     | Provider-neutral payment abstraction            | Accepted (amended by [0022](0022-payment-provider-operations.md)) |
 | [0006](0006-manual-first-delivery.md)         | Manual-first delivery integration               | Accepted                                                    |
 | [0007](0007-object-storage-media.md)          | Object storage for media, keys not URLs         | Accepted                                                    |
 | [0008](0008-testing-strategy.md)              | Testing strategy                                | Accepted                                                    |
@@ -41,3 +41,4 @@ Rules:
 | [0019](0019-postgres-catalog-search.md)       | Indexed Postgres FTS for catalogue search       | Accepted                                                    |
 | [0020](0020-persistent-cart.md)               | Persistent carts; server-side price/stock       | Accepted                                                    |
 | [0021](0021-server-controlled-checkout.md)    | Checkout totals and reservation are server-side | Accepted                                                    |
+| [0022](0022-payment-provider-operations.md)   | Replaceable payment provider operations         | Accepted                                                    |

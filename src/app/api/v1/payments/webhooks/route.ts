@@ -26,7 +26,10 @@ export const POST = withRoute(
       if (error instanceof Error && error.message === "invalid_signature") {
         throw new UnauthenticatedError("invalid webhook signature");
       }
-      if (error instanceof Error && error.message === "invalid_payload") {
+      if (
+        error instanceof Error &&
+        (error.message === "invalid_payload" || error.message === "unknown_provider_status")
+      ) {
         throw new ValidationError("webhook payload is invalid");
       }
       throw error;
