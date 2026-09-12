@@ -19,6 +19,7 @@ export interface UserAccountRepository {
 export interface SessionRepository {
   insert(session: StoredSession): Promise<void>;
   findByTokenHash(tokenHash: string): Promise<StoredSession | null>;
+  touch(id: string, at: Date): Promise<void>;
   revoke(id: string, at: Date): Promise<void>;
   revokeAllForUser(userId: string, at: Date): Promise<number>;
 }

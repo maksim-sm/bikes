@@ -3,7 +3,8 @@
 Status: authoritative companion to ADR-0027.
 
 Authenticated customers manage their own data at `/account`. Login and
-registration live at `/login` and `/register`. Staff use `/admin`.
+registration live at `/login` and `/register`. Staff use `/admin`
+(`docs/admin.md`).
 
 ## Surfaces
 

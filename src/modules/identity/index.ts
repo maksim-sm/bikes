@@ -84,7 +84,18 @@ export {
   createMemoryCustomerRepository,
   createMemoryWishlistRepository,
 } from "./infrastructure/memory-customer-repository";
-export { SESSION_COOKIE_NAME, MIN_PASSWORD_LENGTH, type AuthUser } from "./domain/auth";
+export {
+  MIN_PASSWORD_LENGTH,
+  SESSION_COOKIE_NAME,
+  SESSION_TTL_MS,
+  STAFF_SESSION_IDLE_MS,
+  STAFF_SESSION_MAX_MS,
+  isSessionActive,
+  sessionPolicyFor,
+  type AuthUser,
+  type SessionPolicy,
+  type StoredSession,
+} from "./domain/auth";
 export {
   clearedSessionCookie,
   readCookieValue,

@@ -29,6 +29,10 @@ support.
 
 The raw session token and password hashes never appear in JSON.
 
+Customer sessions last 14 days. Staff sessions last at most 12 hours and
+end after 30 minutes without a server-side `resolve` (ADR-0029). The admin
+console is described in `docs/admin.md`.
+
 A signed-in customer may change their password (`POST /api/v1/auth/password/change`)
 or revoke every session (`POST /api/v1/auth/logout-all`). Password change
 issues a fresh cookie for the current browser. The account UI is described

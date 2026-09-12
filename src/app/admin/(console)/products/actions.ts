@@ -7,6 +7,7 @@ import { isAppError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { adminHref } from "../../_lib/paths";
 import { parseProductForm } from "../../_lib/product-form";
+import { recordAdminAudit } from "../../_lib/audit";
 import { requireAdminCatalog } from "../../_lib/staff";
 
 export type ProductFormState = { ok: boolean; message: string } | null;
@@ -44,6 +45,12 @@ export async function createProductAction(
       admin.createProduct(principal, parsed),
     );
     createdId = created.id;
+    await recordAdminAudit(principal, {
+      action: "catalog.product.create",
+      entityType: "product",
+      entityId: created.id,
+      after: { slug: created.slug, status: created.status },
+    });
   } catch (error) {
     return fail(error);
   }
@@ -64,6 +71,13 @@ export async function updateProductAction(
     const admin = await getCatalogAdminServices();
     const before = await admin.getProduct(principal, id);
     const after = await admin.updateProduct(principal, id, parsed);
+    await recordAdminAudit(principal, {
+      action: "catalog.product.update",
+      entityType: "product",
+      entityId: id,
+      before: { status: before.status },
+      after: { status: after.status },
+    });
     const removed = [...imageKeysOf(before)].filter(
       (key) => !imageKeysOf(after).has(key),
     );
@@ -83,6 +97,11 @@ export async function publishProductAction(formData: FormData): Promise<void> {
   const principal = await requireAdminCatalog();
   const id = String(formData.get("id") ?? "");
   await getCatalogAdminServices().then((admin) => admin.publish(principal, id));
+  await recordAdminAudit(principal, {
+    action: "catalog.product.publish",
+    entityType: "product",
+    entityId: id,
+  });
   redirect(adminHref(`/admin/products/${id}`));
 }
 
@@ -90,5 +109,10 @@ export async function unpublishProductAction(formData: FormData): Promise<void> 
   const principal = await requireAdminCatalog();
   const id = String(formData.get("id") ?? "");
   await getCatalogAdminServices().then((admin) => admin.unpublish(principal, id));
+  await recordAdminAudit(principal, {
+    action: "catalog.product.unpublish",
+    entityType: "product",
+    entityId: id,
+  });
   redirect(adminHref(`/admin/products/${id}`));
 }

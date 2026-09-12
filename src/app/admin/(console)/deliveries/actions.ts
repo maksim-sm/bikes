@@ -5,6 +5,7 @@ import { isAppError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { fromDateTimeLocal } from "../../_lib/datetime";
 import { parsePriceBynToMinor } from "../../_lib/money";
+import { recordAdminAudit } from "../../_lib/audit";
 import { requireAdminOrderManagement } from "../../_lib/staff";
 
 export type DeliveryFormState = { ok: boolean; message: string } | null;
@@ -50,10 +51,16 @@ export async function assignShipmentAction(
     return { ok: false, message: t.admin.invalidCost };
   }
   try {
-    await getDeliveryServices().assignShipment(principal, {
+    const shipment = await getDeliveryServices().assignShipment(principal, {
       orderId,
       methodCode,
       costMinor,
+    });
+    await recordAdminAudit(principal, {
+      action: "delivery.shipment.assign",
+      entityType: "shipment",
+      entityId: shipment.id,
+      after: { orderId, methodCode },
     });
     return { ok: true, message: t.admin.assigned };
   } catch (error) {
@@ -72,7 +79,17 @@ export async function updateTrackingAction(
     return { ok: false, message: t.admin.invalidTracking };
   }
   try {
-    await getDeliveryServices().updateTracking(principal, orderId, tracking);
+    const shipment = await getDeliveryServices().updateTracking(
+      principal,
+      orderId,
+      tracking,
+    );
+    await recordAdminAudit(principal, {
+      action: "delivery.shipment.tracking",
+      entityType: "shipment",
+      entityId: shipment.id,
+      after: { orderId },
+    });
     return { ok: true, message: t.admin.trackingSaved };
   } catch (error) {
     return fail(error, t.admin.trackingFailed);
@@ -100,6 +117,12 @@ export async function markShippedAction(
       deliveredAt: shipped.deliveredAt,
       notes: String(formData.get("notes") ?? ""),
     });
+    await recordAdminAudit(principal, {
+      action: "delivery.shipment.ship",
+      entityType: "shipment",
+      entityId: shipped.id,
+      after: { orderId },
+    });
     return { ok: true, message: t.admin.shipped };
   } catch (error) {
     return fail(error, t.admin.shipFailed);
@@ -116,7 +139,13 @@ export async function markDeliveredAction(
     return { ok: false, message: t.admin.deliverFailed };
   }
   try {
-    await getDeliveryServices().markDelivered(principal, orderId);
+    const delivered = await getDeliveryServices().markDelivered(principal, orderId);
+    await recordAdminAudit(principal, {
+      action: "delivery.shipment.deliver",
+      entityType: "shipment",
+      entityId: delivered.id,
+      after: { orderId },
+    });
     return { ok: true, message: t.admin.markedDelivered };
   } catch (error) {
     return fail(error, t.admin.deliverFailed);
