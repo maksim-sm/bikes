@@ -108,7 +108,12 @@ function toShipment(row: {
   orderId: string;
   costMinor: number;
   status: ShipmentRecord["status"];
+  carrierName: string | null;
   trackingNumber: string | null;
+  trackingUrl: string | null;
+  notes: string | null;
+  shippedAt: Date | null;
+  deliveredAt: Date | null;
   method: { code: string };
 }): ShipmentRecord {
   return {
@@ -117,7 +122,12 @@ function toShipment(row: {
     methodCode: row.method.code,
     costMinor: row.costMinor,
     status: row.status,
+    carrierName: row.carrierName,
     trackingNumber: row.trackingNumber,
+    trackingUrl: row.trackingUrl,
+    notes: row.notes,
+    shippedAt: row.shippedAt,
+    deliveredAt: row.deliveredAt,
   };
 }
 
@@ -149,15 +159,23 @@ export function createPrismaShipmentRepository(
           deliveryMethodId: method.id,
           status: shipment.status,
           costMinor: shipment.costMinor,
+          carrierName: shipment.carrierName,
           trackingNumber: shipment.trackingNumber,
+          trackingUrl: shipment.trackingUrl,
+          notes: shipment.notes,
+          shippedAt: shipment.shippedAt,
+          deliveredAt: shipment.deliveredAt,
         },
         update: {
           deliveryMethodId: method.id,
           status: shipment.status,
           costMinor: shipment.costMinor,
+          carrierName: shipment.carrierName,
           trackingNumber: shipment.trackingNumber,
-          ...(shipment.status === "SHIPPED" ? { shippedAt: new Date() } : {}),
-          ...(shipment.status === "DELIVERED" ? { deliveredAt: new Date() } : {}),
+          trackingUrl: shipment.trackingUrl,
+          notes: shipment.notes,
+          shippedAt: shipment.shippedAt,
+          deliveredAt: shipment.deliveredAt,
           ...(shipment.status === "FAILED" ? { failedAt: new Date() } : {}),
         },
         include: { method: { select: { code: true } } },

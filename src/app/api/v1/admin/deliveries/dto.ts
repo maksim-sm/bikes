@@ -1,5 +1,8 @@
-import type { DeliveryKind, DeliveryMethodRecord } from "@/modules/delivery";
-import type { ShipmentRecord } from "@/modules/delivery";
+import type {
+  DeliveryKind,
+  DeliveryMethodRecord,
+  ShipmentRecord,
+} from "@/modules/delivery";
 
 export interface DeliveryMethodDto {
   code: string;
@@ -15,7 +18,12 @@ export interface ShipmentDto {
   methodCode: string;
   costMinor: number;
   status: ShipmentRecord["status"];
+  carrierName: string | null;
   trackingNumber: string | null;
+  trackingUrl: string | null;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  notes: string | null;
 }
 
 export function toDeliveryMethodDto(method: DeliveryMethodRecord): DeliveryMethodDto {
@@ -35,6 +43,11 @@ export function toShipmentDto(shipment: ShipmentRecord): ShipmentDto {
     methodCode: shipment.methodCode,
     costMinor: shipment.costMinor,
     status: shipment.status,
+    carrierName: shipment.carrierName,
     trackingNumber: shipment.trackingNumber,
+    trackingUrl: shipment.trackingUrl,
+    shippedAt: shipment.shippedAt ? shipment.shippedAt.toISOString() : null,
+    deliveredAt: shipment.deliveredAt ? shipment.deliveredAt.toISOString() : null,
+    notes: shipment.notes,
   };
 }

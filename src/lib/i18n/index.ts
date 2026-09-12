@@ -46,4 +46,14 @@ export function formatDate(date: Date, locale: Locale = defaultLocale): string {
   }).format(date);
 }
 
+export function formatDateTime(date: Date, locale: Locale = defaultLocale): string {
+  return new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export type { Messages };

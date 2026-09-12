@@ -343,8 +343,9 @@ quoteMethod(method, zones, destination, { subtotalMinor }): DeliveryQuote | null
 - `orders` stores the method `code` and the quoted cost **as captured at
   order time**. Quotes are never recomputed against a historical order.
 - `order_management` assigns one shipment per order and later enters
-  tracking. Carrier SDK types, if any are added later, stay inside
-  `delivery`.
+  tracking facts: carrier name, number, `http(s)` URL, shipped/delivered
+  times, and notes. The shop does not call a carrier. Carrier SDK types,
+  if any are added later, stay inside `delivery`.
 
 ## 10. Media storage abstraction
 

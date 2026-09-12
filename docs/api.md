@@ -162,6 +162,7 @@ webhook bodies.
 | GET    | `/api/v1/admin/delivery/methods`      | order_management | Configured delivery methods          |
 | GET    | `/api/v1/admin/deliveries`            | order_management | Shipment for `?orderId=`             |
 | POST   | `/api/v1/admin/deliveries`            | order_management | Assign a shipment                    |
+| PATCH  | `/api/v1/admin/deliveries`            | order_management | Update staff-entered tracking        |
 | POST   | `/api/v1/admin/deliveries/ship`       | order_management | Record tracking; mark shipped        |
 | POST   | `/api/v1/checkout`                    | public           | Place order; server totals only      |
 | GET    | `/api/v1/orders/:id`                  | customer         | Order DTO (ownership in service)     |

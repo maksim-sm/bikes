@@ -44,8 +44,27 @@ catalogue.
 
 `order_management` staff assign at most one shipment per order (`ASSIGNED` →
 `SHIPPED` → `DELIVERED`, or `FAILED` from an open state). They set the
-captured cost and later the tracking number. Catalog-only staff do not see
+captured cost and later the tracking facts. Catalog-only staff do not see
 this screen.
+
+## Shipment tracking
+
+Tracking is staff-entered. There is no carrier client and no status poll.
+A shipment stores:
+
+| Field            | Meaning                                    |
+| ---------------- | ------------------------------------------ |
+| `carrierName`    | Who is carrying the parcel (free text)     |
+| `trackingNumber` | Reference the carrier gave the shop        |
+| `trackingUrl`    | `http(s)` page a human can open            |
+| `shippedAt`      | When it left, if known                     |
+| `deliveredAt`    | When it was handed over, if known          |
+| `notes`          | Operational remarks (access, call, pickup) |
+
+`updateTracking` writes these fields without changing status. `markShipped`
+requires a tracking number and sets `shippedAt` if it is still empty.
+`markDelivered` sets `deliveredAt` the same way. Staff may correct times
+afterwards. `deliveredAt` cannot be earlier than `shippedAt`.
 
 ## Persistence
 

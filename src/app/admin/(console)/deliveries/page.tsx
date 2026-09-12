@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
 import { getDeliveryServices } from "@/app/api/_lib/compose";
-import { formatPrice, t } from "@/lib/i18n";
-import type { DeliveryKind } from "@/modules/delivery";
+import { isAppError } from "@/lib/errors";
+import { formatDateTime, formatPrice, t } from "@/lib/i18n";
+import type { DeliveryKind, ShipmentRecord } from "@/modules/delivery";
+import { Button, TextField, TextLink } from "@/ui";
 import { requireAdminOrderManagement } from "../../_lib/staff";
 import styles from "../../admin.module.css";
-import { AssignShipmentForm, MarkShippedForm } from "./delivery-forms";
+import {
+  AssignShipmentForm,
+  MarkDeliveredForm,
+  MarkShippedForm,
+  UpdateTrackingForm,
+} from "./delivery-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +29,40 @@ function kindLabel(kind: DeliveryKind): string {
   return t.delivery.kindCourier;
 }
 
-export default async function AdminDeliveriesPage() {
+function statusLabel(status: ShipmentRecord["status"]): string {
+  if (status === "SHIPPED") {
+    return t.admin.shipmentShipped;
+  }
+  if (status === "DELIVERED") {
+    return t.admin.shipmentDelivered;
+  }
+  if (status === "FAILED") {
+    return t.admin.shipmentFailed;
+  }
+  return t.admin.shipmentAssigned;
+}
+
+export default async function AdminDeliveriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ orderId?: string }>;
+}) {
   const principal = await requireAdminOrderManagement();
   const methods = await getDeliveryServices().listMethods(principal);
+  const orderId = (await searchParams).orderId?.trim() ?? "";
+  let shipment: ShipmentRecord | null = null;
+  let lookupError: string | null = null;
+  if (orderId.length > 0) {
+    try {
+      shipment = await getDeliveryServices().getShipment(principal, orderId);
+    } catch (error) {
+      if (isAppError(error) && error.code === "not_found") {
+        lookupError = t.admin.lookupEmpty;
+      } else {
+        throw error;
+      }
+    }
+  }
 
   return (
     <div className={styles.page}>
@@ -58,10 +96,97 @@ export default async function AdminDeliveriesPage() {
           </tbody>
         </table>
       )}
+
+      <form method="get" className={styles.form}>
+        <h2>{t.admin.lookupTitle}</h2>
+        <TextField
+          name="orderId"
+          label={t.admin.orderId}
+          required
+          defaultValue={orderId}
+          autoComplete="off"
+        />
+        <Button type="submit">{t.admin.lookupSubmit}</Button>
+        {lookupError ? (
+          <p className={styles.error} role="status">
+            {lookupError}
+          </p>
+        ) : null}
+      </form>
+
+      {shipment ? (
+        <>
+          <table className={styles.table}>
+            <tbody>
+              <tr>
+                <th>{t.admin.shipmentStatus}</th>
+                <td>{statusLabel(shipment.status)}</td>
+              </tr>
+              <tr>
+                <th>{t.fields.deliveryMethod}</th>
+                <td>{shipment.methodCode}</td>
+              </tr>
+              <tr>
+                <th>{t.admin.carrierName}</th>
+                <td>{shipment.carrierName ?? t.admin.noTime}</td>
+              </tr>
+              <tr>
+                <th>{t.admin.trackingNumber}</th>
+                <td>{shipment.trackingNumber ?? t.admin.noTime}</td>
+              </tr>
+              <tr>
+                <th>{t.admin.trackingUrl}</th>
+                <td>
+                  {shipment.trackingUrl ? (
+                    <TextLink href={shipment.trackingUrl}>
+                      {shipment.trackingUrl}
+                    </TextLink>
+                  ) : (
+                    t.admin.noTime
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <th>{t.admin.shippedAt}</th>
+                <td>
+                  {shipment.shippedAt
+                    ? formatDateTime(shipment.shippedAt)
+                    : t.admin.noTime}
+                </td>
+              </tr>
+              <tr>
+                <th>{t.admin.deliveredAt}</th>
+                <td>
+                  {shipment.deliveredAt
+                    ? formatDateTime(shipment.deliveredAt)
+                    : t.admin.noTime}
+                </td>
+              </tr>
+              <tr>
+                <th>{t.admin.deliveryNotes}</th>
+                <td>{shipment.notes ?? t.admin.noTime}</td>
+              </tr>
+            </tbody>
+          </table>
+          <UpdateTrackingForm
+            values={{
+              orderId: shipment.orderId,
+              carrierName: shipment.carrierName ?? "",
+              trackingNumber: shipment.trackingNumber ?? "",
+              trackingUrl: shipment.trackingUrl ?? "",
+              shippedAt: shipment.shippedAt,
+              deliveredAt: shipment.deliveredAt,
+              notes: shipment.notes ?? "",
+            }}
+          />
+        </>
+      ) : null}
+
       <AssignShipmentForm
         methods={methods.map((method) => ({ code: method.code, name: method.name }))}
       />
       <MarkShippedForm />
+      <MarkDeliveredForm />
     </div>
   );
 }

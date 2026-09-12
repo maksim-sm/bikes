@@ -19,11 +19,13 @@ export {
   type QuoteOptions,
   type ShipmentStatus,
 } from "./domain/quote";
-export type {
-  DeliveryRepository,
-  ShipmentRecord,
-  ShipmentRepository,
-} from "./application/ports";
+export {
+  emptyTracking,
+  normalizeTracking,
+  type ShipmentRecord,
+  type ShipmentTracking,
+} from "./domain/shipment";
+export type { DeliveryRepository, ShipmentRepository } from "./application/ports";
 export { createDeliveryServices, type DeliveryServices } from "./application/services";
 export {
   createDemoDeliveryRepository,

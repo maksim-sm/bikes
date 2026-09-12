@@ -44,4 +44,5 @@ Rules:
 | [0022](0022-payment-provider-operations.md)        | Replaceable payment provider operations         | Accepted                                                                 |
 | [0023](0023-server-authoritative-payment-state.md) | Server-authoritative payment lifecycle          | Accepted                                                                 |
 | [0024](0024-payment-failure-releases-holds.md)     | Failed/expired payments release holds once      | Accepted                                                                 |
-| [0025](0025-belarus-delivery-configuration.md)     | Belarus delivery kinds, zones, and assignment   | Accepted                                                                 |
+| [0025](0025-belarus-delivery-configuration.md)     | Belarus delivery kinds, zones, and assignment   | Accepted (amended by [0026](0026-staff-entered-shipment-tracking.md))    |
+| [0026](0026-staff-entered-shipment-tracking.md)    | Staff-entered shipment tracking, no carrier API | Accepted                                                                 |
