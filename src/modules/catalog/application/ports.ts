@@ -23,7 +23,10 @@ export interface CatalogInventory {
 
 export interface CatalogRepository {
   findBySlug(slug: string): Promise<Product | null>;
+  findById(id: string): Promise<Product | null>;
   listPublished(query: CatalogListQuery): Promise<CatalogListResult>;
+  listAll(): Promise<Product[]>;
+  save(product: Product): Promise<Product>;
   listCategories(): Promise<Category[]>;
   listBrands(): Promise<Brand[]>;
 }

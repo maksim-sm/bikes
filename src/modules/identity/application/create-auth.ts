@@ -38,6 +38,38 @@ export async function createMemoryAuthServices(options?: {
   return Object.assign(services, { mailer });
 }
 
+export const DEMO_STAFF_EMAIL = "staff@bikes.local";
+export const DEMO_STAFF_PASSWORD = "StaffPass12";
+
+/** Development staff account: verified admin, no Prisma required. */
+export async function createDemoAuthServices(): Promise<AuthServices> {
+  const passwords = createArgon2PasswordHasher({ cheap: true });
+  const users = createMemoryUserAccounts();
+  const dummyPasswordHash = await passwords.hash("timing-pad");
+  const created = await users.create({
+    email: DEMO_STAFF_EMAIL,
+    passwordHash: await passwords.hash(DEMO_STAFF_PASSWORD),
+    role: "STAFF",
+  });
+  await users.save({
+    ...created,
+    staffRoles: ["admin"],
+    emailVerifiedAt: new Date("2026-01-01T00:00:00.000Z"),
+  });
+  return createAuthServices({
+    users,
+    sessions: createMemorySessions(),
+    tokens: createMemoryAuthTokens(),
+    passwords,
+    tokensDigest: createSha256TokenDigest(),
+    mailer: createCapturingMailer(),
+    limiter: createMemoryRateLimiter({ limit: 20, windowMs: 60_000 }),
+    log: createSecurityLog(),
+    clock: { now: () => new Date() },
+    dummyPasswordHash,
+  });
+}
+
 export async function createPrismaAuthServices(): Promise<AuthServices> {
   const { createPrismaAuthTokens, createPrismaSessions, createPrismaUserAccounts } =
     await import("../infrastructure/prisma-auth-repository");

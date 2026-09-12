@@ -3,6 +3,7 @@ import {
   canReadCustomerResource,
   canReadOrder,
   canWriteCustomerResource,
+  hasCapability,
   hasStaffRole,
   isAnonymous,
   isCustomer,
@@ -87,6 +88,16 @@ export function requireOrderManagementRole(
   const staff = requireStaff(principal);
   if (!hasStaffRole(staff, "order_management")) {
     throw new ForbiddenError("order-management role required");
+  }
+  return staff;
+}
+
+export function requireCatalogRole(
+  principal: Principal,
+): Extract<Principal, { type: "staff" }> {
+  const staff = requireStaff(principal);
+  if (!hasCapability(staff, "manage_catalog")) {
+    throw new ForbiddenError("catalog role required");
   }
   return staff;
 }

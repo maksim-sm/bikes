@@ -47,9 +47,18 @@ function memoryCatalog(products: Product[]): CatalogRepository {
     async findBySlug(slug) {
       return products.find((item) => item.slug === slug) ?? null;
     },
+    async findById(id) {
+      return products.find((item) => item.id === id) ?? null;
+    },
     async listPublished(query) {
       const items = products.filter((item) => isListedOnStorefront(item, query.now));
       return { items, total: items.length };
+    },
+    async listAll() {
+      return [...products];
+    },
+    async save(product) {
+      return product;
     },
     async listCategories() {
       return [];

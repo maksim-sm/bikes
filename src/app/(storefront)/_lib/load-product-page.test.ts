@@ -3,7 +3,7 @@ import {
   createDemoCatalogInventory,
   createDemoCatalogRepository,
 } from "@/modules/catalog";
-import { ConflictError } from "@/lib/errors";
+import { ConflictError, NotFoundError } from "@/lib/errors";
 import {
   getCartServices,
   resetRepositories,
@@ -39,6 +39,12 @@ describe("loadProductPage", () => {
       costMinor: 2500,
       estimatedDays: 1,
     });
+  });
+
+  it("does not load a draft product on the public page", async () => {
+    setCatalogRepository(createDemoCatalogRepository());
+    setCatalogInventory(createDemoCatalogInventory());
+    await expect(loadProductPage("fx-3-disc")).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it("rejects adding an out-of-stock variant to the cart", async () => {

@@ -15,7 +15,10 @@ Resolved once per request from the `bikes_session` httpOnly cookie.
 Staff titles: `admin`, `manager`, `inventory`, `order_management`. Helpers:
 `requireAnonymous`, `requireCustomer`, `requireStaff`, `requireAdmin`,
 `requireManager`, `requireInventoryRole`, `requireOrderManagementRole`,
-`assertCanReadCustomerResource`, `assertCanReadOrder`.
+`requireCatalogRole`, `assertCanReadCustomerResource`, `assertCanReadOrder`.
+
+`manage_catalog` is a capability of admin and manager. Inventory-only staff
+cannot create or publish products.
 
 ## Customer isolation
 

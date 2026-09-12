@@ -83,12 +83,46 @@ export const demoEmonda: Product = {
   ],
 };
 
+export const demoDraftFx: Product = {
+  id: "p-fx-draft",
+  slug: "fx-3-disc",
+  name: "FX 3 Disc",
+  description: "Городской гибрид. Черновик — не должен появляться на витрине.",
+  status: "DRAFT",
+  publishedAt: null,
+  brandName: "Trek",
+  brandSlug: "trek",
+  categorySlug: "city",
+  bicycleType: "CITY",
+  frameMaterial: "алюминий",
+  groupset: "Shimano Acera",
+  brakeType: "дисковые",
+  modelYear: 2026,
+  warrantyMonths: 12,
+  warrantyText: null,
+  images: [],
+  variants: [
+    {
+      id: "v-fx-m-blue",
+      productId: "p-fx-draft",
+      sku: "FX-M-BLU",
+      frameSize: "M",
+      wheelSize: "28",
+      color: "синий",
+      listPriceMinor: 219900,
+      currency: "BYN",
+      isActive: true,
+    },
+  ],
+};
+
 export function createDemoCatalogRepository() {
   return createMemoryCatalogRepository({
-    products: [demoEmonda],
+    products: [demoEmonda, demoDraftFx],
     categories: [
       { slug: "bikes", name: "Велосипеды", parentSlug: null, sortOrder: 0 },
       { slug: "road", name: "Шоссе", parentSlug: "bikes", sortOrder: 1 },
+      { slug: "city", name: "Городские", parentSlug: "bikes", sortOrder: 2 },
     ],
     brands: [{ slug: "trek", name: "Trek" }],
   });

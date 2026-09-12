@@ -2,6 +2,7 @@ import {
   requireAdmin,
   requireAnonymous,
   requireAuthenticated,
+  requireCatalogRole,
   requireCustomer,
   requireInventoryRole,
   requireManager,
@@ -26,6 +27,7 @@ export interface SessionServices {
   requireManager(principal: Principal): Extract<Principal, { type: "staff" }>;
   requireInventoryRole(principal: Principal): Extract<Principal, { type: "staff" }>;
   requireOrderManagementRole(principal: Principal): Extract<Principal, { type: "staff" }>;
+  requireCatalogRole(principal: Principal): Extract<Principal, { type: "staff" }>;
 }
 
 export function createSessionServices(deps: { sessions: SessionPort }): SessionServices {
@@ -41,6 +43,7 @@ export function createSessionServices(deps: { sessions: SessionPort }): SessionS
     requireManager,
     requireInventoryRole,
     requireOrderManagementRole,
+    requireCatalogRole,
   };
 }
 
