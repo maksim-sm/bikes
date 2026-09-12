@@ -210,13 +210,49 @@ describe("delivery services", () => {
       methodCode: "minsk-courier",
       costMinor: 2500,
     });
+    expect(assigned).toMatchObject({
+      status: "ASSIGNED",
+      carrierName: null,
+      trackingNumber: null,
+      trackingUrl: null,
+      shippedAt: null,
+      deliveredAt: null,
+      notes: null,
+    });
     const shipped = await delivery.markShipped(ops, "o1", "BY123");
-    expect(assigned.status).toBe("ASSIGNED");
     expect(shipped.status).toBe("SHIPPED");
     expect(shipped.trackingNumber).toBe("BY123");
+    expect(shipped.shippedAt).toBeInstanceOf(Date);
+    const tracked = await delivery.updateTracking(ops, "o1", {
+      carrierName: "Европочта",
+      trackingNumber: "BY123",
+      trackingUrl: "https://evropochta.by/track/BY123",
+      shippedAt: shipped.shippedAt,
+      deliveredAt: null,
+      notes: "хрупкое",
+    });
+    expect(tracked).toMatchObject({
+      carrierName: "Европочта",
+      trackingUrl: "https://evropochta.by/track/BY123",
+      notes: "хрупкое",
+    });
+    const delivered = await delivery.markDelivered(ops, "o1");
+    expect(delivered.status).toBe("DELIVERED");
+    expect(delivered.deliveredAt).toBeInstanceOf(Date);
+    await expect(
+      delivery.updateTracking(ops, "o1", {
+        carrierName: "Европочта",
+        trackingNumber: "BY123",
+        trackingUrl: "not-a-url",
+        shippedAt: shipped.shippedAt,
+        deliveredAt: delivered.deliveredAt,
+        notes: null,
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
     expect(await delivery.getShipment(ops, "o1")).toMatchObject({
       orderId: "o1",
-      status: "SHIPPED",
+      status: "DELIVERED",
+      carrierName: "Европочта",
     });
   });
 });

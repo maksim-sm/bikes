@@ -8,7 +8,17 @@ import {
   type Destination,
   type QuoteOptions,
 } from "../domain/quote";
-import type { DeliveryRepository, ShipmentRecord, ShipmentRepository } from "./ports";
+import {
+  emptyTracking,
+  normalizeTracking,
+  type ShipmentRecord,
+  type ShipmentTracking,
+} from "../domain/shipment";
+import type { DeliveryRepository, ShipmentRepository } from "./ports";
+
+export interface Clock {
+  now(): Date;
+}
 
 export interface DeliveryServices {
   quote(
@@ -27,6 +37,11 @@ export interface DeliveryServices {
       costMinor: number;
     },
   ): Promise<ShipmentRecord>;
+  updateTracking(
+    principal: Principal,
+    orderId: string,
+    tracking: ShipmentTracking,
+  ): Promise<ShipmentRecord>;
   markShipped(
     principal: Principal,
     orderId: string,
@@ -36,10 +51,28 @@ export interface DeliveryServices {
   markFailed(principal: Principal, orderId: string): Promise<ShipmentRecord>;
 }
 
+function mapTrackingError(error: unknown): never {
+  if (error instanceof Error) {
+    throw new ValidationError(error.message);
+  }
+  throw error;
+}
+
+function trackingOf(input: ShipmentTracking): ShipmentTracking {
+  try {
+    return normalizeTracking(input);
+  } catch (error) {
+    mapTrackingError(error);
+  }
+}
+
 export function createDeliveryServices(deps: {
   methods: DeliveryRepository;
   shipments: ShipmentRepository;
+  clock?: Clock;
 }): DeliveryServices {
+  const now = () => (deps.clock ?? { now: () => new Date() }).now();
+
   async function loadShipment(orderId: string): Promise<ShipmentRecord> {
     const shipment = await deps.shipments.findByOrder(orderId);
     if (!shipment) {
@@ -104,22 +137,35 @@ export function createDeliveryServices(deps: {
         methodCode: input.methodCode,
         costMinor: input.costMinor,
         status: "ASSIGNED",
-        trackingNumber: null,
+        ...emptyTracking(),
+      });
+    },
+
+    async updateTracking(principal, orderId, tracking) {
+      requireOrderManagementRole(principal);
+      const shipment = await loadShipment(orderId);
+      return deps.shipments.save({
+        ...shipment,
+        ...trackingOf(tracking),
       });
     },
 
     async markShipped(principal, orderId, trackingNumber) {
       requireOrderManagementRole(principal);
-      const tracking = trackingNumber.trim();
-      if (tracking.length === 0) {
+      const shipment = await loadShipment(orderId);
+      const tracking = trackingOf({
+        ...shipment,
+        trackingNumber,
+      });
+      if (tracking.trackingNumber === null) {
         throw new ValidationError("trackingNumber is required");
       }
-      const shipment = await loadShipment(orderId);
       try {
         return deps.shipments.save({
           ...shipment,
+          ...tracking,
           status: nextShipmentStatus(shipment.status, "ship"),
-          trackingNumber: tracking,
+          shippedAt: shipment.shippedAt ?? now(),
         });
       } catch {
         throw new ConflictError("shipment cannot be marked shipped", { orderId });
@@ -133,6 +179,7 @@ export function createDeliveryServices(deps: {
         return deps.shipments.save({
           ...shipment,
           status: nextShipmentStatus(shipment.status, "deliver"),
+          deliveredAt: shipment.deliveredAt ?? now(),
         });
       } catch {
         throw new ConflictError("shipment cannot be marked delivered", { orderId });

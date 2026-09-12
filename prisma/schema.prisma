@@ -725,7 +725,10 @@ model Delivery {
   deliveryZoneId   String?              @map("delivery_zone_id") @db.Uuid
   status           DeliveryRecordStatus @default(ASSIGNED)
   costMinor        Int                  @map("cost_minor")
+  carrierName      String?              @map("carrier_name") @db.VarChar(80)
   trackingNumber   String?              @map("tracking_number") @db.VarChar(80)
+  trackingUrl      String?              @map("tracking_url") @db.VarChar(500)
+  notes            String?              @db.Text
   assignedAt       DateTime             @default(now()) @map("assigned_at") @db.Timestamptz(6)
   shippedAt        DateTime?            @map("shipped_at") @db.Timestamptz(6)
   deliveredAt      DateTime?            @map("delivered_at") @db.Timestamptz(6)
