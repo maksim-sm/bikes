@@ -356,7 +356,7 @@ export function resetRepositories(): void {
   cartPromise = null;
   cartRepo = createMemoryCartRepository();
   composeGlobals.bikesMemoryCart = cartRepo;
-  composeGlobals.bikesAuthPromise = undefined;
+  delete composeGlobals.bikesAuthPromise;
 }
 
 export function setInventoryServices(services: InventoryServices): void {
