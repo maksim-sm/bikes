@@ -27,6 +27,9 @@ export default async function AccountLayout({ children }: { children: ReactNode 
             <TextLink href="/account/orders" subtle>
               {t.account.orders}
             </TextLink>
+            <TextLink href="/account/wishlist" subtle>
+              {t.account.wishlist}
+            </TextLink>
             <TextLink href="/account/security" subtle>
               {t.account.security}
             </TextLink>

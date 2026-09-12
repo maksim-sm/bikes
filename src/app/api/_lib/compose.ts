@@ -9,6 +9,9 @@ import {
   createCatalogServices,
   createDemoCatalogRepository,
   createPrismaCatalogRepository,
+  isListedOnStorefront,
+  isSellableVariant,
+  lowestListPriceMinor,
   type CatalogAdminServices,
   type CatalogServices,
 } from "@/modules/catalog";
@@ -21,7 +24,6 @@ import {
   type CartServices,
   type CartVariantSnapshot,
 } from "@/modules/cart";
-import { isListedOnStorefront, isSellableVariant } from "@/modules/catalog";
 import { createPricingServices } from "@/modules/pricing";
 import {
   createDemoDeliveryRepository,
@@ -47,13 +49,16 @@ import {
   createMemoryCustomerRepository,
   createMemoryWishlistRepository,
   createPrismaCustomerRepository,
+  createPrismaWishlistRepository,
   createWishlistServices,
   type AuthServices,
   type CustomerRepository,
   type CustomerServices,
   type WishlistCatalog,
+  type WishlistCatalogProduct,
   type WishlistRepository,
   type WishlistServices,
+  type WishlistStock,
 } from "@/modules/identity";
 import {
   demoCustomerAddress,
@@ -88,6 +93,7 @@ import {
   createMemoryMediaRepository,
   createMemoryMediaStore,
   createPrismaMediaRepository,
+  mediaSrc,
   type MediaServices,
 } from "@/modules/media";
 
@@ -159,6 +165,7 @@ const composeGlobals = globalThis as unknown as {
   bikesAuthPromise?: Promise<AuthServices>;
   bikesMemoryShipments?: ShipmentRepository;
   bikesMemoryCustomers?: CustomerRepository;
+  bikesMemoryWishlist?: WishlistRepository;
 };
 
 const DEMO_STOCK: InventoryItem[] = [
@@ -187,7 +194,12 @@ let orderRepo: OrderRepository = emptyOrders;
 let customerRepo: CustomerRepository = createMemoryCustomerRepository();
 let wishlistRepo: WishlistRepository = createMemoryWishlistRepository();
 let wishlistCatalog: WishlistCatalog = {
-  async productExists() {
+  async getProduct() {
+    return null;
+  },
+};
+let wishlistStock: WishlistStock = {
+  async anyInStock() {
     return false;
   },
 };
@@ -415,7 +427,12 @@ export function resetRepositories(): void {
   customerRepo = createMemoryCustomerRepository();
   wishlistRepo = createMemoryWishlistRepository();
   wishlistCatalog = {
-    async productExists() {
+    async getProduct() {
+      return null;
+    },
+  };
+  wishlistStock = {
+    async anyInStock() {
       return false;
     },
   };
@@ -431,6 +448,7 @@ export function resetRepositories(): void {
   composeGlobals.bikesMemoryCart = cartRepo;
   composeGlobals.bikesMemoryOrders = createMemoryOrderRepository();
   composeGlobals.bikesMemoryCustomers = createMemoryCustomerRepository();
+  composeGlobals.bikesMemoryWishlist = createMemoryWishlistRepository();
   paymentRepo = createMemoryPaymentRepository();
   paymentProvider = new MockPaymentProvider();
   composeGlobals.bikesMemoryPayments = paymentRepo;
@@ -512,6 +530,61 @@ export function setWishlistRepository(repository: WishlistRepository): void {
   wishlistRepo = repository;
 }
 
+export function setWishlistCatalog(catalog: WishlistCatalog): void {
+  wishlistCatalog = catalog;
+}
+
+export function setWishlistStock(stock: WishlistStock): void {
+  wishlistStock = stock;
+}
+
+function sharedMemoryWishlist(): WishlistRepository {
+  if (process.env.VITEST === "true") {
+    return wishlistRepo;
+  }
+  composeGlobals.bikesMemoryWishlist ??= createMemoryWishlistRepository();
+  return composeGlobals.bikesMemoryWishlist;
+}
+
+function composeWishlistCatalog(catalog: CatalogRepository): WishlistCatalog {
+  return {
+    async getProduct(productId) {
+      const product = await catalog.findById(productId);
+      if (!product) {
+        return null;
+      }
+      const image = [...product.images].sort(
+        (left, right) => left.sortOrder - right.sortOrder,
+      )[0];
+      const mapped: WishlistCatalogProduct = {
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        brandName: product.brandName,
+        listed: isListedOnStorefront(product, new Date()),
+        listPriceMinor: lowestListPriceMinor(product),
+        variantIds: product.variants
+          .filter(isSellableVariant)
+          .map((variant) => variant.id),
+        image: image ? { src: mediaSrc(image.key), alt: image.alt } : null,
+      };
+      return mapped;
+    },
+  };
+}
+
+function composeWishlistStock(inventory: CatalogInventory): WishlistStock {
+  return {
+    async anyInStock(variantIds) {
+      if (variantIds.length === 0) {
+        return false;
+      }
+      const rows = await inventory.listAvailabilityByVariantIds(variantIds);
+      return rows.some((row) => row.available > 0);
+    },
+  };
+}
+
 function getCustomerRepository(): CustomerRepository {
   if (process.env.VITEST === "true") {
     return customerRepo;
@@ -530,8 +603,21 @@ export function getCustomerServices(): CustomerServices {
   return createCustomerServices({ customers: getCustomerRepository() });
 }
 
-export function getWishlistServices(): WishlistServices {
-  return createWishlistServices({ wishlists: wishlistRepo, catalog: wishlistCatalog });
+export async function getWishlistServices(): Promise<WishlistServices> {
+  if (process.env.VITEST === "true") {
+    return createWishlistServices({
+      wishlists: wishlistRepo,
+      catalog: wishlistCatalog,
+      stock: wishlistStock,
+    });
+  }
+  const catalog = composeWishlistCatalog(await getCatalogRepository());
+  const stock = composeWishlistStock(await getCatalogInventory());
+  const wishlists =
+    process.env.NODE_ENV === "production"
+      ? createPrismaWishlistRepository()
+      : sharedMemoryWishlist();
+  return createWishlistServices({ wishlists, catalog, stock });
 }
 
 export function setAuthServices(services: AuthServices): void {

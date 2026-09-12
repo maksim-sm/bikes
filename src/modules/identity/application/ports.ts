@@ -14,6 +14,21 @@ export interface WishlistRepository {
   save(wishlist: Wishlist): Promise<Wishlist>;
 }
 
+export interface WishlistCatalogProduct {
+  id: string;
+  slug: string;
+  name: string;
+  brandName: string;
+  listed: boolean;
+  listPriceMinor: number | null;
+  variantIds: string[];
+  image: { src: string; alt: string } | null;
+}
+
 export interface WishlistCatalog {
-  productExists(productId: string): Promise<boolean>;
+  getProduct(productId: string): Promise<WishlistCatalogProduct | null>;
+}
+
+export interface WishlistStock {
+  anyInStock(variantIds: readonly string[]): Promise<boolean>;
 }

@@ -284,10 +284,11 @@ model Wishlist {
 }
 
 model WishlistItem {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  wishlistId String   @map("wishlist_id") @db.Uuid
-  productId  String   @map("product_id") @db.Uuid
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  wishlistId      String   @map("wishlist_id") @db.Uuid
+  productId       String   @map("product_id") @db.Uuid
+  savedPriceMinor Int?     @map("saved_price_minor")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
   product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)

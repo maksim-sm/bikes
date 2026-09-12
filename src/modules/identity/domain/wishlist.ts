@@ -1,23 +1,39 @@
+export interface WishlistEntry {
+  productId: string;
+  savedPriceMinor: number | null;
+}
+
 export interface Wishlist {
   id: string;
   userId: string;
-  productIds: string[];
+  items: WishlistEntry[];
+}
+
+export function productIds(wishlist: Wishlist): string[] {
+  return wishlist.items.map((item) => item.productId);
 }
 
 export function canAddProduct(wishlist: Wishlist, productId: string): boolean {
-  return !wishlist.productIds.includes(productId);
+  return !wishlist.items.some((item) => item.productId === productId);
 }
 
-export function addProduct(wishlist: Wishlist, productId: string): Wishlist {
+export function addProduct(
+  wishlist: Wishlist,
+  productId: string,
+  savedPriceMinor: number | null,
+): Wishlist {
   if (!canAddProduct(wishlist, productId)) {
     throw new Error("wishlist_duplicate");
   }
-  return { ...wishlist, productIds: [...wishlist.productIds, productId] };
+  return {
+    ...wishlist,
+    items: [...wishlist.items, { productId, savedPriceMinor }],
+  };
 }
 
 export function removeProduct(wishlist: Wishlist, productId: string): Wishlist {
   return {
     ...wishlist,
-    productIds: wishlist.productIds.filter((id) => id !== productId),
+    items: wishlist.items.filter((item) => item.productId !== productId),
   };
 }

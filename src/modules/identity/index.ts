@@ -15,13 +15,17 @@ export {
 export {
   addProduct,
   canAddProduct,
+  productIds,
   removeProduct,
   type Wishlist,
+  type WishlistEntry,
 } from "./domain/wishlist";
 export type {
   CustomerRepository,
   WishlistCatalog,
+  WishlistCatalogProduct,
   WishlistRepository,
+  WishlistStock,
 } from "./application/ports";
 export {
   createCustomerServices,
@@ -29,7 +33,10 @@ export {
 } from "./application/customer-services";
 export {
   createWishlistServices,
+  type WishlistIssue,
   type WishlistServices,
+  type WishlistView,
+  type WishlistViewItem,
 } from "./application/wishlist-services";
 export {
   actorUserId,
@@ -98,6 +105,7 @@ export {
   createPrismaAuthServices,
 } from "./application/create-auth";
 export { createPrismaCustomerRepository } from "./infrastructure/prisma-customer-repository";
+export { createPrismaWishlistRepository } from "./infrastructure/prisma-wishlist-repository";
 export type {
   AuthMailer,
   PasswordHasher,

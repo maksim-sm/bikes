@@ -21,7 +21,8 @@ defines storefront listing filters (PostgreSQL, not Elasticsearch).
 `docs/payments.md` defines the replaceable payment provider port.
 `docs/delivery.md` defines methods, zones, free-delivery thresholds, and
 staff shipment assignment. `docs/account.md` defines the customer
-self-service area.
+self-service area. `docs/wishlist.md` defines the authenticated product
+wishlist.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -32,7 +33,7 @@ exist for auth tables, catalog listing, inventory, media, production
 carts, customer profiles/addresses, and orders. Local demo catalogue and cart stay in-memory. Integration and
 end-to-end test tiers are still targets. Storefront product, catalog, cart,
 and checkout pages exist; staff can manage the catalogue and assign
-shipments under `/admin`. Customers manage profile, addresses, orders,
+shipments under `/admin`. Customers manage profile, addresses, wishlist, orders,
 payment/delivery status, and sessions under `/account` (`docs/account.md`).
 Cart and
 checkout totals are recalculated server-side (`docs/cart.md`,
@@ -129,7 +130,9 @@ merging them tends to scatter price logic across product queries.
 
 Customer profile, address book, and wishlist operations are application
 services on `identity`. The signed-in UI is `/account` (`docs/account.md`).
-There is no `customers` or `wishlist` module folder.
+The wishlist is authenticated-only, product-grained, and never stores a
+duplicate `productId` (`docs/wishlist.md`). There is no `customers` or
+`wishlist` module folder.
 
 ### Module anatomy
 
