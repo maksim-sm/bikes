@@ -14,15 +14,14 @@ built on and the toolchain measured on the machine. `docs/adr/` records the
 decisions behind it — when an ADR and this document disagree, the most recent
 accepted ADR is correct and this document needs updating.
 `docs/inventory.md` defines on-hand, reserved, available, expiration, release,
-and commit.
+and commit. `docs/api.md` is the external HTTP contract.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
 boundary rules, the design system, the Prisma schema through the inventory
-ledger, and application services for catalog, cart, inventory, orders,
-payments, delivery, customers, and wishlist. No storefront features,
-authentication, or Prisma repositories have been built yet. Integration and
-end-to-end test tiers are still targets.
+ledger, application services, and versioned Route Handlers under `/api/v1`.
+No storefront features, cookie sessions, or Prisma repositories have been
+built yet. Integration and end-to-end test tiers are still targets.
 
 ## 1. Why a modular monolith
 
@@ -217,15 +216,15 @@ imported nowhere but module repositories.
 ## 6. API boundary
 
 The application is server-rendered; most data reaches the browser through server
-components, so **there is no general-purpose public REST API and none should be
-built speculatively.** HTTP endpoints exist only where something outside our
-rendering pipeline must call in.
+components. **Do not grow an ad-hoc REST surface.** External HTTP exists only
+where something outside our rendering pipeline must call in, and those callers
+share one contract: `docs/api.md` (ADR-0015).
 
-| Surface           | Location              | Use for                                                              |
-| ----------------- | --------------------- | -------------------------------------------------------------------- |
-| Server components | `app/**/page.tsx`     | Reading data for rendering                                           |
-| Server actions    | `app/**/actions.ts`   | Mutations from our own UI                                            |
-| Route handlers    | `app/api/**/route.ts` | Payment webhooks, health checks, sitemap, future third-party clients |
+| Surface           | Location              | Use for                                                  |
+| ----------------- | --------------------- | -------------------------------------------------------- |
+| Server components | `app/**/page.tsx`     | Reading data for rendering                               |
+| Server actions    | `app/**/actions.ts`   | Mutations from our own UI                                |
+| Route handlers    | `app/api/**/route.ts` | Health, payment webhooks, `/api/v1/*` for non-UI clients |
 
 Rules for all three: every entry point validates its input with a schema
 (Zod or equivalent) at the boundary and passes typed, validated data inward, so
@@ -233,6 +232,14 @@ domain services can assume well-formed input. Every entry point performs its own
 authorization check — never rely on the caller having checked. Domain errors from
 `lib/errors.ts` are mapped to HTTP status codes or UI state at this layer only;
 internal error details and stack traces never reach the client.
+
+Route Handlers additionally:
+
+- wrap work in `withRoute` so the envelope, request id, logs, and error map
+  are the same on every path;
+- return DTOs, never service objects or spread domain entities;
+- paginate, filter, and sort through the allow-lists in `src/lib/http`;
+- resolve a `Principal` from `identity` and pass it into services.
 
 ## 7. Authentication and authorization boundary
 
@@ -479,8 +486,9 @@ to stable 7.10.0 (ADR-0004), the provider-neutral payment abstraction
 (ADR-0009), BYN as integer minor units (ADR-0010), CSS Modules with design
 tokens for styling (ADR-0011), the first catalogue schema with per-variant
 stock grain and no EAV (ADR-0012), independent order/payment/fulfillment
-statuses (ADR-0013), and the race-safe inventory ledger (ADR-0014). Availability
-vocabulary is in `docs/inventory.md`.
+statuses (ADR-0013), the race-safe inventory ledger (ADR-0014), and Route
+Handler HTTP conventions (ADR-0015). Availability vocabulary is in
+`docs/inventory.md`; the HTTP envelope is in `docs/api.md`.
 
 What remains open. Each names who must decide and what it blocks; none should be
 silently settled by whoever writes the first line of relevant code.

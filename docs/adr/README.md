@@ -34,3 +34,4 @@ Rules:
 | [0012](0012-first-catalogue-schema.md)        | Variants own stock grain; no EAV               | Partially superseded by [0014](0014-race-safe-inventory.md) |
 | [0013](0013-independent-commerce-statuses.md) | Independent order/payment/fulfillment statuses | Accepted                                                    |
 | [0014](0014-race-safe-inventory.md)           | Race-safe inventory ledger in `inventory`      | Accepted                                                    |
+| [0015](0015-http-route-handler-contract.md)   | Route Handler envelope, auth, and DTOs         | Accepted                                                    |

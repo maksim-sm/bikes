@@ -88,7 +88,7 @@ To add a variable: add it to the schema in `src/lib/config.ts`, add it to
 ```
 src/
   app/            Routing and rendering only (Next.js App Router)
-    api/health/   Liveness endpoint
+    api/          Route Handlers: health and `/api/v1` (see docs/api.md)
   modules/        Domain modules — the modular-monolith seam
     catalog/ pricing/ cart/ orders/
     payments/ delivery/ identity/ media/ inventory/ audit/
@@ -97,6 +97,7 @@ src/
     config.ts     Validated environment configuration
     logger.ts     Structured JSON logging
     errors.ts     Error taxonomy
+    http/         Envelope, validation, pagination, error mapping
     i18n/         Locale resolution, Russian messages, Intl formatting
     db.ts         Prisma client (imported only by module repositories)
 prisma/           Schema and committed SQL migrations
@@ -173,12 +174,13 @@ decide it. See `src/modules/README.md` for the internal layering rules.
 
 - `docs/architecture.md` — the architecture contract: what goes where and why.
 - `docs/inventory.md` — on-hand, reserved, available, expiration, release, commit.
+- `docs/api.md` — Route Handler envelope, validation, errors, auth, pagination.
 - `docs/adr/` — decision records. Read these before proposing a change to the
   stack; each lists the conditions under which reopening it is legitimate.
 - `docs/BASELINE.md` — the pre-implementation audit.
 
 ## Status
 
-Foundation, visual system, database schema, and application services for
-catalog, cart, inventory, orders, payments, delivery, customers, and wishlist.
-No catalogue UI, cart page, checkout, or authentication yet.
+Foundation, visual system, database schema, application services, and
+versioned HTTP Route Handlers. No catalogue UI, cart page, checkout, or
+cookie sessions yet.

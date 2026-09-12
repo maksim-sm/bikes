@@ -1,8 +1,9 @@
 /**
  * identity module — public entry point.
  *
- * Owns users, profiles, addresses, and wishlists. Customer and wishlist
- * operations are the public application services for those aggregates.
+ * Owns users, profiles, addresses, wishlists, and request principals.
+ * Customer and wishlist operations are application services. Session
+ * resolution is a port so Route Handlers never read tokens themselves.
  */
 
 export {
@@ -31,3 +32,16 @@ export {
   createWishlistServices,
   type WishlistServices,
 } from "./application/wishlist-services";
+export {
+  actorUserId,
+  isAuthenticated,
+  isStaff,
+  parseBearerPrincipal,
+  type Principal,
+} from "./domain/principal";
+export {
+  createBearerSessionPort,
+  createSessionServices,
+  type SessionPort,
+  type SessionServices,
+} from "./application/session-services";
