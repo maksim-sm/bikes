@@ -1,4 +1,4 @@
-import { Prisma } from "../../../generated/prisma/client";
+import type { Prisma } from "../../../generated/prisma/client";
 import { prisma, type PrismaClient } from "@/lib/db";
 import type { AuditRecord } from "../domain/audit";
 import type { AuditRepository } from "../application/ports";
@@ -32,21 +32,22 @@ export function createPrismaAuditRepository(
 ): AuditRepository {
   return {
     async append(record) {
-      const row = await client.auditLog.create({
-        data: {
-          id: record.id,
-          actorUserId: record.actorUserId,
-          requestId: record.requestId,
-          action: record.action,
-          entityType: record.entityType,
-          entityId: record.entityId,
-          before:
-            record.before === null ? undefined : (record.before as Prisma.InputJsonValue),
-          after:
-            record.after === null ? undefined : (record.after as Prisma.InputJsonValue),
-          createdAt: record.createdAt,
-        },
-      });
+      const data: Prisma.AuditLogUncheckedCreateInput = {
+        id: record.id,
+        actorUserId: record.actorUserId,
+        requestId: record.requestId,
+        action: record.action,
+        entityType: record.entityType,
+        entityId: record.entityId,
+        createdAt: record.createdAt,
+      };
+      if (record.before !== null) {
+        data.before = record.before as Prisma.InputJsonValue;
+      }
+      if (record.after !== null) {
+        data.after = record.after as Prisma.InputJsonValue;
+      }
+      const row = await client.auditLog.create({ data });
       return toRecord(row);
     },
     async listByEntity(entityType, entityId) {
