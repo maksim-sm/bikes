@@ -13,6 +13,7 @@ import { mapInventoryWriteError } from "./inventory-errors";
 import type { Clock, InventoryRepository } from "./ports";
 
 const DEFAULT_HOLD_MS = 15 * 60 * 1000;
+const CONFIRMED_HOLD_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface StockSnapshot {
   onHand: number;
@@ -47,7 +48,10 @@ export interface InventoryServices {
   cancel(reservationId: string): Promise<Reservation>;
   cancelForOrder(orderId: string): Promise<Reservation[]>;
   commitForOrder(orderId: string): Promise<Reservation[]>;
+  hasActiveForOrder(orderId: string): Promise<boolean>;
+  confirmForOrder(orderId: string): Promise<void>;
   expireDue(): Promise<number>;
+  listDueActive(): Promise<Reservation[]>;
   listInStockVariantIds(): Promise<string[]>;
   listAvailabilityByVariantIds(
     variantIds: readonly string[],
@@ -162,7 +166,14 @@ export function createInventoryServices(deps: {
       const holds = await deps.inventory.listActiveByOrder(orderId);
       const released: Reservation[] = [];
       for (const hold of holds) {
-        released.push(await transition(deps, hold.id, "release"));
+        try {
+          released.push(await transition(deps, hold.id, "release"));
+        } catch (error) {
+          if (error instanceof ConflictError) {
+            continue;
+          }
+          throw error;
+        }
       }
       return released;
     },
@@ -182,6 +193,23 @@ export function createInventoryServices(deps: {
 
     async listAvailabilityByVariantIds(variantIds) {
       return deps.inventory.listAvailabilityByVariantIds(variantIds);
+    },
+
+    async hasActiveForOrder(orderId) {
+      const holds = await deps.inventory.listActiveByOrder(orderId);
+      return holds.length > 0;
+    },
+
+    async confirmForOrder(orderId) {
+      const holds = await deps.inventory.listActiveByOrder(orderId);
+      const expiresAt = new Date(deps.clock.now().getTime() + CONFIRMED_HOLD_MS);
+      for (const hold of holds) {
+        await deps.inventory.saveReservation({ ...hold, expiresAt });
+      }
+    },
+
+    async listDueActive() {
+      return deps.inventory.listDueActive(deps.clock.now());
     },
 
     async expireDue() {

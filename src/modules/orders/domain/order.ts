@@ -90,6 +90,20 @@ export function transitionOrder(
   return action === "cancel" ? "CANCELLED" : "COMPLETED";
 }
 
+export function paymentEventReleasesReservation(
+  type: PaymentProjectionEvent["type"],
+): boolean {
+  return type === "failed" || type === "expired" || type === "cancelled";
+}
+
+export function paymentEventRequiresHold(type: PaymentProjectionEvent["type"]): boolean {
+  return type === "created";
+}
+
+export function paymentEventConfirmsHold(type: PaymentProjectionEvent["type"]): boolean {
+  return type === "authorized" || type === "succeeded";
+}
+
 export function projectPaymentStatus(event: PaymentProjectionEvent): PaymentStatus {
   switch (event.type) {
     case "created":

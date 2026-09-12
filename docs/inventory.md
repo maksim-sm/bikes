@@ -52,6 +52,10 @@ proves that against real PostgreSQL: two buyers, many buyers, expiry, payment
 failure, cancellation, and a successful payment. Available never goes negative
 and the number of successful reservations never exceeds `on_hand`.
 
+Failed, expired, and cancelled payments call `cancelForOrder`. That path and
+`expireDue` both refuse to decrement a hold that is no longer ACTIVE, so
+`reserved` moves exactly once.
+
 ## Reservation lifecycle
 
 A reservation starts **ACTIVE** and is terminal after one of the three

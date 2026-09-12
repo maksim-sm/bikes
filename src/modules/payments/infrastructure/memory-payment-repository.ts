@@ -1,5 +1,9 @@
 import type { PaymentRepository } from "../application/ports";
-import type { PaymentAttempt, ProviderEvent } from "../domain/payment";
+import {
+  isPaymentTimedOut,
+  type PaymentAttempt,
+  type ProviderEvent,
+} from "../domain/payment";
 
 export function createMemoryPaymentRepository(): PaymentRepository {
   const payments = new Map<string, PaymentAttempt>();
@@ -7,6 +11,9 @@ export function createMemoryPaymentRepository(): PaymentRepository {
   return {
     async listByOrder(orderId) {
       return [...payments.values()].filter((row) => row.orderId === orderId);
+    },
+    async listExpiredOpen(now) {
+      return [...payments.values()].filter((row) => isPaymentTimedOut(row, now));
     },
     async save(payment) {
       payments.set(payment.id, payment);

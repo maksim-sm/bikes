@@ -11,6 +11,10 @@ export {
   canCancelPayment,
   canStartPayment,
   canTransition,
+  isOpenUnpaidPayment,
+  isPaymentTimedOut,
+  paymentReleasesReservation,
+  PAYMENT_TIMEOUT_MS,
   refundStatus,
   PAYMENT_TRANSITIONS,
   type Payment,
@@ -35,6 +39,7 @@ export {
 export type {
   CreatePaymentInput,
   CreatePaymentResult,
+  Clock,
   PaymentOrder,
   PaymentProvider,
   PaymentRepository,

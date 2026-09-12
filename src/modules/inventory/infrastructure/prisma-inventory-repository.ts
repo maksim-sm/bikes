@@ -110,7 +110,7 @@ export function createPrismaInventoryRepository(
       try {
         const row = await client.inventoryReservation.update({
           where: { id: reservation.id },
-          data: { status: reservation.status },
+          data: { status: reservation.status, expiresAt: reservation.expiresAt },
         });
         return toReservation(row);
       } catch (error) {

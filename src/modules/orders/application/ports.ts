@@ -28,8 +28,14 @@ export interface OrderInventory {
     quantity: number;
     orderId: string;
   }): Promise<void>;
+  hasActiveForOrder(orderId: string): Promise<boolean>;
+  confirmForOrder(orderId: string): Promise<void>;
   cancelForOrder(orderId: string): Promise<void>;
   commitForOrder(orderId: string): Promise<void>;
+}
+
+export interface OrderPayments {
+  cancelOpenForOrder(orderId: string): Promise<void>;
 }
 
 export interface OrderDelivery {

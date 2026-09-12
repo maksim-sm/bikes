@@ -48,6 +48,12 @@ export function orderInventoryAdapter(inventory: InventoryServices): OrderInvent
         orderId: input.orderId,
       });
     },
+    async hasActiveForOrder(orderId) {
+      return inventory.hasActiveForOrder(orderId);
+    },
+    async confirmForOrder(orderId) {
+      await inventory.confirmForOrder(orderId);
+    },
     async cancelForOrder(orderId) {
       await inventory.cancelForOrder(orderId);
     },

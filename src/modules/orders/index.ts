@@ -10,6 +10,9 @@
 export {
   formatOrderNumber,
   projectFulfillmentStatus,
+  paymentEventConfirmsHold,
+  paymentEventReleasesReservation,
+  paymentEventRequiresHold,
   projectPaymentStatus,
   transitionOrder,
   type FulfillmentStatus,
@@ -37,10 +40,15 @@ export type {
   OrderCatalog,
   OrderDelivery,
   OrderInventory,
+  OrderPayments,
   OrderRepository,
   PlaceOrderInput,
 } from "./application/ports";
 export { createOrderServices, type OrderServices } from "./application/services";
+export {
+  createCheckoutHoldReconciler,
+  type CheckoutHoldReconciler,
+} from "./application/checkout-holds";
 export {
   orderCartAdapter,
   orderCatalogAdapter,

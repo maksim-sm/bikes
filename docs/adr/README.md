@@ -33,7 +33,7 @@ Rules:
 | [0011](0011-css-modules-design-tokens.md)          | CSS Modules with design tokens                  | Accepted                                                                 |
 | [0012](0012-first-catalogue-schema.md)             | Variants own stock grain; no EAV                | Partially superseded by [0014](0014-race-safe-inventory.md)              |
 | [0013](0013-independent-commerce-statuses.md)      | Independent order/payment/fulfillment statuses  | Accepted (amended by [0023](0023-server-authoritative-payment-state.md)) |
-| [0014](0014-race-safe-inventory.md)                | Race-safe inventory ledger in `inventory`       | Accepted                                                                 |
+| [0014](0014-race-safe-inventory.md)                | Race-safe inventory ledger in `inventory`       | Accepted (amended by [0024](0024-payment-failure-releases-holds.md))     |
 | [0015](0015-http-route-handler-contract.md)        | Route Handler envelope, auth, and DTOs          | Accepted                                                                 |
 | [0016](0016-customer-authentication.md)            | Argon2id + hashed httpOnly sessions             | Accepted                                                                 |
 | [0017](0017-staff-authorization-roles.md)          | Staff job titles and ownership checks           | Accepted                                                                 |
@@ -43,3 +43,4 @@ Rules:
 | [0021](0021-server-controlled-checkout.md)         | Checkout totals and reservation are server-side | Accepted                                                                 |
 | [0022](0022-payment-provider-operations.md)        | Replaceable payment provider operations         | Accepted                                                                 |
 | [0023](0023-server-authoritative-payment-state.md) | Server-authoritative payment lifecycle          | Accepted                                                                 |
+| [0024](0024-payment-failure-releases-holds.md)     | Failed/expired payments release holds once      | Accepted                                                                 |
