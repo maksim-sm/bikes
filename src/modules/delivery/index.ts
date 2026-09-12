@@ -6,6 +6,7 @@
  */
 
 export {
+  applyFixedPrice,
   matchZone,
   nextShipmentStatus,
   quoteMethod,
@@ -15,6 +16,7 @@ export {
   type DeliveryZone,
   type Destination,
   type PickupPoint,
+  type QuoteOptions,
   type ShipmentStatus,
 } from "./domain/quote";
 export type {
@@ -27,3 +29,7 @@ export {
   createDemoDeliveryRepository,
   createMemoryShipments,
 } from "./infrastructure/demo-delivery";
+export {
+  createPrismaDeliveryRepository,
+  createPrismaShipmentRepository,
+} from "./infrastructure/prisma-delivery-repository";

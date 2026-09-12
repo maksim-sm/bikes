@@ -10,13 +10,19 @@ import {
 } from "@/app/(storefront)/_lib/guest-cart";
 import { isAppError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
-import { DEMO_STAFF_EMAIL, DEMO_STAFF_PASSWORD, hasCapability } from "@/modules/identity";
+import { DEMO_STAFF_EMAIL, DEMO_STAFF_PASSWORD } from "@/modules/identity";
 import { adminHref } from "../_lib/paths";
-import { cookieSecurity, writeSessionCookie } from "../_lib/staff";
+import {
+  adminHomePath,
+  canAccessAdmin,
+  cookieSecurity,
+  writeSessionCookie,
+} from "../_lib/staff";
 
 export type LoginState = { ok: false; message: string } | null;
 
 async function signIn(email: string, password: string): Promise<LoginState> {
+  let home = "/admin/products";
   try {
     const auth = await getAuthServices();
     const result = await auth.login({
@@ -26,7 +32,7 @@ async function signIn(email: string, password: string): Promise<LoginState> {
       rateKey: "admin-login",
       secureCookie: cookieSecurity(),
     });
-    if (!hasCapability(result.principal, "manage_catalog")) {
+    if (!canAccessAdmin(result.principal)) {
       await auth.logout({
         rawToken: result.cookie.value,
         requestId: "admin-login",
@@ -39,13 +45,14 @@ async function signIn(email: string, password: string): Promise<LoginState> {
     if (await mergeGuestCartForPrincipal(result.principal, guestToken)) {
       await clearGuestCartCookie();
     }
+    home = adminHomePath(result.principal);
   } catch (error) {
     if (isAppError(error)) {
       return { ok: false, message: t.admin.loginFailed };
     }
     return { ok: false, message: t.admin.loginFailed };
   }
-  redirect(adminHref("/admin/products"));
+  redirect(adminHref(home));
 }
 
 export async function staffLoginAction(

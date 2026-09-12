@@ -1,4 +1,4 @@
-export type DeliveryKind = "courier" | "pickup";
+export type DeliveryKind = "courier" | "pickup" | "regional";
 
 export interface PickupPoint {
   region: string;
@@ -12,6 +12,10 @@ export interface Destination {
   city: string;
 }
 
+export interface QuoteOptions {
+  subtotalMinor: number | null;
+}
+
 export interface DeliveryZone {
   id: string;
   methodCode: string;
@@ -20,6 +24,7 @@ export interface DeliveryZone {
   city: string;
   costMinor: number;
   estimatedDays: number;
+  estimatedText: string;
   isActive: boolean;
 }
 
@@ -28,6 +33,7 @@ export interface DeliveryQuote {
   methodName: string;
   costMinor: number;
   estimatedDays: number;
+  estimatedText: string;
   kind: DeliveryKind;
   pickup: PickupPoint | null;
 }
@@ -38,6 +44,22 @@ export interface DeliveryMethodRecord {
   isActive: boolean;
   kind: DeliveryKind;
   pickup: PickupPoint | null;
+  freeThresholdMinor: number | null;
+}
+
+export function applyFixedPrice(
+  costMinor: number,
+  freeThresholdMinor: number | null,
+  subtotalMinor: number | null,
+): number {
+  if (
+    freeThresholdMinor !== null &&
+    subtotalMinor !== null &&
+    subtotalMinor >= freeThresholdMinor
+  ) {
+    return 0;
+  }
+  return costMinor;
 }
 
 export function matchZone(
@@ -46,20 +68,27 @@ export function matchZone(
 ): DeliveryZone | null {
   const region = destination.region.trim().toLowerCase();
   const city = destination.city.trim().toLowerCase();
-  const active = zones.filter(
-    (zone) => zone.isActive && zone.region.toLowerCase() === region,
+  const active = zones.filter((zone) => zone.isActive);
+  const cityMatch = active.find(
+    (zone) => zone.region.toLowerCase() === region && zone.city.toLowerCase() === city,
   );
-  const cityMatch = active.find((zone) => zone.city.toLowerCase() === city);
   if (cityMatch) {
     return cityMatch;
   }
-  return active.find((zone) => zone.city === "") ?? null;
+  const regionMatch = active.find(
+    (zone) => zone.region.toLowerCase() === region && zone.city === "",
+  );
+  if (regionMatch) {
+    return regionMatch;
+  }
+  return active.find((zone) => zone.region === "" && zone.city === "") ?? null;
 }
 
 export function quoteMethod(
   method: DeliveryMethodRecord,
   zones: readonly DeliveryZone[],
   destination: Destination,
+  options: QuoteOptions = { subtotalMinor: null },
 ): DeliveryQuote | null {
   if (!method.isActive) {
     return null;
@@ -74,8 +103,13 @@ export function quoteMethod(
   return {
     methodCode: method.code,
     methodName: method.name,
-    costMinor: zone.costMinor,
+    costMinor: applyFixedPrice(
+      zone.costMinor,
+      method.freeThresholdMinor,
+      options.subtotalMinor,
+    ),
     estimatedDays: zone.estimatedDays,
+    estimatedText: zone.estimatedText,
     kind: method.kind,
     pickup: method.kind === "pickup" ? method.pickup : null,
   };

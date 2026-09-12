@@ -128,15 +128,6 @@ export function createOrderServices(deps: {
     }
     assertOwnsCart(cart, input);
 
-    const quote = await deps.delivery.quote({
-      methodCode: input.deliveryMethodCode,
-      destination: { region: destination.region, city: destination.city },
-      itemCount: cart.items.length,
-    });
-    if (!quote) {
-      throw new ConflictError("delivery method is unavailable for this destination");
-    }
-
     const now = deps.clock.now();
     const lines: OrderLine[] = [];
     for (const item of cart.items) {
@@ -165,6 +156,16 @@ export function createOrderServices(deps: {
         unitPriceMinor: variant.listPriceMinor,
         lineTotalMinor: lineTotalMinor(variant.listPriceMinor, item.quantity),
       });
+    }
+
+    const quote = await deps.delivery.quote({
+      methodCode: input.deliveryMethodCode,
+      destination: { region: destination.region, city: destination.city },
+      itemCount: cart.items.length,
+      subtotalMinor: lines.reduce((sum, line) => sum + line.lineTotalMinor, 0),
+    });
+    if (!quote) {
+      throw new ConflictError("delivery method is unavailable for this destination");
     }
 
     const totals = checkoutTotals(

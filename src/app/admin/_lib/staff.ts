@@ -8,6 +8,8 @@ import {
   SESSION_COOKIE_NAME,
   hasCapability,
   requireCatalogRole,
+  requireOrderManagementRole,
+  requireStaff,
   type Principal,
   type SessionCookie,
 } from "@/modules/identity";
@@ -18,6 +20,24 @@ export async function currentPrincipal(): Promise<Principal> {
   return (await getAuthServices()).resolve(token);
 }
 
+function redirectStaffAuth(error: unknown): never {
+  if (isAppError(error) && error.code === "unauthenticated") {
+    redirect(adminHref("/admin/login"));
+  }
+  redirect(adminHref("/admin/login?forbidden=1"));
+}
+
+export async function requireAdminStaff(): Promise<
+  Extract<Principal, { type: "staff" }>
+> {
+  const principal = await currentPrincipal();
+  try {
+    return requireStaff(principal);
+  } catch (error) {
+    redirectStaffAuth(error);
+  }
+}
+
 export async function requireAdminCatalog(): Promise<
   Extract<Principal, { type: "staff" }>
 > {
@@ -25,15 +45,41 @@ export async function requireAdminCatalog(): Promise<
   try {
     return requireCatalogRole(principal);
   } catch (error) {
-    if (isAppError(error) && error.code === "unauthenticated") {
-      redirect(adminHref("/admin/login"));
-    }
-    redirect(adminHref("/admin/login?forbidden=1"));
+    redirectStaffAuth(error);
+  }
+}
+
+export async function requireAdminOrderManagement(): Promise<
+  Extract<Principal, { type: "staff" }>
+> {
+  const principal = await currentPrincipal();
+  try {
+    return requireOrderManagementRole(principal);
+  } catch (error) {
+    redirectStaffAuth(error);
   }
 }
 
 export function canManageCatalog(principal: Principal): boolean {
   return hasCapability(principal, "manage_catalog");
+}
+
+export function canManageOrders(principal: Principal): boolean {
+  return hasCapability(principal, "manage_orders");
+}
+
+export function canAccessAdmin(principal: Principal): boolean {
+  return canManageCatalog(principal) || canManageOrders(principal);
+}
+
+export function adminHomePath(principal: Principal): string {
+  if (canManageCatalog(principal)) {
+    return "/admin/products";
+  }
+  if (canManageOrders(principal)) {
+    return "/admin/deliveries";
+  }
+  return "/admin/login?forbidden=1";
 }
 
 export async function writeSessionCookie(cookie: SessionCookie): Promise<void> {

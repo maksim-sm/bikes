@@ -160,7 +160,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 {product.quotes.map((quote) => (
                   <li key={quote.methodCode}>
                     {quote.methodName}: {formatPrice(quote.costMinor)},{" "}
-                    {quote.estimatedDays} {t.product.deliveryDays}
+                    {quote.estimatedText}
                   </li>
                 ))}
               </ul>

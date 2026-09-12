@@ -223,12 +223,57 @@ describe("checkout HTTP", () => {
           methodCode: "minsk-courier",
           costMinor: 2500,
           kind: "courier",
+          estimatedText: "1 рабочий день",
+        }),
+        expect.objectContaining({
+          methodCode: "minsk-pickup",
+          costMinor: 0,
+          kind: "pickup",
+          estimatedText: "Можно забрать в день заказа",
+        }),
+      ]),
+    );
+    expect(body.data.quotes.some((quote) => quote.methodCode === "by-regional")).toBe(
+      false,
+    );
+  });
+
+  it("quotes regional delivery and applies a free-delivery threshold", async () => {
+    const paid = await listQuotes(
+      new Request(
+        "http://localhost/api/v1/delivery/quotes?region=%D0%93%D1%80%D0%BE%D0%B4%D0%BD%D0%B5%D0%BD%D1%81%D0%BA%D0%B0%D1%8F&city=%D0%93%D1%80%D0%BE%D0%B4%D0%BD%D0%BE",
+      ),
+    );
+    const paidBody = (await paid.json()) as {
+      data: { quotes: Array<{ methodCode: string; costMinor: number; kind: string }> };
+    };
+    expect(paid.status).toBe(200);
+    expect(paidBody.data.quotes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          methodCode: "by-regional",
+          costMinor: 8000,
+          kind: "regional",
         }),
         expect.objectContaining({
           methodCode: "minsk-pickup",
           costMinor: 0,
           kind: "pickup",
         }),
+      ]),
+    );
+
+    const free = await listQuotes(
+      new Request(
+        "http://localhost/api/v1/delivery/quotes?region=%D0%93%D1%80%D0%BE%D0%B4%D0%BD%D0%B5%D0%BD%D1%81%D0%BA%D0%B0%D1%8F&city=%D0%93%D1%80%D0%BE%D0%B4%D0%BD%D0%BE&subtotalMinor=300000",
+      ),
+    );
+    const freeBody = (await free.json()) as {
+      data: { quotes: Array<{ methodCode: string; costMinor: number }> };
+    };
+    expect(freeBody.data.quotes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ methodCode: "by-regional", costMinor: 0 }),
       ]),
     );
   });
