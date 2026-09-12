@@ -40,7 +40,11 @@ export function createMemoryWishlistRepository(): WishlistRepository {
       return rows.get(userId) ?? null;
     },
     async create(userId) {
-      const wishlist: Wishlist = { id: `w-${userId}`, userId, productIds: [] };
+      const existing = rows.get(userId);
+      if (existing) {
+        return existing;
+      }
+      const wishlist: Wishlist = { id: `w-${userId}`, userId, items: [] };
       rows.set(userId, wishlist);
       return wishlist;
     },

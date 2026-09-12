@@ -86,3 +86,9 @@
   flex-wrap: wrap;
   gap: var(--space-3);
 }
+
+.issueList {
+  margin: 0;
+  padding-inline-start: 1.2rem;
+  color: var(--color-danger);
+}

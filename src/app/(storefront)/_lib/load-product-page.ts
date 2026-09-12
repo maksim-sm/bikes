@@ -27,6 +27,7 @@ export interface ProductPageImage {
 }
 
 export interface ProductPageModel {
+  id: string;
   slug: string;
   name: string;
   description: string;
@@ -49,6 +50,7 @@ function toPageModel(
   quotes: DeliveryQuote[],
 ): ProductPageModel {
   return {
+    id: product.id,
     slug: product.slug,
     name: product.name,
     description: product.description,

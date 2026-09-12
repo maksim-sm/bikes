@@ -46,4 +46,5 @@ Rules:
 | [0024](0024-payment-failure-releases-holds.md)     | Failed/expired payments release holds once      | Accepted                                                                 |
 | [0025](0025-belarus-delivery-configuration.md)     | Belarus delivery kinds, zones, and assignment   | Accepted (amended by [0026](0026-staff-entered-shipment-tracking.md))    |
 | [0026](0026-staff-entered-shipment-tracking.md)    | Staff-entered shipment tracking, no carrier API | Accepted                                                                 |
-| [0027](0027-customer-account-area.md)              | Customer self-service account area              | Accepted                                                                 |
+| [0027](0027-customer-account-area.md)              | Customer self-service account area              | Accepted (amended by [0028](0028-persistent-wishlist.md))                |
+| [0028](0028-persistent-wishlist.md)                | Persistent wishlist; no duplicates              | Accepted                                                                 |

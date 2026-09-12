@@ -17,6 +17,7 @@ registration live at `/login` and `/register`. Staff use `/admin`.
 | `/account/addresses`  | Address book; one default                             |
 | `/account/orders`     | Order history with payment and fulfillment status     |
 | `/account/orders/:id` | Lines, totals, payment, delivery, staff-entered track |
+| `/account/wishlist`   | Saved products; stock, deletion, and price flags      |
 | `/account/security`   | Password change; logout all sessions                  |
 
 The header **Личный кабинет** link goes to `/account` when signed in,
@@ -34,6 +35,10 @@ The header **Личный кабинет** link goes to `/account` when signed i
 - **Delivery** — fulfillment status always; shipment tracking (carrier,
   number, URL, times) when staff have assigned a shipment. Staff notes are
   not shown.
+- **Wishlist** — products the customer saved. Out-of-stock, unpublished, and
+  deleted rows stay visible with a flag. A price change is shown against the
+  snapshot taken at add time. The same product cannot be added twice. See
+  `docs/wishlist.md`.
 - **Password change** — current password required. All other sessions are
   revoked; this browser receives a new cookie.
 - **Logout all sessions** — `SessionRepository.revokeAllForUser`. The current
@@ -51,7 +56,7 @@ GET; they do not use `/account`.
 
 ## Persistence
 
-Local and test compose keep profiles, addresses, and demo orders in memory
-and seed a verified demo customer (`customer@bikes.local` /
-`CustomerPass12`). Production uses Prisma for profiles, addresses, and
-order history.
+Local and test compose keep profiles, addresses, wishlists, and demo orders
+in memory and seed a verified demo customer (`customer@bikes.local` /
+`CustomerPass12`). Production uses Prisma for profiles, addresses,
+wishlists, and order history.

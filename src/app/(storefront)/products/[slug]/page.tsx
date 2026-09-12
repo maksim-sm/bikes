@@ -6,6 +6,7 @@ import { Container, Stack } from "@/ui";
 import { loadProductPage } from "../../_lib/load-product-page";
 import { MediaImage } from "../../_lib/media-image";
 import { ProductPurchase } from "./product-purchase";
+import { ProductWishlist } from "./product-wishlist";
 import styles from "./product-detail.module.css";
 
 export const dynamic = "force-dynamic";
@@ -89,6 +90,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </dl>
 
             <ProductPurchase variants={product.variants} />
+            <ProductWishlist productId={product.id} slug={product.slug} />
 
             <section className={styles.section} aria-labelledby="specs-heading">
               <h2 id="specs-heading">{t.product.specifications}</h2>

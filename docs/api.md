@@ -175,7 +175,9 @@ webhook bodies.
 | GET    | `/api/v1/customers/:userId/addresses`         | customer         | Address DTOs (self or manager/admin)   |
 | POST   | `/api/v1/customers/:userId/addresses`         | customer_only    | Add an address                         |
 | POST   | `/api/v1/customers/:userId/addresses/default` | customer_only    | Set the default address                |
-| GET    | `/api/v1/customers/:userId/wishlist`          | customer         | Wishlist DTO (self or manager/admin)   |
+| GET    | `/api/v1/customers/:userId/wishlist`          | customer         | Wishlist view (self or manager/admin)  |
+| POST   | `/api/v1/customers/:userId/wishlist`          | customer_only    | Add a product; 409 on duplicate        |
+| DELETE | `/api/v1/customers/:userId/wishlist`          | customer_only    | Remove a product                       |
 | GET    | `/api/v1/payments/:id`                        | public           | Return landing; ignores `?status=`     |
 | POST   | `/api/v1/payments/webhooks`                   | public           | Provider webhook (signature)           |
 

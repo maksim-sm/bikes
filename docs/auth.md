@@ -23,8 +23,9 @@ cannot create or publish products.
 ## Customer isolation
 
 A customer may read and write only their own profile, addresses, wishlist,
-and orders. Inventory staff cannot. Order-management staff may read any
-order. Admin and manager may read customer records for support.
+and orders. There is no guest wishlist. Inventory staff cannot. Order-management
+staff may read any order. Admin and manager may read customer records for
+support.
 
 The raw session token and password hashes never appear in JSON.
 

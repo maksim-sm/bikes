@@ -50,6 +50,9 @@ export default async function AccountHomePage() {
         <ButtonLink href="/account/profile" variant="secondary">
           {t.account.profile}
         </ButtonLink>
+        <ButtonLink href="/account/wishlist" variant="secondary">
+          {t.account.wishlist}
+        </ButtonLink>
       </div>
     </Stack>
   );
