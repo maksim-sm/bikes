@@ -12,21 +12,25 @@ function headerMap(headers: Headers): Record<string, string> {
   return result;
 }
 
-export const POST = withRoute("public", async (ctx) => {
-  const rawBody = await ctx.request.text();
-  try {
-    const payment = await getPaymentServices().handleWebhook(
-      rawBody,
-      headerMap(ctx.request.headers),
-    );
-    return { data: { paymentId: payment.id, status: payment.status } };
-  } catch (error) {
-    if (error instanceof Error && error.message === "invalid_signature") {
-      throw new UnauthenticatedError("invalid webhook signature");
+export const POST = withRoute(
+  "public",
+  async (ctx) => {
+    const rawBody = await ctx.request.text();
+    try {
+      const payment = await getPaymentServices().handleWebhook(
+        rawBody,
+        headerMap(ctx.request.headers),
+      );
+      return { data: { paymentId: payment.id, status: payment.status } };
+    } catch (error) {
+      if (error instanceof Error && error.message === "invalid_signature") {
+        throw new UnauthenticatedError("invalid webhook signature");
+      }
+      if (error instanceof Error && error.message === "invalid_payload") {
+        throw new ValidationError("webhook payload is invalid");
+      }
+      throw error;
     }
-    if (error instanceof Error && error.message === "invalid_payload") {
-      throw new ValidationError("webhook payload is invalid");
-    }
-    throw error;
-  }
-});
+  },
+  { csrf: false },
+);

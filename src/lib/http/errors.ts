@@ -2,6 +2,7 @@ import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  RateLimitedError,
   UnauthenticatedError,
   ValidationError,
   isAppError,
@@ -19,6 +20,7 @@ const STATUS_BY_CODE: Record<string, number> = {
   forbidden: 403,
   not_found: 404,
   conflict: 409,
+  rate_limited: 429,
 };
 
 /**
@@ -48,6 +50,7 @@ export {
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  RateLimitedError,
   UnauthenticatedError,
   ValidationError,
 };

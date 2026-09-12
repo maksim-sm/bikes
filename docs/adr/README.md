@@ -35,3 +35,4 @@ Rules:
 | [0013](0013-independent-commerce-statuses.md) | Independent order/payment/fulfillment statuses | Accepted                                                    |
 | [0014](0014-race-safe-inventory.md)           | Race-safe inventory ledger in `inventory`      | Accepted                                                    |
 | [0015](0015-http-route-handler-contract.md)   | Route Handler envelope, auth, and DTOs         | Accepted                                                    |
+| [0016](0016-customer-authentication.md)       | Argon2id + hashed httpOnly sessions            | Accepted                                                    |

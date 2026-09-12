@@ -1,25 +1,22 @@
 import {
-  createBearerSessionPort,
+  SESSION_COOKIE_NAME,
   createSessionServices,
+  readCookieValue,
   type Principal,
-  type SessionServices,
 } from "@/modules/identity";
+import { getAuthServices } from "./compose";
 
-const sessions: SessionServices = createSessionServices({
-  sessions: createBearerSessionPort(),
+const gates = createSessionServices({
+  sessions: {
+    async resolve() {
+      return { type: "anonymous" };
+    },
+  },
 });
 
-export function readBearerToken(headers: Headers): string | null {
-  const header = headers.get("authorization");
-  if (header === null) {
-    return null;
-  }
-  const match = /^Bearer\s+(\S+)$/i.exec(header);
-  return match?.[1] ?? null;
-}
-
 export async function resolvePrincipal(headers: Headers): Promise<Principal> {
-  return sessions.resolve(readBearerToken(headers));
+  const auth = await getAuthServices();
+  return auth.resolve(readCookieValue(headers.get("cookie"), SESSION_COOKIE_NAME));
 }
 
 export function enforcePolicy(
@@ -30,9 +27,9 @@ export function enforcePolicy(
     return principal;
   }
   if (policy === "staff") {
-    return sessions.requireStaff(principal);
+    return gates.requireStaff(principal);
   }
-  return sessions.requireAuthenticated(principal);
+  return gates.requireAuthenticated(principal);
 }
 
 export function principalUserId(principal: Principal): string | undefined {

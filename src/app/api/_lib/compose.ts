@@ -1,4 +1,5 @@
 import type { CatalogRepository } from "@/modules/catalog";
+import { createMemoryAuthServices, type AuthServices } from "@/modules/identity";
 import type { OrderRepository } from "@/modules/orders";
 import type { PaymentOrder, PaymentRepository } from "@/modules/payments";
 import { createPaymentServices, MockPaymentProvider } from "@/modules/payments";
@@ -51,6 +52,8 @@ const emptyPaymentOrders: PaymentOrder = {
 
 let catalogRepo: CatalogRepository = emptyCatalog;
 let orderRepo: OrderRepository = emptyOrders;
+let authOverride: AuthServices | null = null;
+let authPromise: Promise<AuthServices> | null = null;
 
 export function getCatalogRepository(): CatalogRepository {
   return catalogRepo;
@@ -72,6 +75,25 @@ export function setOrderRepository(repository: OrderRepository): void {
 export function resetRepositories(): void {
   catalogRepo = emptyCatalog;
   orderRepo = emptyOrders;
+  authOverride = null;
+  authPromise = null;
+}
+
+export function setAuthServices(services: AuthServices): void {
+  authOverride = services;
+}
+
+export async function getAuthServices(): Promise<AuthServices> {
+  if (authOverride) {
+    return authOverride;
+  }
+  if (!authPromise) {
+    authPromise =
+      process.env.VITEST === "true"
+        ? createMemoryAuthServices()
+        : import("@/modules/identity").then((mod) => mod.createPrismaAuthServices());
+  }
+  return authPromise;
 }
 
 export function getPaymentServices() {

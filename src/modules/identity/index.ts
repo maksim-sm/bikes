@@ -1,9 +1,8 @@
 /**
  * identity module — public entry point.
  *
- * Owns users, profiles, addresses, wishlists, and request principals.
- * Customer and wishlist operations are application services. Session
- * resolution is a port so Route Handlers never read tokens themselves.
+ * Owns users, credentials, sessions, profiles, addresses, and wishlists.
+ * Session cookies are httpOnly; raw tokens never leave this module as JSON.
  */
 
 export {
@@ -36,12 +35,30 @@ export {
   actorUserId,
   isAuthenticated,
   isStaff,
-  parseBearerPrincipal,
   type Principal,
 } from "./domain/principal";
 export {
-  createBearerSessionPort,
   createSessionServices,
   type SessionPort,
   type SessionServices,
 } from "./application/session-services";
+export { SESSION_COOKIE_NAME, MIN_PASSWORD_LENGTH, type AuthUser } from "./domain/auth";
+export {
+  clearedSessionCookie,
+  readCookieValue,
+  serializeCookie,
+  sessionCookie,
+  type SessionCookie,
+} from "./domain/cookie";
+export { createAuthServices, type AuthServices } from "./application/auth-services";
+export {
+  createMemoryAuthServices,
+  createPrismaAuthServices,
+} from "./application/create-auth";
+export type {
+  AuthMailer,
+  PasswordHasher,
+  RateLimiter,
+  SecurityLog,
+} from "./application/auth-ports";
+export { createCapturingMailer } from "./infrastructure/logging-mailer";

@@ -9,8 +9,10 @@ import {
   toHttpError,
   type PageMeta,
 } from "@/lib/http";
-import { enforcePolicy, principalUserId, resolvePrincipal } from "./auth";
+import { serializeCookie, type SessionCookie } from "@/modules/identity";
 import type { Principal } from "@/modules/identity";
+import { enforcePolicy, principalUserId, resolvePrincipal } from "./auth";
+import { assertSameOrigin } from "./csrf";
 
 export type AuthPolicy = "public" | "customer" | "staff";
 
@@ -25,6 +27,7 @@ export interface HandlerResult<T> {
   data: T;
   meta?: PageMeta;
   status?: number;
+  cookies?: SessionCookie[];
 }
 
 /**
@@ -34,7 +37,9 @@ export interface HandlerResult<T> {
 export function withRoute<T>(
   policy: AuthPolicy,
   handler: (ctx: HttpContext) => Promise<HandlerResult<T>>,
+  options?: { csrf?: boolean },
 ): (request: Request) => Promise<Response> {
+  const csrf = options?.csrf ?? true;
   return async (request: Request) => {
     const started = Date.now();
     const requestId = readRequestId(request.headers);
@@ -43,6 +48,9 @@ export function withRoute<T>(
     let userId: string | undefined;
 
     try {
+      if (csrf) {
+        assertSameOrigin(request);
+      }
       const principal = enforcePolicy(await resolvePrincipal(request.headers), policy);
       userId = principalUserId(principal);
       logRequestStart({
@@ -63,7 +71,7 @@ export function withRoute<T>(
         durationMs: Date.now() - started,
         ...(userId !== undefined ? { userId } : {}),
       });
-      return json(status, body, requestId);
+      return json(status, body, requestId, result.cookies);
     } catch (error) {
       const view = toHttpError(error);
       logRequestError({
@@ -87,12 +95,19 @@ export function withRoute<T>(
   };
 }
 
-export function json(status: number, body: unknown, requestId: string): Response {
-  return Response.json(body, {
-    status,
-    headers: {
-      [REQUEST_ID_HEADER]: requestId,
-      "cache-control": "no-store",
-    },
+export function json(
+  status: number,
+  body: unknown,
+  requestId: string,
+  cookies: SessionCookie[] = [],
+): Response {
+  const headers = new Headers({
+    [REQUEST_ID_HEADER]: requestId,
+    "cache-control": "no-store",
+    "content-type": "application/json",
   });
+  for (const cookie of cookies) {
+    headers.append("set-cookie", serializeCookie(cookie));
+  }
+  return new Response(JSON.stringify(body), { status, headers });
 }

@@ -181,6 +181,6 @@ decide it. See `src/modules/README.md` for the internal layering rules.
 
 ## Status
 
-Foundation, visual system, database schema, application services, and
-versioned HTTP Route Handlers. No catalogue UI, cart page, checkout, or
-cookie sessions yet.
+Foundation, visual system, database schema, application services, versioned
+HTTP Route Handlers, and customer authentication with httpOnly sessions. No
+catalogue UI, cart page, or checkout yet.

@@ -43,6 +43,11 @@ export class ConflictError extends AppError {
   readonly code = "conflict";
 }
 
+/** The caller has exceeded a rate limit. */
+export class RateLimitedError extends AppError {
+  readonly code = "rate_limited";
+}
+
 export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
 }

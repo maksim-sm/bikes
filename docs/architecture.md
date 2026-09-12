@@ -20,8 +20,9 @@ Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
 boundary rules, the design system, the Prisma schema through the inventory
 ledger, application services, and versioned Route Handlers under `/api/v1`.
-No storefront features, cookie sessions, or Prisma repositories have been
-built yet. Integration and end-to-end test tiers are still targets.
+Cookie sessions and customer auth live in `identity`. Prisma repositories
+exist for auth tables; other modules still use in-memory ports. Integration
+and end-to-end test tiers are still targets. No storefront account UI yet.
 
 ## 1. Why a modular monolith
 
@@ -486,34 +487,33 @@ to stable 7.10.0 (ADR-0004), the provider-neutral payment abstraction
 (ADR-0009), BYN as integer minor units (ADR-0010), CSS Modules with design
 tokens for styling (ADR-0011), the first catalogue schema with per-variant
 stock grain and no EAV (ADR-0012), independent order/payment/fulfillment
-statuses (ADR-0013), the race-safe inventory ledger (ADR-0014), and Route
-Handler HTTP conventions (ADR-0015). Availability vocabulary is in
+statuses (ADR-0013), the race-safe inventory ledger (ADR-0014), Route
+Handler HTTP conventions (ADR-0015), and customer authentication with Argon2id
+plus hashed httpOnly sessions (ADR-0016). Availability vocabulary is in
 `docs/inventory.md`; the HTTP envelope is in `docs/api.md`.
 
 What remains open. Each names who must decide and what it blocks; none should be
 silently settled by whoever writes the first line of relevant code.
 
-1. **Auth implementation: Auth.js v4 stable or v5 beta.** Engineering decision.
-   Blocks `identity`. Section 7's boundaries hold either way.
-2. **Payment provider: bePaid, WebPay, or ERIP.** Business decision, requires a
+1. **Payment provider: bePaid, WebPay, or ERIP.** Business decision, requires a
    merchant account. Blocks real checkout but not its construction, because of
    the mock provider in section 8 and ADR-0005.
-3. **Delivery rate table contents and the eventual carrier.** Business decision.
+2. **Delivery rate table contents and the eventual carrier.** Business decision.
    ADR-0006 settles the manual-first approach; the actual zones, rates, and
    which carrier is used are still to be supplied by the business.
-4. **Hosting target and managed PostgreSQL provider.** Blocks section 15's
+3. **Hosting target and managed PostgreSQL provider.** Blocks section 15's
    specifics and the local development database that section 13's integration
    tier depends on. This is the highest-priority unblock: ADR-0008's integration
    tier cannot run without it.
-5. **Object storage provider and credentials.** Blocks production media under
+4. **Object storage provider and credentials.** Blocks production media under
    ADR-0007; the filesystem implementation covers development meanwhile.
-6. **Admin scope: custom admin area or an off-the-shelf CMS.** Determines
+5. **Admin scope: custom admin area or an off-the-shelf CMS.** Determines
    whether `app/admin/` is built out at all. Note that ADR-0006's manual-first
    delivery assumes staff have somewhere to record tracking references.
-7. **VAT and currency presentation.** Business decision. Blocks `pricing`.
+6. **VAT and currency presentation.** Business decision. Blocks `pricing`.
    ADR-0010 fixes the representation; how VAT is displayed and whether a second
    currency is shown are not settled.
-8. **Whether Belarusian is added as a second locale.** Business decision.
+7. **Whether Belarusian is added as a second locale.** Business decision.
    ADR-0009 ships Russian-only and defers the routing segment; this answer
    activates that deferred work.
 

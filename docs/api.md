@@ -63,27 +63,19 @@ Zod runs at the Route Handler boundary (`parseWithSchema`, `parsePageQuery`,
 | `forbidden`         | 403                    |
 | `not_found`         | 404                    |
 | `conflict`          | 409                    |
+| `rate_limited`      | 429                    |
 | anything else       | 500 (`internal_error`) |
 
 Unexpected throws become `internal_error` with the message `"internal error"`.
 
 ## Authentication checks
 
-Identity owns credentials. The handler resolves a `Principal` once and passes
-it inward.
+Identity owns credentials. The handler resolves a `Principal` from the
+`bikes_session` **httpOnly** cookie and passes it inward. The raw session
+token is never included in JSON.
 
-Until session cookies exist, the HTTP credential is:
-
-```
-Authorization: Bearer customer:<userId>
-Authorization: Bearer staff:<userId>
-```
-
-Missing or unknown tokens are `anonymous`. Production will replace the bearer
-parser with cookie session verification in `identity`; the `Principal` type
-and the `requireAuthenticated` / `requireStaff` checks stay.
-
-`withRoute(policy, handler)` applies the check before the handler runs:
+Missing or unknown cookies are `anonymous`. `withRoute(policy, handler)`
+applies the check before the handler runs:
 
 | Policy     | Who may proceed                 |
 | ---------- | ------------------------------- |
@@ -135,14 +127,21 @@ webhook bodies.
 
 ## Resources (v1)
 
-| Method | Path                        | Policy   | Purpose                          |
-| ------ | --------------------------- | -------- | -------------------------------- |
-| GET    | `/api/health`               | public   | Process liveness                 |
-| GET    | `/api/v1/session`           | public   | Resolved principal               |
-| GET    | `/api/v1/products`          | public   | Published catalogue, paginated   |
-| GET    | `/api/v1/products/:slug`    | public   | Published product detail         |
-| GET    | `/api/v1/orders/:id`        | customer | Order DTO (ownership in service) |
-| POST   | `/api/v1/payments/webhooks` | public   | Provider webhook (signature)     |
+| Method | Path                           | Policy   | Purpose                           |
+| ------ | ------------------------------ | -------- | --------------------------------- |
+| GET    | `/api/health`                  | public   | Process liveness                  |
+| GET    | `/api/v1/session`              | public   | Resolved principal                |
+| POST   | `/api/v1/auth/register`        | public   | Register (always same shape)      |
+| POST   | `/api/v1/auth/login`           | public   | Login; sets httpOnly cookie       |
+| POST   | `/api/v1/auth/logout`          | public   | Revoke session; clear cookie      |
+| POST   | `/api/v1/auth/email/verify`    | public   | Confirm email with mailed token   |
+| POST   | `/api/v1/auth/email/resend`    | public   | Resend verification (opaque)      |
+| POST   | `/api/v1/auth/password/forgot` | public   | Request reset (opaque)            |
+| POST   | `/api/v1/auth/password/reset`  | public   | Set new password; revoke sessions |
+| GET    | `/api/v1/products`             | public   | Published catalogue, paginated    |
+| GET    | `/api/v1/products/:slug`       | public   | Published product detail          |
+| GET    | `/api/v1/orders/:id`           | customer | Order DTO (ownership in service)  |
+| POST   | `/api/v1/payments/webhooks`    | public   | Provider webhook (signature)      |
 
 New external endpoints are Route Handlers that reuse `withRoute` and a DTO.
 They are not added “because REST”.
