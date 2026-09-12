@@ -2,7 +2,9 @@
  * orders module — public entry point.
  *
  * Owns the commercial agreement, line snapshots, and the payment/fulfillment
- * projections. Does not take payment or ship parcels.
+ * projections. Checkout is a server-controlled use case on this module:
+ * the browser may send cart identity, a delivery method, and customer data —
+ * never prices or the order total.
  */
 
 export {
@@ -13,9 +15,17 @@ export {
   type FulfillmentStatus,
   type Order,
   type OrderLine,
+  type OrderShipping,
   type OrderStatus,
   type PaymentStatus,
 } from "./domain/order";
+export {
+  assertCheckoutCustomer,
+  assertCheckoutDestination,
+  checkoutTotals,
+  type CheckoutCustomer,
+  type CheckoutDestination,
+} from "./domain/checkout";
 export type {
   Clock,
   OrderCart,
@@ -26,3 +36,11 @@ export type {
   PlaceOrderInput,
 } from "./application/ports";
 export { createOrderServices, type OrderServices } from "./application/services";
+export {
+  orderCartAdapter,
+  orderCatalogAdapter,
+  orderDeliveryAdapter,
+  orderInventoryAdapter,
+} from "./application/adapters";
+export { createMemoryOrderRepository } from "./infrastructure/memory-order-repository";
+export { createPrismaOrderRepository } from "./application/create-order";

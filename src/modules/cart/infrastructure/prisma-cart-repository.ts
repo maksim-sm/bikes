@@ -53,6 +53,14 @@ export function createPrismaCartRepository(
       return row ? toCart(row) : null;
     },
 
+    async findById(id) {
+      const row = await client.cart.findUnique({
+        where: { id },
+        include: { items: { orderBy: itemOrder } },
+      });
+      return row ? toCart(row) : null;
+    },
+
     async create(actor) {
       const row = await client.cart.create({
         data:
@@ -96,6 +104,15 @@ export function createPrismaCartRepository(
         }
       });
       return loadById(cart.id);
+    },
+
+    async clear(id) {
+      const cart = await this.findById(id);
+      if (!cart) {
+        throw new NotFoundError("cart not found", { cartId: id });
+      }
+      cart.items = [];
+      await this.save(cart);
     },
 
     async delete(cart) {

@@ -7,7 +7,6 @@ import {
   catalogMediaReferences,
   createCatalogAdminServices,
   createCatalogServices,
-  createDemoCatalogInventory,
   createDemoCatalogRepository,
   createPrismaCatalogRepository,
   type CatalogAdminServices,
@@ -35,6 +34,7 @@ import {
   createMemoryInventoryRepository,
   createPrismaCatalogInventory,
   createPrismaInventoryRepository,
+  type InventoryItem,
   type InventoryServices,
 } from "@/modules/inventory";
 import {
@@ -51,7 +51,17 @@ import {
   type WishlistRepository,
   type WishlistServices,
 } from "@/modules/identity";
-import type { OrderRepository } from "@/modules/orders";
+import {
+  createMemoryOrderRepository,
+  createOrderServices,
+  createPrismaOrderRepository,
+  orderCartAdapter,
+  orderCatalogAdapter,
+  orderDeliveryAdapter,
+  orderInventoryAdapter,
+  type OrderRepository,
+  type OrderServices,
+} from "@/modules/orders";
 import type { PaymentOrder, PaymentRepository } from "@/modules/payments";
 import { createPaymentServices, MockPaymentProvider } from "@/modules/payments";
 import {
@@ -144,8 +154,24 @@ let cartPromise: Promise<CartRepository> | null = null;
 
 const composeGlobals = globalThis as unknown as {
   bikesMemoryCart?: CartRepository;
+  bikesMemoryOrders?: OrderRepository;
+  bikesInventory?: InventoryServices;
   bikesAuthPromise?: Promise<AuthServices>;
 };
+
+const DEMO_STOCK: InventoryItem[] = [
+  { id: "inv-emonda-m-black", variantId: "v-emonda-m-black", onHand: 4, reserved: 0 },
+  { id: "inv-emonda-l-black", variantId: "v-emonda-l-black", onHand: 2, reserved: 0 },
+  { id: "inv-emonda-m-red", variantId: "v-emonda-m-red", onHand: 0, reserved: 0 },
+  { id: "inv-emonda-l-red", variantId: "v-emonda-l-red", onHand: 1, reserved: 0 },
+];
+
+function demoInventoryServices(): InventoryServices {
+  return createInventoryServices({
+    inventory: createMemoryInventoryRepository(DEMO_STOCK),
+    clock: { now: () => new Date() },
+  });
+}
 
 function sharedMemoryCart(): CartRepository {
   if (process.env.VITEST === "true") {
@@ -155,7 +181,6 @@ function sharedMemoryCart(): CartRepository {
   return composeGlobals.bikesMemoryCart;
 }
 const demoCatalog = createDemoCatalogRepository();
-const demoInventory = createDemoCatalogInventory();
 let orderRepo: OrderRepository = emptyOrders;
 let customerRepo: CustomerRepository = createMemoryCustomerRepository();
 let wishlistRepo: WishlistRepository = createMemoryWishlistRepository();
@@ -210,7 +235,7 @@ export async function getCatalogInventory(): Promise<CatalogInventory> {
     return emptyInventory;
   }
   if (process.env.NODE_ENV !== "production") {
-    return demoInventory;
+    return getInventoryServices();
   }
   if (!inventoryPromise) {
     inventoryPromise = createPrismaCatalogInventory();
@@ -317,7 +342,30 @@ export function getDeliveryServices(): DeliveryServices {
 }
 
 export function getOrderRepository(): OrderRepository {
+  if (process.env.VITEST === "true") {
+    return orderRepo;
+  }
+  if (process.env.NODE_ENV !== "production") {
+    composeGlobals.bikesMemoryOrders ??= createMemoryOrderRepository();
+    return composeGlobals.bikesMemoryOrders;
+  }
   return orderRepo;
+}
+
+export async function getOrderServices(): Promise<OrderServices> {
+  const clock = { now: () => new Date() };
+  const orders =
+    process.env.NODE_ENV === "production" && process.env.VITEST !== "true"
+      ? await createPrismaOrderRepository()
+      : getOrderRepository();
+  return createOrderServices({
+    orders,
+    carts: orderCartAdapter(await getCartRepository()),
+    catalog: orderCatalogAdapter(await getCatalogRepository()),
+    inventory: orderInventoryAdapter(await getInventoryServices()),
+    delivery: orderDeliveryAdapter(getDeliveryServices()),
+    clock,
+  });
 }
 
 /** Test-only substitution. Production will pass Prisma repositories. */
@@ -331,6 +379,7 @@ export function setCatalogInventory(inventory: CatalogInventory): void {
 
 export function setOrderRepository(repository: OrderRepository): void {
   orderRepo = repository;
+  composeGlobals.bikesMemoryOrders = repository;
 }
 
 export function resetRepositories(): void {
@@ -356,7 +405,9 @@ export function resetRepositories(): void {
   cartPromise = null;
   cartRepo = createMemoryCartRepository();
   composeGlobals.bikesMemoryCart = cartRepo;
+  composeGlobals.bikesMemoryOrders = createMemoryOrderRepository();
   delete composeGlobals.bikesAuthPromise;
+  delete composeGlobals.bikesInventory;
 }
 
 export function setInventoryServices(services: InventoryServices): void {
@@ -371,11 +422,15 @@ export async function getInventoryServices(): Promise<InventoryServices> {
     return stockPromise;
   }
   stockPromise = (async () => {
-    if (process.env.VITEST === "true" || process.env.NODE_ENV !== "production") {
+    if (process.env.VITEST === "true") {
       return createInventoryServices({
         inventory: createMemoryInventoryRepository(),
         clock: { now: () => new Date() },
       });
+    }
+    if (process.env.NODE_ENV !== "production") {
+      composeGlobals.bikesInventory ??= demoInventoryServices();
+      return composeGlobals.bikesInventory;
     }
     return createInventoryServices({
       inventory: await createPrismaInventoryRepository(),
