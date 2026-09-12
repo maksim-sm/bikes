@@ -25,7 +25,8 @@ ledger, application services, and versioned Route Handlers under `/api/v1`.
 Cookie sessions and customer auth live in `identity`. Prisma repositories
 exist for auth tables and catalog listing; other modules still use in-memory
 ports. Integration and end-to-end test tiers are still targets. Storefront
-product, catalog, and guest-cart pages exist; there is no account UI yet.
+product, catalog, and guest-cart pages exist; staff can manage the catalogue
+under `/admin`. There is no customer account UI yet.
 
 ## 1. Why a modular monolith
 

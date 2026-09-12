@@ -23,7 +23,8 @@ export type AuthPolicy =
   | "admin"
   | "manager"
   | "inventory"
-  | "order_management";
+  | "order_management"
+  | "catalog";
 
 export async function resolvePrincipal(headers: Headers): Promise<Principal> {
   const auth = await getAuthServices();
@@ -48,6 +49,8 @@ export function enforcePolicy(principal: Principal, policy: AuthPolicy): Princip
       return gates.requireInventoryRole(principal);
     case "order_management":
       return gates.requireOrderManagementRole(principal);
+    case "catalog":
+      return gates.requireCatalogRole(principal);
     case "customer":
       return gates.requireAuthenticated(principal);
     default: {

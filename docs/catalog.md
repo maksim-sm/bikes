@@ -53,3 +53,12 @@ as `/api/media/…` placeholders until the object store is wired.
 Variant size and color are real radio groups. The selected option is marked
 with a thicker border **and** the visible word «выбрано»; color is never the
 only cue. Add-to-cart is a server action on a guest `bikes_guest` cookie.
+
+## Staff catalogue
+
+`/admin/products` is the staff write path (create, edit, publish, unpublish).
+Admin services require the `manage_catalog` capability (admin and manager).
+Creates start as `DRAFT`. Publish sets `PUBLISHED` and `publishedAt`;
+unpublish returns the row to `DRAFT`. Storefront `listPublishedProducts` and
+`getProductBySlug` still use `isListedOnStorefront` — drafts never appear on
+`/catalog`, `/products/[slug]`, or `GET /api/v1/products`.

@@ -15,6 +15,7 @@ import {
   assertCanReadOrder,
   requireAdmin,
   requireAnonymous,
+  requireCatalogRole,
   requireCustomer,
   requireInventoryRole,
   requireManager,
@@ -49,6 +50,9 @@ describe("authorization helpers", () => {
     expect(() => requireInventoryRole(orders)).toThrow(ForbiddenError);
     expect(requireOrderManagementRole(orders).roles).toContain("order_management");
     expect(() => requireOrderManagementRole(inventory)).toThrow(ForbiddenError);
+    expect(requireCatalogRole(manager).roles).toContain("manager");
+    expect(requireCatalogRole(admin).roles).toContain("admin");
+    expect(() => requireCatalogRole(inventory)).toThrow(ForbiddenError);
   });
 
   it("keeps customer records to the owner, manager, or admin", () => {

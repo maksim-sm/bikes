@@ -11,11 +11,18 @@ export type Capability =
   | "admin"
   | "manage_orders"
   | "manage_inventory"
+  | "manage_catalog"
   | "read_any_customer";
 
 const ROLE_CAPABILITIES: Record<StaffRole, readonly Capability[]> = {
-  admin: ["admin", "manage_orders", "manage_inventory", "read_any_customer"],
-  manager: ["manage_orders", "manage_inventory", "read_any_customer"],
+  admin: [
+    "admin",
+    "manage_orders",
+    "manage_inventory",
+    "manage_catalog",
+    "read_any_customer",
+  ],
+  manager: ["manage_orders", "manage_inventory", "manage_catalog", "read_any_customer"],
   inventory: ["manage_inventory"],
   order_management: ["manage_orders"],
 };

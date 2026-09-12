@@ -61,6 +61,7 @@ export {
   requireAdmin,
   requireAnonymous,
   requireAuthenticated,
+  requireCatalogRole,
   requireCustomer,
   requireInventoryRole,
   requireManager,
@@ -86,6 +87,9 @@ export {
 } from "./domain/cookie";
 export { createAuthServices, type AuthServices } from "./application/auth-services";
 export {
+  DEMO_STAFF_EMAIL,
+  DEMO_STAFF_PASSWORD,
+  createDemoAuthServices,
   createMemoryAuthServices,
   createPrismaAuthServices,
 } from "./application/create-auth";

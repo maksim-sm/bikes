@@ -4,10 +4,12 @@ import type {
   CatalogRepository,
 } from "@/modules/catalog";
 import {
+  createCatalogAdminServices,
   createCatalogServices,
   createDemoCatalogInventory,
   createDemoCatalogRepository,
   createPrismaCatalogRepository,
+  type CatalogAdminServices,
   type CatalogServices,
 } from "@/modules/catalog";
 import {
@@ -25,6 +27,7 @@ import {
 import { createPrismaCatalogInventory } from "@/modules/inventory";
 import {
   createCustomerServices,
+  createDemoAuthServices,
   createMemoryAuthServices,
   createMemoryCustomerRepository,
   createMemoryWishlistRepository,
@@ -44,8 +47,17 @@ export const emptyCatalog: CatalogRepository = {
   async findBySlug() {
     return null;
   },
+  async findById() {
+    return null;
+  },
   async listPublished(_query: CatalogListQuery) {
     return { items: [], total: 0 };
+  },
+  async listAll() {
+    return [];
+  },
+  async save(product) {
+    return product;
   },
   async listCategories() {
     return [];
@@ -140,6 +152,13 @@ export async function getCatalogServices(): Promise<CatalogServices> {
     catalog: await getCatalogRepository(),
     clock: { now: () => new Date() },
     inventory: await getCatalogInventory(),
+  });
+}
+
+export async function getCatalogAdminServices(): Promise<CatalogAdminServices> {
+  return createCatalogAdminServices({
+    catalog: await getCatalogRepository(),
+    clock: { now: () => new Date() },
   });
 }
 
@@ -246,7 +265,9 @@ export async function getAuthServices(): Promise<AuthServices> {
     authPromise =
       process.env.VITEST === "true"
         ? createMemoryAuthServices()
-        : import("@/modules/identity").then((mod) => mod.createPrismaAuthServices());
+        : process.env.NODE_ENV !== "production"
+          ? createDemoAuthServices()
+          : import("@/modules/identity").then((mod) => mod.createPrismaAuthServices());
   }
   return authPromise;
 }

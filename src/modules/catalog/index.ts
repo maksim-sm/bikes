@@ -12,6 +12,9 @@ export {
   isBicycleType,
   isListedOnStorefront,
   lowestListPriceMinor,
+  normalizeProductSlug,
+  publishProduct,
+  unpublishProduct,
   type BicycleType,
   type Brand,
   type Category,
@@ -19,6 +22,7 @@ export {
   type ProductImage,
   type ProductStatus,
   type ProductVariant,
+  type ProductWriteInput,
 } from "./domain/product";
 export {
   CATALOG_SORT_FIELDS,
@@ -33,10 +37,15 @@ export type {
   Clock,
 } from "./application/ports";
 export { createCatalogServices, type CatalogServices } from "./application/services";
+export {
+  createCatalogAdminServices,
+  type CatalogAdminServices,
+} from "./application/admin-services";
 export { createMemoryCatalogRepository } from "./infrastructure/memory-catalog-repository";
 export {
   createDemoCatalogInventory,
   createDemoCatalogRepository,
+  demoDraftFx,
   demoEmonda,
 } from "./infrastructure/demo-catalog";
 export { createPrismaCatalogRepository } from "./application/create-catalog";

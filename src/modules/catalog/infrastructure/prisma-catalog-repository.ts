@@ -1,4 +1,5 @@
 import { Prisma } from "../../../generated/prisma/client";
+import { ConflictError, ValidationError } from "@/lib/errors";
 import { prisma } from "@/lib/db";
 import { descendantCategorySlugs } from "../application/list-match";
 import type { CatalogListQuery } from "../application/list-query";
@@ -25,6 +26,13 @@ const productInclude = {
   brand: true,
   category: true,
   variants: { where: { isActive: true } },
+  media: { include: { media: true }, orderBy: { sortOrder: "asc" as const } },
+} as const;
+
+const adminProductInclude = {
+  brand: true,
+  category: true,
+  variants: true,
   media: { include: { media: true }, orderBy: { sortOrder: "asc" as const } },
 } as const;
 
@@ -233,6 +241,14 @@ export function createPrismaCatalogRepository(): CatalogRepository {
       return row ? toProduct(row) : null;
     },
 
+    async findById(id) {
+      const row = await prisma.product.findUnique({
+        where: { id },
+        include: adminProductInclude,
+      });
+      return row ? toProduct(row) : null;
+    },
+
     async listPublished(query) {
       const where = await buildWhere(query);
       if (!where) {
@@ -287,6 +303,118 @@ export function createPrismaCatalogRepository(): CatalogRepository {
         take: query.pageSize,
       });
       return { items: rows.map(toProduct), total };
+    },
+
+    async listAll() {
+      const rows = await prisma.product.findMany({
+        include: adminProductInclude,
+        orderBy: [{ name: "asc" }, { slug: "asc" }],
+      });
+      return rows.map(toProduct);
+    },
+
+    async save(product) {
+      const brand = await prisma.brand.findUnique({ where: { slug: product.brandSlug } });
+      if (!brand) {
+        throw new ValidationError("unknown brand", { brandSlug: product.brandSlug });
+      }
+      const category = await prisma.category.findUnique({
+        where: { slug: product.categorySlug },
+      });
+      if (!category) {
+        throw new ValidationError("unknown category", {
+          categorySlug: product.categorySlug,
+        });
+      }
+      const slugOwner = await prisma.product.findUnique({
+        where: { slug: product.slug },
+      });
+      if (slugOwner && slugOwner.id !== product.id) {
+        throw new ConflictError("slug already exists", { slug: product.slug });
+      }
+      const existing = await prisma.product.findUnique({
+        where: { id: product.id },
+        include: { variants: true },
+      });
+      const data = {
+        brandId: brand.id,
+        categoryId: category.id,
+        slug: product.slug,
+        name: product.name,
+        description: product.description,
+        status: product.status,
+        publishedAt: product.publishedAt,
+        bicycleType: product.bicycleType,
+        frameMaterial: product.frameMaterial,
+        groupset: product.groupset,
+        brakeType: product.brakeType,
+        modelYear: product.modelYear,
+        warrantyMonths: product.warrantyMonths,
+        warrantyText: product.warrantyText,
+      };
+      await prisma.$transaction(async (tx) => {
+        if (existing) {
+          await tx.product.update({ where: { id: product.id }, data });
+          const keep = new Set(product.variants.map((variant) => variant.id));
+          const removed = existing.variants.filter((row) => !keep.has(row.id));
+          if (removed.length > 0) {
+            await tx.productVariant.deleteMany({
+              where: { id: { in: removed.map((row) => row.id) } },
+            });
+          }
+          for (const variant of product.variants) {
+            await tx.productVariant.upsert({
+              where: { id: variant.id },
+              create: {
+                id: variant.id,
+                productId: product.id,
+                sku: variant.sku,
+                frameSize: variant.frameSize,
+                wheelSize: variant.wheelSize,
+                color: variant.color,
+                listPriceMinor: variant.listPriceMinor,
+                currency: variant.currency,
+                isActive: variant.isActive,
+              },
+              update: {
+                sku: variant.sku,
+                frameSize: variant.frameSize,
+                wheelSize: variant.wheelSize,
+                color: variant.color,
+                listPriceMinor: variant.listPriceMinor,
+                isActive: variant.isActive,
+              },
+            });
+          }
+        } else {
+          await tx.product.create({
+            data: {
+              id: product.id,
+              ...data,
+              variants: {
+                create: product.variants.map((variant) => ({
+                  id: variant.id,
+                  sku: variant.sku,
+                  frameSize: variant.frameSize,
+                  wheelSize: variant.wheelSize,
+                  color: variant.color,
+                  listPriceMinor: variant.listPriceMinor,
+                  currency: variant.currency,
+                  isActive: variant.isActive,
+                })),
+              },
+            },
+          });
+        }
+      });
+      const saved = await prisma.product.findUnique({
+        where: { id: product.id },
+        include: adminProductInclude,
+      });
+      if (!saved) {
+        throw new Error("product save failed");
+      }
+      return toProduct(saved);
     },
 
     async listCategories() {
