@@ -4,7 +4,12 @@ import type { StaffRole } from "./roles";
 export const SESSION_COOKIE_NAME = "bikes_session";
 export const MIN_PASSWORD_LENGTH = 10;
 export const MAX_PASSWORD_LENGTH = 128;
+/** Absolute lifetime for a customer session. */
 export const SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+/** Staff idle timeout: no resolve/touch within this window ends the session. */
+export const STAFF_SESSION_IDLE_MS = 30 * 60 * 1000;
+/** Absolute lifetime for a staff session, even if they stay active. */
+export const STAFF_SESSION_MAX_MS = 12 * 60 * 60 * 1000;
 export const EMAIL_VERIFY_TTL_MS = 24 * 60 * 60 * 1000;
 export const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
@@ -25,7 +30,20 @@ export interface StoredSession {
   userId: string;
   tokenHash: string;
   expiresAt: Date;
+  lastSeenAt: Date;
   revokedAt: Date | null;
+}
+
+export interface SessionPolicy {
+  maxMs: number;
+  idleMs: number | null;
+}
+
+export function sessionPolicyFor(user: AuthUser): SessionPolicy {
+  if (user.role === "STAFF") {
+    return { maxMs: STAFF_SESSION_MAX_MS, idleMs: STAFF_SESSION_IDLE_MS };
+  }
+  return { maxMs: SESSION_TTL_MS, idleMs: null };
 }
 
 export interface StoredAuthToken {
@@ -47,11 +65,21 @@ export function assertPasswordPolicy(password: string): void {
   }
 }
 
-export function isSessionActive(session: StoredSession, now: Date): boolean {
+export function isSessionActive(
+  session: StoredSession,
+  now: Date,
+  idleMs: number | null = null,
+): boolean {
   if (session.revokedAt !== null) {
     return false;
   }
-  return session.expiresAt.getTime() > now.getTime();
+  if (session.expiresAt.getTime() <= now.getTime()) {
+    return false;
+  }
+  if (idleMs !== null && session.lastSeenAt.getTime() + idleMs <= now.getTime()) {
+    return false;
+  }
+  return true;
 }
 
 export function isTokenActive(token: StoredAuthToken, now: Date): boolean {

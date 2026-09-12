@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { ConflictError, UnauthenticatedError, ValidationError } from "@/lib/errors";
-import { createMemoryAuthServices } from "./create-auth";
+import { STAFF_SESSION_IDLE_MS, STAFF_SESSION_MAX_MS } from "../domain/auth";
+import { createArgon2PasswordHasher } from "../infrastructure/argon2-hasher";
 import { createCapturingMailer } from "../infrastructure/logging-mailer";
+import {
+  createMemoryAuthTokens,
+  createMemorySessions,
+  createMemoryUserAccounts,
+} from "../infrastructure/memory-auth-repository";
+import { createMemoryRateLimiter } from "../infrastructure/memory-rate-limiter";
+import { createSecurityLog } from "../infrastructure/security-log";
+import { createSha256TokenDigest } from "../infrastructure/sha256-token";
+import { createAuthServices } from "./auth-services";
+import { createMemoryAuthServices } from "./create-auth";
 
 describe("customer authentication", () => {
   it("registers without leaking a session and requires verification before login", async () => {
@@ -221,6 +232,46 @@ describe("customer authentication", () => {
     expect(cleared.cookie.maxAge).toBe(0);
     expect(await auth.resolve(again.cookie.value)).toEqual({ type: "anonymous" });
     expect(await auth.resolve(changed.cookie.value)).toEqual({ type: "anonymous" });
+  });
+
+  it("ends a staff session after the idle window", async () => {
+    const now = { value: new Date("2026-09-12T12:00:00.000Z") };
+    const passwords = createArgon2PasswordHasher({ cheap: true });
+    const users = createMemoryUserAccounts();
+    const created = await users.create({
+      email: "clerk@bikes.local",
+      passwordHash: await passwords.hash("correct-horse"),
+      role: "STAFF",
+    });
+    await users.save({
+      ...created,
+      staffRoles: ["inventory"],
+      emailVerifiedAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    const auth = createAuthServices({
+      users,
+      sessions: createMemorySessions(),
+      tokens: createMemoryAuthTokens(),
+      passwords,
+      tokensDigest: createSha256TokenDigest(),
+      mailer: createCapturingMailer(),
+      limiter: createMemoryRateLimiter({ limit: 20, windowMs: 60_000 }),
+      log: createSecurityLog(),
+      clock: { now: () => now.value },
+      dummyPasswordHash: await passwords.hash("timing-pad"),
+    });
+    const loggedIn = await auth.login({
+      email: "clerk@bikes.local",
+      password: "correct-horse",
+      requestId: "r1",
+      rateKey: "ip:staff",
+      secureCookie: false,
+    });
+    expect(loggedIn.principal.type).toBe("staff");
+    expect(loggedIn.cookie.maxAge).toBe(STAFF_SESSION_MAX_MS / 1000);
+    expect(await auth.resolve(loggedIn.cookie.value)).toEqual(loggedIn.principal);
+    now.value = new Date(now.value.getTime() + STAFF_SESSION_IDLE_MS + 1);
+    expect(await auth.resolve(loggedIn.cookie.value)).toEqual({ type: "anonymous" });
   });
 
   it("rejects short passwords", async () => {

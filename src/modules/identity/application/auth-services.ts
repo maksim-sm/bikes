@@ -9,13 +9,13 @@ import { requireAuthenticated, requireCustomer } from "./authorization";
 import {
   EMAIL_VERIFY_TTL_MS,
   PASSWORD_RESET_TTL_MS,
-  SESSION_TTL_MS,
   assertPasswordPolicy,
   canAuthenticate,
   isSessionActive,
   isTokenActive,
   normalizeEmail,
   principalForUser,
+  sessionPolicyFor,
   type AuthUser,
 } from "../domain/auth";
 import {
@@ -121,14 +121,16 @@ export function createAuthServices(deps: {
   ): Promise<SessionCookie> {
     const now = deps.clock.now();
     const token = deps.tokensDigest.generate();
+    const policy = sessionPolicyFor(user);
     await deps.sessions.insert({
       id: crypto.randomUUID(),
       userId: user.id,
       tokenHash: token.hash,
-      expiresAt: new Date(now.getTime() + SESSION_TTL_MS),
+      expiresAt: new Date(now.getTime() + policy.maxMs),
+      lastSeenAt: now,
       revokedAt: null,
     });
-    return sessionCookie(token.raw, secureCookie);
+    return sessionCookie(token.raw, secureCookie, policy.maxMs / 1000);
   }
 
   async function issueOneTime(
@@ -324,12 +326,23 @@ export function createAuthServices(deps: {
       const session = await deps.sessions.findByTokenHash(
         deps.tokensDigest.hash(rawToken),
       );
-      if (!session || !isSessionActive(session, deps.clock.now())) {
+      if (!session) {
         return { type: "anonymous" };
       }
       const user = await deps.users.findById(session.userId);
       if (!user || canAuthenticate(user, deps.clock.now()) !== "ok") {
         return { type: "anonymous" };
+      }
+      const now = deps.clock.now();
+      const policy = sessionPolicyFor(user);
+      if (!isSessionActive(session, now, policy.idleMs)) {
+        if (session.revokedAt === null) {
+          await deps.sessions.revoke(session.id, now);
+        }
+        return { type: "anonymous" };
+      }
+      if (policy.idleMs !== null) {
+        await deps.sessions.touch(session.id, now);
       }
       return principalForUser(user);
     },

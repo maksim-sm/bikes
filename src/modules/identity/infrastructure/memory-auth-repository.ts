@@ -47,6 +47,12 @@ export function createMemorySessions(): SessionRepository {
     async findByTokenHash(tokenHash) {
       return [...rows.values()].find((row) => row.tokenHash === tokenHash) ?? null;
     },
+    async touch(id, at) {
+      const row = rows.get(id);
+      if (row && row.revokedAt === null) {
+        rows.set(id, { ...row, lastSeenAt: at });
+      }
+    },
     async revoke(id, at) {
       const row = rows.get(id);
       if (row) {

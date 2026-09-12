@@ -89,6 +89,7 @@ export function createPrismaSessions(): SessionRepository {
           userId: session.userId,
           tokenHash: session.tokenHash,
           expiresAt: session.expiresAt,
+          lastSeenAt: session.lastSeenAt,
         },
       });
     },
@@ -102,8 +103,15 @@ export function createPrismaSessions(): SessionRepository {
         userId: row.userId,
         tokenHash: row.tokenHash,
         expiresAt: row.expiresAt,
+        lastSeenAt: row.lastSeenAt,
         revokedAt: row.revokedAt,
       };
+    },
+    async touch(id, at) {
+      await prisma.authSession.update({
+        where: { id },
+        data: { lastSeenAt: at },
+      });
     },
     async revoke(id, at) {
       await prisma.authSession.update({

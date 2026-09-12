@@ -2,7 +2,8 @@ import { z } from "zod";
 import { ValidationError } from "@/lib/errors";
 import { parseFilters, parseWithSchema, searchParamsObject } from "@/lib/http";
 import { withRoute } from "@/app/api/_lib/route";
-import { getDeliveryServices } from "@/app/api/_lib/compose";
+import { getAuditServices, getDeliveryServices } from "@/app/api/_lib/compose";
+import { actorUserId } from "@/modules/identity";
 import { toShipmentDto } from "./dto";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,15 @@ export const GET = withRoute("order_management", async (ctx) => {
 export const POST = withRoute("order_management", async (ctx) => {
   const body = parseWithSchema(assignSchema, await ctx.request.json());
   const shipment = await getDeliveryServices().assignShipment(ctx.principal, body);
+  await getAuditServices().record(
+    { actorUserId: actorUserId(ctx.principal), requestId: ctx.requestId },
+    {
+      action: "delivery.shipment.assign",
+      entityType: "shipment",
+      entityId: shipment.id,
+      after: { orderId: body.orderId, methodCode: body.methodCode },
+    },
+  );
   return { data: { shipment: toShipmentDto(shipment) }, status: 201 };
 });
 

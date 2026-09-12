@@ -1,18 +1,28 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { adminHref } from "./paths";
+import { canAccessAdmin } from "./access";
 import { getAuthServices } from "@/app/api/_lib/compose";
 import { usesSecureCookies } from "@/app/api/_lib/csrf";
 import { isAppError } from "@/lib/errors";
 import {
   SESSION_COOKIE_NAME,
-  hasCapability,
   requireCatalogRole,
+  requireInventoryRole,
   requireOrderManagementRole,
   requireStaff,
   type Principal,
   type SessionCookie,
 } from "@/modules/identity";
+
+export {
+  adminHomePath,
+  canAccessAdmin,
+  canManageCatalog,
+  canManageInventory,
+  canManageOrders,
+  visibleAdminNav,
+} from "./access";
 
 export async function currentPrincipal(): Promise<Principal> {
   const store = await cookies();
@@ -20,9 +30,12 @@ export async function currentPrincipal(): Promise<Principal> {
   return (await getAuthServices()).resolve(token);
 }
 
-function redirectStaffAuth(error: unknown): never {
+function redirectStaffAuth(error: unknown, principal: Principal): never {
   if (isAppError(error) && error.code === "unauthenticated") {
     redirect(adminHref("/admin/login"));
+  }
+  if (principal.type === "staff" && canAccessAdmin(principal)) {
+    redirect(adminHref("/admin/forbidden"));
   }
   redirect(adminHref("/admin/login?forbidden=1"));
 }
@@ -32,9 +45,13 @@ export async function requireAdminStaff(): Promise<
 > {
   const principal = await currentPrincipal();
   try {
-    return requireStaff(principal);
+    const staff = requireStaff(principal);
+    if (!canAccessAdmin(staff)) {
+      redirect(adminHref("/admin/login?forbidden=1"));
+    }
+    return staff;
   } catch (error) {
-    redirectStaffAuth(error);
+    redirectStaffAuth(error, principal);
   }
 }
 
@@ -45,7 +62,7 @@ export async function requireAdminCatalog(): Promise<
   try {
     return requireCatalogRole(principal);
   } catch (error) {
-    redirectStaffAuth(error);
+    redirectStaffAuth(error, principal);
   }
 }
 
@@ -56,30 +73,19 @@ export async function requireAdminOrderManagement(): Promise<
   try {
     return requireOrderManagementRole(principal);
   } catch (error) {
-    redirectStaffAuth(error);
+    redirectStaffAuth(error, principal);
   }
 }
 
-export function canManageCatalog(principal: Principal): boolean {
-  return hasCapability(principal, "manage_catalog");
-}
-
-export function canManageOrders(principal: Principal): boolean {
-  return hasCapability(principal, "manage_orders");
-}
-
-export function canAccessAdmin(principal: Principal): boolean {
-  return canManageCatalog(principal) || canManageOrders(principal);
-}
-
-export function adminHomePath(principal: Principal): string {
-  if (canManageCatalog(principal)) {
-    return "/admin/products";
+export async function requireAdminInventory(): Promise<
+  Extract<Principal, { type: "staff" }>
+> {
+  const principal = await currentPrincipal();
+  try {
+    return requireInventoryRole(principal);
+  } catch (error) {
+    redirectStaffAuth(error, principal);
   }
-  if (canManageOrders(principal)) {
-    return "/admin/deliveries";
-  }
-  return "/admin/login?forbidden=1";
 }
 
 export async function writeSessionCookie(cookie: SessionCookie): Promise<void> {

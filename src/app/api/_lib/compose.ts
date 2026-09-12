@@ -96,6 +96,13 @@ import {
   mediaSrc,
   type MediaServices,
 } from "@/modules/media";
+import {
+  createAuditServices,
+  createMemoryAuditRepository,
+  createPrismaAuditRepository,
+  type AuditRepository,
+  type AuditServices,
+} from "@/modules/audit";
 
 export const emptyCatalog: CatalogRepository = {
   async findBySlug() {
@@ -166,6 +173,7 @@ const composeGlobals = globalThis as unknown as {
   bikesMemoryShipments?: ShipmentRepository;
   bikesMemoryCustomers?: CustomerRepository;
   bikesMemoryWishlist?: WishlistRepository;
+  bikesMemoryAudit?: AuditRepository;
 };
 
 const DEMO_STOCK: InventoryItem[] = [
@@ -203,6 +211,7 @@ let wishlistStock: WishlistStock = {
     return false;
   },
 };
+let auditOverride: AuditRepository | null = null;
 let authOverride: AuthServices | null = null;
 let authPromise: Promise<AuthServices> | null = null;
 let mediaOverride: MediaServices | null = null;
@@ -436,6 +445,7 @@ export function resetRepositories(): void {
       return false;
     },
   };
+  auditOverride = null;
   authOverride = null;
   authPromise = null;
   mediaOverride = null;
@@ -449,6 +459,7 @@ export function resetRepositories(): void {
   composeGlobals.bikesMemoryOrders = createMemoryOrderRepository();
   composeGlobals.bikesMemoryCustomers = createMemoryCustomerRepository();
   composeGlobals.bikesMemoryWishlist = createMemoryWishlistRepository();
+  composeGlobals.bikesMemoryAudit = createMemoryAuditRepository();
   paymentRepo = createMemoryPaymentRepository();
   paymentProvider = new MockPaymentProvider();
   composeGlobals.bikesMemoryPayments = paymentRepo;
@@ -698,5 +709,31 @@ export async function getCheckoutHoldReconciler(): Promise<CheckoutHoldReconcile
   return createCheckoutHoldReconciler({
     inventory: await getInventoryServices(),
     payments: getPaymentServices(),
+  });
+}
+
+export function setAuditRepository(repository: AuditRepository): void {
+  auditOverride = repository;
+}
+
+function getAuditRepository(): AuditRepository {
+  if (auditOverride) {
+    return auditOverride;
+  }
+  if (process.env.VITEST === "true") {
+    composeGlobals.bikesMemoryAudit ??= createMemoryAuditRepository();
+    return composeGlobals.bikesMemoryAudit;
+  }
+  if (process.env.NODE_ENV !== "production") {
+    composeGlobals.bikesMemoryAudit ??= createMemoryAuditRepository();
+    return composeGlobals.bikesMemoryAudit;
+  }
+  return createPrismaAuditRepository();
+}
+
+export function getAuditServices(): AuditServices {
+  return createAuditServices({
+    audit: getAuditRepository(),
+    clock: { now: () => new Date() },
   });
 }

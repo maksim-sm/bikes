@@ -22,7 +22,8 @@ defines storefront listing filters (PostgreSQL, not Elasticsearch).
 `docs/delivery.md` defines methods, zones, free-delivery thresholds, and
 staff shipment assignment. `docs/account.md` defines the customer
 self-service area. `docs/wishlist.md` defines the authenticated product
-wishlist.
+wishlist. `docs/admin.md` defines the staff console, route protection,
+and session timeout.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -33,7 +34,7 @@ exist for auth tables, catalog listing, inventory, media, production
 carts, customer profiles/addresses, and orders. Local demo catalogue and cart stay in-memory. Integration and
 end-to-end test tiers are still targets. Storefront product, catalog, cart,
 and checkout pages exist; staff can manage the catalogue and assign
-shipments under `/admin`. Customers manage profile, addresses, wishlist, orders,
+shipments under `/admin` (`docs/admin.md`). Customers manage profile, addresses, wishlist, orders,
 payment/delivery status, and sessions under `/account` (`docs/account.md`).
 Cart and
 checkout totals are recalculated server-side (`docs/cart.md`,
@@ -283,7 +284,11 @@ the helpers in `identity` — do not invent a second permission matrix.
 - Passwords, if used, are hashed with a modern memory-hard algorithm. Sessions
   are httpOnly, `Secure`, and `SameSite=Lax` cookies.
 - The admin area is never exposed through the same navigation as the storefront
-  and is excluded from search indexing.
+  and is excluded from search indexing. Staff see a dedicated shell
+  (`docs/admin.md`). Authorization is checked on the page, in `withRoute`,
+  and again inside the service. Staff sessions expire after 30 minutes idle
+  or 12 hours absolute (ADR-0029). Admin writes append an `audit` row with
+  actor and request id.
 
 ## 8. Payment abstraction
 

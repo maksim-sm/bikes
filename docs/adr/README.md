@@ -48,3 +48,4 @@ Rules:
 | [0026](0026-staff-entered-shipment-tracking.md)    | Staff-entered shipment tracking, no carrier API | Accepted                                                                 |
 | [0027](0027-customer-account-area.md)              | Customer self-service account area              | Accepted (amended by [0028](0028-persistent-wishlist.md))                |
 | [0028](0028-persistent-wishlist.md)                | Persistent wishlist; no duplicates              | Accepted                                                                 |
+| [0029](0029-admin-shell-authorization.md)          | Admin shell, staff idle timeout, audit context  | Accepted                                                                 |
