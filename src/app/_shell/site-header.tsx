@@ -1,8 +1,17 @@
+import { currentPrincipal } from "@/app/_lib/session";
 import { t } from "@/lib/i18n";
 import { Container, TextLink } from "@/ui";
 import styles from "./site-header.module.css";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const principal = await currentPrincipal();
+  const accountHref =
+    principal.type === "customer"
+      ? "/account"
+      : principal.type === "staff"
+        ? "/admin"
+        : "/login";
+
   return (
     <header className={styles.header}>
       <Container>
@@ -19,9 +28,14 @@ export function SiteHeader() {
             <span className={styles.navLink}>{t.nav.contacts}</span>
           </nav>
 
-          <TextLink className={styles.cart} href="/cart" subtle>
-            {t.nav.cart}
-          </TextLink>
+          <div className={styles.tools}>
+            <TextLink className={styles.cart} href={accountHref} subtle>
+              {t.nav.account}
+            </TextLink>
+            <TextLink className={styles.cart} href="/cart" subtle>
+              {t.nav.cart}
+            </TextLink>
+          </div>
         </div>
       </Container>
     </header>

@@ -1,5 +1,9 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
-import { requireOrderManagementRole, type Principal } from "@/modules/identity";
+import {
+  assertCanReadOrder,
+  requireOrderManagementRole,
+  type Principal,
+} from "@/modules/identity";
 import {
   nextShipmentStatus,
   quoteMethod,
@@ -29,6 +33,10 @@ export interface DeliveryServices {
   listQuotes(destination: Destination, options?: QuoteOptions): Promise<DeliveryQuote[]>;
   listMethods(principal: Principal): Promise<DeliveryMethodRecord[]>;
   getShipment(principal: Principal, orderId: string): Promise<ShipmentRecord>;
+  getShipmentForOrder(
+    principal: Principal,
+    order: { id: string; userId: string | null },
+  ): Promise<ShipmentRecord | null>;
   assignShipment(
     principal: Principal,
     input: {
@@ -112,6 +120,11 @@ export function createDeliveryServices(deps: {
     async getShipment(principal, orderId) {
       requireOrderManagementRole(principal);
       return loadShipment(orderId);
+    },
+
+    async getShipmentForOrder(principal, order) {
+      assertCanReadOrder(principal, order.userId, order.id);
+      return deps.shipments.findByOrder(order.id);
     },
 
     async assignShipment(principal, input) {

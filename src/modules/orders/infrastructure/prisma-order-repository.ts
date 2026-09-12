@@ -167,29 +167,73 @@ export function createPrismaOrderRepository(
         where: { id },
         include: { items: { orderBy: { createdAt: "asc" } } },
       });
-      if (!row) {
-        return null;
-      }
-      return {
-        id: row.id,
-        number: row.number,
-        userId: row.userId,
-        status: row.status as Order["status"],
-        paymentStatus: row.paymentStatus as Order["paymentStatus"],
-        fulfillmentStatus: row.fulfillmentStatus as Order["fulfillmentStatus"],
-        currency: "BYN",
-        subtotalMinor: row.subtotalMinor,
-        deliveryCostMinor: row.deliveryCostMinor,
-        totalMinor: row.totalMinor,
-        deliveryMethodCode: row.deliveryMethodCode,
-        deliveryMethodName: row.deliveryMethodName,
-        customerEmail: row.customerEmail,
-        customerName: row.customerName,
-        customerPhone: row.customerPhone,
-        paymentMethodCode: snapshotPaymentMethod(row.placedSnapshot),
-        shipping: toShipping(row),
-        items: row.items.map(toLine),
-      };
+      return row ? toOrder(row) : null;
     },
+
+    async listByUser(userId) {
+      const rows = await client.order.findMany({
+        where: { userId },
+        include: { items: { orderBy: { createdAt: "asc" } } },
+        orderBy: { placedAt: "desc" },
+      });
+      return rows.map(toOrder);
+    },
+  };
+}
+
+function toOrder(row: {
+  id: string;
+  number: string;
+  userId: string | null;
+  status: string;
+  paymentStatus: string;
+  fulfillmentStatus: string;
+  subtotalMinor: number;
+  deliveryCostMinor: number;
+  totalMinor: number;
+  deliveryMethodCode: string;
+  deliveryMethodName: string;
+  customerEmail: string;
+  customerName: string;
+  customerPhone: string;
+  placedSnapshot: unknown;
+  shippingRecipientName: string;
+  shippingPhone: string;
+  shippingCountryCode: string;
+  shippingRegion: string;
+  shippingCity: string;
+  shippingStreet: string;
+  shippingPostalCode: string;
+  items: Array<{
+    productVariantId: string;
+    sku: string;
+    productName: string;
+    brandName: string;
+    frameSize: string;
+    color: string;
+    quantity: number;
+    unitPriceMinor: number;
+    lineTotalMinor: number;
+  }>;
+}): Order {
+  return {
+    id: row.id,
+    number: row.number,
+    userId: row.userId,
+    status: row.status as Order["status"],
+    paymentStatus: row.paymentStatus as Order["paymentStatus"],
+    fulfillmentStatus: row.fulfillmentStatus as Order["fulfillmentStatus"],
+    currency: "BYN",
+    subtotalMinor: row.subtotalMinor,
+    deliveryCostMinor: row.deliveryCostMinor,
+    totalMinor: row.totalMinor,
+    deliveryMethodCode: row.deliveryMethodCode,
+    deliveryMethodName: row.deliveryMethodName,
+    customerEmail: row.customerEmail,
+    customerName: row.customerName,
+    customerPhone: row.customerPhone,
+    paymentMethodCode: snapshotPaymentMethod(row.placedSnapshot),
+    shipping: toShipping(row),
+    items: row.items.map(toLine),
   };
 }

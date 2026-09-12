@@ -64,7 +64,7 @@ authoritative where they differ from the sketch below.
 ```
 app/                     HTTP + rendering layer only (routes, layouts, server actions)
   (storefront)/          public catalogue, product pages, cart, checkout
-  (account)/             customer auth'd area: orders, addresses
+  (account)/             customer auth'd area: profile, addresses, orders
   admin/                 internal catalogue and order management
 modules/                 the modular-monolith seam; one folder per domain
   catalog/               bicycles, categories, specs, variants, stock

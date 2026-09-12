@@ -10,6 +10,7 @@ export interface OrderRepository {
   nextSequence(day: Date): Promise<number>;
   save(order: Order): Promise<Order>;
   findById(id: string): Promise<Order | null>;
+  listByUser(userId: string): Promise<Order[]>;
 }
 
 export interface OrderCart {

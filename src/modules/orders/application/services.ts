@@ -7,6 +7,7 @@ import {
 import { findActiveVariant, isListedOnStorefront } from "@/modules/catalog";
 import {
   assertCanReadOrder,
+  requireCustomer,
   requireOrderManagementRole,
   type Principal,
 } from "@/modules/identity";
@@ -45,6 +46,7 @@ export interface OrderServices {
   checkout(input: PlaceOrderInput): Promise<Order>;
   placeOrder(input: PlaceOrderInput): Promise<Order>;
   getOrder(id: string, principal: Principal): Promise<Order>;
+  listOrders(principal: Principal): Promise<Order[]>;
   getPlacedOrder(id: string): Promise<Order>;
   cancelOrder(id: string, principal: Principal): Promise<Order>;
   completeOrder(id: string, principal: Principal): Promise<Order>;
@@ -226,6 +228,11 @@ export function createOrderServices(deps: {
       const order = await load(id);
       assertCanReadOrder(principal, order.userId, order.id);
       return order;
+    },
+
+    async listOrders(principal) {
+      const customer = requireCustomer(principal);
+      return deps.orders.listByUser(customer.userId);
     },
 
     async getPlacedOrder(id) {

@@ -114,6 +114,9 @@ describe("customer resource isolation", () => {
       async findById(id) {
         return id === order.id ? order : null;
       },
+      async listByUser(userId) {
+        return userId === order.userId ? [order] : [];
+      },
     });
 
     const headers = { cookie: stranger.cookie };

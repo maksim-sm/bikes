@@ -158,6 +158,71 @@ describe("customer authentication", () => {
     expect(next.principal.type).toBe("customer");
   });
 
+  it("changes the password, keeps this session, and revokes the others", async () => {
+    const mailer = createCapturingMailer();
+    const auth = await createMemoryAuthServices({ mailer });
+    await auth.register({
+      email: "nina@example.by",
+      password: "correct-horse",
+      requestId: "r1",
+      rateKey: "ip:5",
+    });
+    await auth.verifyEmail({
+      rawToken: mailer.verifications[0]!.rawToken,
+      requestId: "r2",
+    });
+    const first = await auth.login({
+      email: "nina@example.by",
+      password: "correct-horse",
+      requestId: "r3",
+      rateKey: "ip:5",
+      secureCookie: false,
+    });
+    const second = await auth.login({
+      email: "nina@example.by",
+      password: "correct-horse",
+      requestId: "r4",
+      rateKey: "ip:5",
+      secureCookie: false,
+    });
+    const changed = await auth.changePassword({
+      principal: first.principal,
+      currentPassword: "correct-horse",
+      password: "new-correct",
+      requestId: "r5",
+      rateKey: "ip:5",
+      secureCookie: false,
+    });
+    expect(await auth.resolve(first.cookie.value)).toEqual({ type: "anonymous" });
+    expect(await auth.resolve(second.cookie.value)).toEqual({ type: "anonymous" });
+    expect((await auth.resolve(changed.cookie.value)).type).toBe("customer");
+    await expect(
+      auth.changePassword({
+        principal: first.principal,
+        currentPassword: "wrong-password",
+        password: "another-one",
+        requestId: "r6",
+        rateKey: "ip:5",
+        secureCookie: false,
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    const again = await auth.login({
+      email: "nina@example.by",
+      password: "new-correct",
+      requestId: "r7",
+      rateKey: "ip:5",
+      secureCookie: false,
+    });
+    const cleared = await auth.logoutAllSessions({
+      principal: again.principal,
+      requestId: "r8",
+      secureCookie: false,
+    });
+    expect(cleared.cookie.maxAge).toBe(0);
+    expect(await auth.resolve(again.cookie.value)).toEqual({ type: "anonymous" });
+    expect(await auth.resolve(changed.cookie.value)).toEqual({ type: "anonymous" });
+  });
+
   it("rejects short passwords", async () => {
     const auth = await createMemoryAuthServices();
     await expect(

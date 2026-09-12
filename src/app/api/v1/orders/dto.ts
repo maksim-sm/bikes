@@ -13,6 +13,14 @@ export interface OrderDto {
   deliveryMethodCode: string;
   deliveryMethodName: string;
   paymentMethodCode: string;
+  customerName: string;
+  shipping: {
+    recipientName: string;
+    city: string;
+    region: string;
+    street: string;
+    postalCode: string;
+  };
   items: Array<{
     sku: string;
     productName: string;
@@ -36,6 +44,14 @@ export function toOrderDto(order: Order): OrderDto {
     deliveryMethodCode: order.deliveryMethodCode,
     deliveryMethodName: order.deliveryMethodName,
     paymentMethodCode: order.paymentMethodCode,
+    customerName: order.customerName,
+    shipping: {
+      recipientName: order.shipping.recipientName,
+      city: order.shipping.city,
+      region: order.shipping.region,
+      street: order.shipping.street,
+      postalCode: order.shipping.postalCode,
+    },
     items: order.items.map((item) => ({
       sku: item.sku,
       productName: item.productName,

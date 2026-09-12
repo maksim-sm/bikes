@@ -106,6 +106,9 @@ function stack(options?: { now?: Date; holdMs?: number }) {
     async findById(id) {
       return orders.get(id) ?? null;
     },
+    async listByUser(userId) {
+      return [...orders.values()].filter((order) => order.userId === userId);
+    },
   };
   const cart: Cart = {
     id: "c1",
