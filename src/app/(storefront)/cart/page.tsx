@@ -55,6 +55,15 @@ export default async function CartPage({ searchParams }: PageProps) {
               <p className={styles.subtotal}>
                 {t.cart.subtotal}: {formatPrice(view.subtotalMinor)}
               </p>
+              {view.items.every((line) => line.purchasable) ? (
+                <div>
+                  <ButtonLink href="/checkout">{t.actions.checkout}</ButtonLink>
+                </div>
+              ) : (
+                <p className={styles.error} role="status">
+                  {t.cart.checkoutBlocked}
+                </p>
+              )}
               <div>
                 <ButtonLink href="/catalog" variant="secondary">
                   {t.cart.continueShopping}

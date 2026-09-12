@@ -57,6 +57,10 @@ export const ru = {
     address: "Адрес",
     comment: "Комментарий к заказу",
     deliveryMethod: "Способ доставки",
+    recipient: "Получатель",
+    region: "Область",
+    street: "Улица, дом",
+    postalCode: "Индекс",
   },
 
   status: {
@@ -142,6 +146,30 @@ export const ru = {
     unavailable: "Этой комплектации нет в продаже",
     insufficient: "Доступно только",
     missing: "Товар недоступен",
+    checkoutBlocked: "Исправьте позиции в корзине, чтобы оформить заказ",
+  },
+
+  checkout: {
+    title: "Оформление заказа",
+    empty: "Сначала добавьте товары в корзину",
+    goToCart: "Открыть корзину",
+    customer: "Покупатель",
+    shipping: "Адрес доставки",
+    quoteFailed: "Не удалось рассчитать доставку",
+    noMethods: "Для этого адреса нет доставки",
+    place: "Подтвердить заказ",
+    failed: "Не удалось оформить заказ",
+    unavailable: "Товар больше нельзя купить",
+    insufficient: "Недостаточно товара на складе",
+    deliveryUnavailable: "Этот способ доставки недоступен",
+    cartInvalid: "Проверьте корзину и попробуйте снова",
+    previewNote: "Итоговая сумма считается на сервере. Браузер не задаёт цену заказа.",
+    subtotal: "Товары",
+    delivery: "Доставка",
+    total: "К оплате",
+    confirmationTitle: "Заказ принят",
+    confirmationLead: "Мы зафиксировали заказ. Его номер:",
+    backToCatalog: "Вернуться в каталог",
   },
 
   admin: {

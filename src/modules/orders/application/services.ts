@@ -4,13 +4,18 @@ import {
   NotFoundError,
   ValidationError,
 } from "@/lib/errors";
-import { findActiveVariant } from "@/modules/catalog";
+import { findActiveVariant, isListedOnStorefront } from "@/modules/catalog";
 import {
   assertCanReadOrder,
   requireOrderManagementRole,
   type Principal,
 } from "@/modules/identity";
-import { lineTotalMinor, orderTotalMinor, sumMinor } from "@/modules/pricing";
+import { lineTotalMinor } from "@/modules/pricing";
+import {
+  assertCheckoutCustomer,
+  assertCheckoutDestination,
+  checkoutTotals,
+} from "../domain/checkout";
 import {
   formatOrderNumber,
   projectFulfillmentStatus,
@@ -32,8 +37,10 @@ import type {
 } from "./ports";
 
 export interface OrderServices {
+  checkout(input: PlaceOrderInput): Promise<Order>;
   placeOrder(input: PlaceOrderInput): Promise<Order>;
   getOrder(id: string, principal: Principal): Promise<Order>;
+  getPlacedOrder(id: string): Promise<Order>;
   cancelOrder(id: string, principal: Principal): Promise<Order>;
   completeOrder(id: string, principal: Principal): Promise<Order>;
   applyPaymentEvent(
@@ -47,6 +54,28 @@ export interface OrderServices {
     principal: Principal,
     event: { type: "assigned" | "shipped" | "delivered" | "failed" | "cancelled" },
   ): Promise<Order>;
+}
+
+function mapCheckoutValidation(error: unknown): never {
+  if (error instanceof Error && error.message.startsWith("checkout_")) {
+    throw new ValidationError(error.message.replaceAll("_", " "));
+  }
+  throw error;
+}
+
+function assertOwnsCart(
+  cart: { userId: string | null; guestToken: string | null },
+  input: PlaceOrderInput,
+): void {
+  if (cart.userId) {
+    if (input.actorUserId !== cart.userId) {
+      throw new ForbiddenError("cart does not belong to the caller");
+    }
+    return;
+  }
+  if (!input.guestToken || cart.guestToken !== input.guestToken) {
+    throw new ForbiddenError("cart does not belong to the caller");
+  }
 }
 
 export function createOrderServices(deps: {
@@ -65,80 +94,122 @@ export function createOrderServices(deps: {
     return order;
   }
 
-  return {
-    async placeOrder(input) {
-      const cart = await deps.carts.getCartById(input.cartId);
-      if (!cart || cart.items.length === 0) {
-        throw new ValidationError("cart is empty");
-      }
-      if (input.actorUserId && cart.userId && cart.userId !== input.actorUserId) {
-        throw new ForbiddenError("cart does not belong to the caller");
-      }
+  async function placeOrder(input: PlaceOrderInput): Promise<Order> {
+    let customer;
+    let destination;
+    try {
+      customer = assertCheckoutCustomer(input);
+      destination = assertCheckoutDestination(input.destination);
+    } catch (error) {
+      mapCheckoutValidation(error);
+    }
 
-      const quote = await deps.delivery.quote({
-        methodCode: input.deliveryMethodCode,
-        destination: { region: input.destination.region, city: input.destination.city },
-        itemCount: cart.items.length,
-      });
-      if (!quote) {
-        throw new ConflictError("delivery method is unavailable for this destination");
-      }
+    const cart = await deps.carts.getCartById(input.cartId);
+    if (!cart || cart.items.length === 0) {
+      throw new ValidationError("cart is empty");
+    }
+    assertOwnsCart(cart, input);
 
-      const lines: OrderLine[] = [];
-      for (const item of cart.items) {
-        const product = await deps.catalog.getProductForVariant(item.variantId);
-        const variant = product ? findActiveVariant(product, item.variantId) : null;
-        if (!product || !variant) {
-          throw new ConflictError("variant is not purchasable", {
-            variantId: item.variantId,
-          });
-        }
-        lines.push({
-          variantId: variant.id,
-          sku: variant.sku,
-          productName: product.name,
-          brandName: product.brandName,
-          frameSize: variant.frameSize,
-          color: variant.color,
-          quantity: item.quantity,
-          unitPriceMinor: variant.listPriceMinor,
-          lineTotalMinor: lineTotalMinor(variant.listPriceMinor, item.quantity),
+    const quote = await deps.delivery.quote({
+      methodCode: input.deliveryMethodCode,
+      destination: { region: destination.region, city: destination.city },
+      itemCount: cart.items.length,
+    });
+    if (!quote) {
+      throw new ConflictError("delivery method is unavailable for this destination");
+    }
+
+    const now = deps.clock.now();
+    const lines: OrderLine[] = [];
+    for (const item of cart.items) {
+      const product = await deps.catalog.getProductForVariant(item.variantId);
+      const variant = product ? findActiveVariant(product, item.variantId) : null;
+      if (!product || !variant || !isListedOnStorefront(product, now)) {
+        throw new ConflictError("variant is not purchasable", {
+          variantId: item.variantId,
         });
       }
+      const available = await deps.inventory.getAvailable(item.variantId);
+      if (available < item.quantity) {
+        throw new ConflictError("insufficient available inventory", {
+          variantId: item.variantId,
+          available,
+        });
+      }
+      lines.push({
+        variantId: variant.id,
+        sku: variant.sku,
+        productName: product.name,
+        brandName: product.brandName,
+        frameSize: variant.frameSize,
+        color: variant.color,
+        quantity: item.quantity,
+        unitPriceMinor: variant.listPriceMinor,
+        lineTotalMinor: lineTotalMinor(variant.listPriceMinor, item.quantity),
+      });
+    }
 
-      const placedAt = deps.clock.now();
-      const sequence = await deps.orders.nextSequence(placedAt);
-      const subtotalMinor = sumMinor(lines.map((line) => line.lineTotalMinor));
-      const order: Order = {
-        id: `order-${sequence}`,
-        number: formatOrderNumber(placedAt, sequence),
-        userId: input.actorUserId,
-        status: "PLACED",
-        paymentStatus: "PENDING",
-        fulfillmentStatus: "UNFULFILLED",
-        currency: "BYN",
-        subtotalMinor,
-        deliveryCostMinor: quote.costMinor,
-        totalMinor: orderTotalMinor(subtotalMinor, quote.costMinor),
-        items: lines,
-      };
+    const totals = checkoutTotals(
+      lines.map((line) => line.lineTotalMinor),
+      quote.costMinor,
+    );
+    const sequence = await deps.orders.nextSequence(now);
+    const order: Order = {
+      id: crypto.randomUUID(),
+      number: formatOrderNumber(now, sequence),
+      userId: input.actorUserId,
+      status: "PLACED",
+      paymentStatus: "PENDING",
+      fulfillmentStatus: "UNFULFILLED",
+      currency: "BYN",
+      ...totals,
+      deliveryMethodCode: input.deliveryMethodCode,
+      deliveryMethodName: quote.methodName,
+      customerEmail: customer.customerEmail,
+      customerName: customer.customerName,
+      customerPhone: customer.customerPhone,
+      shipping: {
+        recipientName: destination.recipientName,
+        phone: destination.phone,
+        countryCode: "BY",
+        region: destination.region,
+        city: destination.city,
+        street: destination.street,
+        postalCode: destination.postalCode,
+      },
+      items: lines,
+    };
 
-      const saved = await deps.orders.save(order);
-      for (const line of lines) {
+    const saved = await deps.orders.save(order);
+    try {
+      for (const line of saved.items) {
         await deps.inventory.reserveForOrder({
           variantId: line.variantId,
           quantity: line.quantity,
           orderId: saved.id,
         });
       }
-      await deps.carts.clear(input.cartId);
-      return saved;
-    },
+    } catch (error) {
+      await deps.inventory.cancelForOrder(saved.id);
+      await deps.orders.save({ ...saved, status: "CANCELLED" });
+      throw error;
+    }
+    await deps.carts.clear(input.cartId);
+    return saved;
+  }
+
+  return {
+    checkout: placeOrder,
+    placeOrder,
 
     async getOrder(id, principal) {
       const order = await load(id);
       assertCanReadOrder(principal, order.userId, order.id);
       return order;
+    },
+
+    async getPlacedOrder(id) {
+      return load(id);
     },
 
     async cancelOrder(id, principal) {

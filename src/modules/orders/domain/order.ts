@@ -26,6 +26,16 @@ export interface OrderLine {
   lineTotalMinor: number;
 }
 
+export interface OrderShipping {
+  recipientName: string;
+  phone: string;
+  countryCode: "BY";
+  region: string;
+  city: string;
+  street: string;
+  postalCode: string;
+}
+
 export interface Order {
   id: string;
   number: string;
@@ -37,6 +47,12 @@ export interface Order {
   subtotalMinor: number;
   deliveryCostMinor: number;
   totalMinor: number;
+  deliveryMethodCode: string;
+  deliveryMethodName: string;
+  customerEmail: string;
+  customerName: string;
+  customerPhone: string;
+  shipping: OrderShipping;
   items: OrderLine[];
 }
 

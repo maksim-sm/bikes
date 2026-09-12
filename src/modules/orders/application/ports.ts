@@ -22,6 +22,7 @@ export interface OrderCatalog {
 }
 
 export interface OrderInventory {
+  getAvailable(variantId: string): Promise<number>;
   reserveForOrder(input: {
     variantId: string;
     quantity: number;
@@ -42,6 +43,7 @@ export interface OrderDelivery {
 export interface PlaceOrderInput {
   cartId: string;
   actorUserId: string | null;
+  guestToken?: string | null;
   customerEmail: string;
   customerName: string;
   customerPhone: string;

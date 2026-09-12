@@ -17,6 +17,7 @@ accepted ADR is correct and this document needs updating.
 and commit. `docs/api.md` is the external HTTP contract. `docs/auth.md`
 defines principals, staff titles, and customer isolation. `docs/catalog.md`
 defines storefront listing filters (PostgreSQL, not Elasticsearch).
+`docs/checkout.md` defines server-controlled order placement.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -25,10 +26,10 @@ ledger, application services, and versioned Route Handlers under `/api/v1`.
 Cookie sessions and customer auth live in `identity`. Prisma repositories
 exist for auth tables, catalog listing, inventory, media, and production
 carts. Local demo catalogue and cart stay in-memory. Integration and
-end-to-end test tiers are still targets. Storefront product, catalog, and
-cart pages exist; staff can manage the catalogue under `/admin`. There is
-no customer account UI yet. Cart totals are recalculated server-side
-(`docs/cart.md`).
+end-to-end test tiers are still targets. Storefront product, catalog, cart,
+and checkout pages exist; staff can manage the catalogue under
+`/admin`. There is no customer account UI yet. Cart and checkout totals
+are recalculated server-side (`docs/cart.md`, `docs/checkout.md`).
 
 ## 1. Why a modular monolith
 

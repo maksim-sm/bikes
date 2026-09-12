@@ -28,7 +28,8 @@ removal. The page renders the **server** subtotal, never a browser-computed
 price.
 
 `GET /api/v1/cart` returns the same view as a DTO. Guest tokens and user
-ids are not in the JSON.
+ids are not in the JSON. `/cart` links to `/checkout` when every line is
+purchasable. Checkout recomputes prices again (`docs/checkout.md`).
 
 ## Login merge
 

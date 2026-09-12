@@ -17,6 +17,9 @@ export function createMemoryCartRepository(): CartRepository {
     async findByActor(actor) {
       return carts.get(actorKey(actor)) ?? null;
     },
+    async findById(id) {
+      return [...carts.values()].find((cart) => cart.id === id) ?? null;
+    },
     async create(actor) {
       seq += 1;
       const cart: Cart = {
@@ -36,6 +39,14 @@ export function createMemoryCartRepository(): CartRepository {
       }
       carts.set(cartKey(cart), cart);
       return cart;
+    },
+    async clear(id) {
+      const cart = [...carts.values()].find((item) => item.id === id);
+      if (!cart) {
+        throw new NotFoundError("cart not found", { cartId: id });
+      }
+      cart.items = [];
+      carts.set(cartKey(cart), cart);
     },
     async delete(cart) {
       for (const [key, existing] of carts) {

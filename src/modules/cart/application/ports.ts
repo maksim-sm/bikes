@@ -2,8 +2,10 @@ import type { Cart, CartActor } from "../domain/cart";
 
 export interface CartRepository {
   findByActor(actor: CartActor): Promise<Cart | null>;
+  findById(id: string): Promise<Cart | null>;
   create(actor: CartActor): Promise<Cart>;
   save(cart: Cart): Promise<Cart>;
+  clear(id: string): Promise<void>;
   delete(cart: Cart): Promise<void>;
   transferToCustomer(cartId: string, userId: string): Promise<Cart>;
 }

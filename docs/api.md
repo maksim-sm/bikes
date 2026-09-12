@@ -158,6 +158,8 @@ webhook bodies.
 | POST   | `/api/v1/cart/items`                  | public   | Add a line; may set guest cookie     |
 | PATCH  | `/api/v1/cart/items`                  | public   | Quantity or sibling variant          |
 | DELETE | `/api/v1/cart/items`                  | public   | Remove a line                        |
+| GET    | `/api/v1/delivery/quotes`             | public   | Delivery quotes for a destination    |
+| POST   | `/api/v1/checkout`                    | public   | Place order; server totals only      |
 | GET    | `/api/v1/orders/:id`                  | customer | Order DTO (ownership in service)     |
 | GET    | `/api/v1/customers/:userId/profile`   | customer | Profile DTO (self or manager/admin)  |
 | GET    | `/api/v1/customers/:userId/addresses` | customer | Address DTOs (self or manager/admin) |

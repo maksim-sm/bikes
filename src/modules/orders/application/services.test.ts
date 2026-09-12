@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ConflictError, ForbiddenError } from "@/lib/errors";
+import { ConflictError, ForbiddenError, ValidationError } from "@/lib/errors";
 import { customerPrincipal, staffPrincipal } from "@/modules/identity";
 import type { Cart } from "@/modules/cart";
 import type { Product } from "@/modules/catalog";
+import { checkoutTotals } from "../domain/checkout";
 import { formatOrderNumber, transitionOrder } from "../domain/order";
 import type {
   OrderCart,
@@ -10,6 +11,7 @@ import type {
   OrderDelivery,
   OrderInventory,
   OrderRepository,
+  PlaceOrderInput,
 } from "./ports";
 import { createOrderServices } from "./services";
 import type { Order } from "../domain/order";
@@ -50,7 +52,39 @@ const product: Product = {
   ],
 };
 
-function setup() {
+const destination = {
+  recipientName: "Иван",
+  phone: "+375291112233",
+  region: "Минск",
+  city: "Минск",
+  street: "Независимости 1",
+  postalCode: "220000",
+};
+
+function placeInput(overrides: Partial<PlaceOrderInput> = {}): PlaceOrderInput {
+  return {
+    cartId: "c1",
+    actorUserId: "user-1",
+    customerEmail: "a@b.by",
+    customerName: "Иван",
+    customerPhone: "+375291112233",
+    destination,
+    deliveryMethodCode: "minsk-courier",
+    ...overrides,
+  };
+}
+
+function setup(options?: {
+  available?: number;
+  catalogProduct?: Product | null;
+  quote?: { costMinor: number; methodName: string } | null;
+  reserve?: (input: {
+    variantId: string;
+    quantity: number;
+    orderId: string;
+  }) => Promise<void>;
+  cart?: Partial<Cart>;
+}) {
   const orders = new Map<string, Order>();
   const repo: OrderRepository = {
     async nextSequence() {
@@ -69,6 +103,7 @@ function setup() {
     userId: "user-1",
     guestToken: null,
     items: [{ variantId: "v1", quantity: 2 }],
+    ...options?.cart,
   };
   const carts: OrderCart = {
     async getCartById() {
@@ -80,14 +115,21 @@ function setup() {
   };
   const catalog: OrderCatalog = {
     async getProductForVariant() {
-      return product;
+      return options?.catalogProduct === undefined ? product : options.catalogProduct;
     },
   };
   const reserved: string[] = [];
   const cancelled: string[] = [];
   const committed: string[] = [];
   const inventory: OrderInventory = {
+    async getAvailable() {
+      return options?.available ?? 8;
+    },
     async reserveForOrder(input) {
+      if (options?.reserve) {
+        await options.reserve(input);
+        return;
+      }
       reserved.push(`${input.variantId}:${input.quantity}`);
     },
     async cancelForOrder(orderId) {
@@ -99,7 +141,9 @@ function setup() {
   };
   const delivery: OrderDelivery = {
     async quote() {
-      return { costMinor: 2500, methodName: "Курьер по Минску" };
+      return options?.quote === undefined
+        ? { costMinor: 2500, methodName: "Курьер по Минску" }
+        : options.quote;
     },
   };
   const services = createOrderServices({
@@ -110,7 +154,7 @@ function setup() {
     delivery,
     clock: { now: () => new Date("2026-09-12T10:00:00.000Z") },
   });
-  return { services, reserved, cancelled, committed, orders };
+  return { services, reserved, cancelled, committed, orders, cart };
 }
 
 describe("order status machine", () => {
@@ -123,51 +167,104 @@ describe("order status machine", () => {
   });
 });
 
-describe("order services", () => {
-  it("snapshots prices and reserves stock when placing", async () => {
-    const { services, reserved } = setup();
-    const order = await services.placeOrder({
-      cartId: "c1",
-      actorUserId: "user-1",
-      customerEmail: "a@b.by",
-      customerName: "Иван",
-      customerPhone: "+375291112233",
-      destination: {
-        recipientName: "Иван",
-        phone: "+375291112233",
-        region: "Минск",
-        city: "Минск",
-        street: "Независимости 1",
-        postalCode: "220000",
-      },
-      deliveryMethodCode: "minsk-courier",
+describe("checkout totals", () => {
+  it("adds line totals and delivery without accepting a client total", () => {
+    expect(checkoutTotals([2000, 1500], 2500)).toEqual({
+      subtotalMinor: 3500,
+      deliveryCostMinor: 2500,
+      totalMinor: 6000,
     });
+  });
+});
+
+describe("order services", () => {
+  it("snapshots current catalogue prices, quotes delivery, and reserves stock", async () => {
+    const { services, reserved, cart } = setup();
+    const order = await services.checkout(placeInput());
     expect(order.subtotalMinor).toBe(2000);
+    expect(order.deliveryCostMinor).toBe(2500);
     expect(order.totalMinor).toBe(4500);
+    expect(order.deliveryMethodName).toBe("Курьер по Минску");
+    expect(order.customerEmail).toBe("a@b.by");
     expect(order.items[0]?.productName).toBe("Émonda");
+    expect(order.items[0]?.unitPriceMinor).toBe(1000);
     expect(order.paymentStatus).toBe("PENDING");
     expect(order.fulfillmentStatus).toBe("UNFULFILLED");
     expect(reserved).toEqual(["v1:2"]);
+    expect(cart.items).toEqual([]);
+  });
+
+  it("ignores a client-supplied total and uses the server quote and list price", async () => {
+    const { services } = setup({
+      quote: { costMinor: 2500, methodName: "Курьер по Минску" },
+    });
+    const forged = placeInput() as PlaceOrderInput & {
+      totalMinor: number;
+      unitPriceMinor: number;
+    };
+    forged.totalMinor = 1;
+    forged.unitPriceMinor = 1;
+    const order = await services.placeOrder(forged);
+    expect(order.totalMinor).toBe(4500);
+    expect(order.totalMinor).not.toBe(1);
+    expect(order.items[0]?.unitPriceMinor).toBe(1000);
+  });
+
+  it("rejects an empty cart, inactive variant, oversell, and unknown delivery", async () => {
+    await expect(
+      setup({ cart: { items: [] } }).services.checkout(placeInput()),
+    ).rejects.toBeInstanceOf(ValidationError);
+
+    const inactive = {
+      ...product,
+      variants: [
+        { ...product.variants[0]!, status: "inactive" as const, isActive: false },
+      ],
+    };
+    await expect(
+      setup({ catalogProduct: inactive }).services.checkout(placeInput()),
+    ).rejects.toBeInstanceOf(ConflictError);
+
+    await expect(
+      setup({ available: 1 }).services.checkout(placeInput()),
+    ).rejects.toBeInstanceOf(ConflictError);
+
+    await expect(
+      setup({ quote: null }).services.checkout(placeInput()),
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("rejects invalid customer data", async () => {
+    const { services } = setup();
+    await expect(
+      services.checkout(placeInput({ customerEmail: "not-an-email" })),
+    ).rejects.toBeInstanceOf(ValidationError);
+    await expect(
+      services.checkout(placeInput({ customerPhone: "12" })),
+    ).rejects.toBeInstanceOf(ValidationError);
+    await expect(
+      services.checkout(placeInput({ customerName: "   " })),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("releases reserved units and cancels the order if a later reserve fails", async () => {
+    let calls = 0;
+    const { services, cancelled, orders } = setup({
+      reserve: async () => {
+        calls += 1;
+        if (calls === 1) {
+          throw new ConflictError("insufficient available inventory");
+        }
+      },
+    });
+    await expect(services.checkout(placeInput())).rejects.toBeInstanceOf(ConflictError);
+    expect(cancelled).toHaveLength(1);
+    expect([...orders.values()][0]?.status).toBe("CANCELLED");
   });
 
   it("can cancel a paid order without changing payment status", async () => {
     const { services, cancelled: released } = setup();
-    const placed = await services.placeOrder({
-      cartId: "c1",
-      actorUserId: "user-1",
-      customerEmail: "a@b.by",
-      customerName: "Иван",
-      customerPhone: "+37529",
-      destination: {
-        recipientName: "Иван",
-        phone: "+37529",
-        region: "Минск",
-        city: "Минск",
-        street: "x",
-        postalCode: "220000",
-      },
-      deliveryMethodCode: "minsk-courier",
-    });
+    const placed = await services.placeOrder(placeInput());
     await services.applyPaymentEvent(placed.id, { type: "succeeded" });
     const cancelled = await services.cancelOrder(placed.id, customerPrincipal("user-1"));
     expect(cancelled.status).toBe("CANCELLED");
@@ -177,22 +274,7 @@ describe("order services", () => {
 
   it("rejects strangers reading an order", async () => {
     const { services } = setup();
-    const placed = await services.placeOrder({
-      cartId: "c1",
-      actorUserId: "user-1",
-      customerEmail: "a@b.by",
-      customerName: "Иван",
-      customerPhone: "+37529",
-      destination: {
-        recipientName: "Иван",
-        phone: "+37529",
-        region: "Минск",
-        city: "Минск",
-        street: "x",
-        postalCode: "220000",
-      },
-      deliveryMethodCode: "minsk-courier",
-    });
+    const placed = await services.placeOrder(placeInput());
     await expect(
       services.getOrder(placed.id, customerPrincipal("user-2")),
     ).rejects.toBeInstanceOf(ForbiddenError);
@@ -208,22 +290,7 @@ describe("order services", () => {
 
   it("refuses a second cancel", async () => {
     const { services } = setup();
-    const placed = await services.placeOrder({
-      cartId: "c1",
-      actorUserId: "user-1",
-      customerEmail: "a@b.by",
-      customerName: "Иван",
-      customerPhone: "+37529",
-      destination: {
-        recipientName: "Иван",
-        phone: "+37529",
-        region: "Минск",
-        city: "Минск",
-        street: "x",
-        postalCode: "220000",
-      },
-      deliveryMethodCode: "minsk-courier",
-    });
+    const placed = await services.placeOrder(placeInput());
     await services.cancelOrder(placed.id, customerPrincipal("user-1"));
     await expect(
       services.cancelOrder(placed.id, customerPrincipal("user-1")),

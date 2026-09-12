@@ -87,6 +87,20 @@ describe("customer resource isolation", () => {
       subtotalMinor: 1000,
       deliveryCostMinor: 0,
       totalMinor: 1000,
+      deliveryMethodCode: "minsk-courier",
+      deliveryMethodName: "Курьер по Минску",
+      customerEmail: "owner@example.by",
+      customerName: "Иван",
+      customerPhone: "+375291112233",
+      shipping: {
+        recipientName: "Иван",
+        phone: "+375291112233",
+        countryCode: "BY",
+        region: "Минск",
+        city: "Минск",
+        street: "1",
+        postalCode: "220000",
+      },
       items: [],
     };
     setOrderRepository({
