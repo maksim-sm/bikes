@@ -28,10 +28,15 @@ export function createAuditServices(deps: {
     async listRecent(principal, query = {}) {
       requireAdmin(principal);
       const limit =
-        Number.isInteger(query.limit) && (query.limit ?? 0) > 0
+        query.limit !== undefined && Number.isInteger(query.limit) && query.limit > 0
           ? query.limit
           : DEFAULT_LIMIT;
-      return deps.audit.listRecent({ ...query, limit });
+      return deps.audit.listRecent({
+        ...(query.action ? { action: query.action } : {}),
+        ...(query.entityType ? { entityType: query.entityType } : {}),
+        ...(query.entityId ? { entityId: query.entityId } : {}),
+        limit,
+      });
     },
   };
 }
