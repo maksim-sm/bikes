@@ -18,7 +18,15 @@ const deepModuleImport = {
 
 export default tseslint.config(
   {
-    ignores: [".next/**", "node_modules/**", "next-env.d.ts", "src/generated/**"],
+    ignores: [
+      ".next/**",
+      "node_modules/**",
+      "next-env.d.ts",
+      "src/generated/**",
+      "test-results/**",
+      "playwright-report/**",
+      "blob-report/**",
+    ],
   },
 
   js.configs.recommended,
