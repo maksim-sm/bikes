@@ -45,27 +45,29 @@ the database role (Prisma's shadow database).
 
 ## Scripts
 
-| Command                  | Does                                                        |
-| ------------------------ | ----------------------------------------------------------- |
-| `pnpm dev`               | Development server with hot reload                          |
-| `pnpm build`             | Production build                                            |
-| `pnpm start`             | Serve a production build (run `build` first)                |
-| `pnpm lint`              | ESLint, including the architecture boundary rules           |
-| `pnpm lint:fix`          | ESLint with autofix                                         |
-| `pnpm typecheck`         | `tsc --noEmit`                                              |
-| `pnpm test`              | Unit and integration suites (Vitest)                        |
-| `pnpm test:unit`         | Domain and application unit tests (no database)             |
-| `pnpm test:integration`  | Real PostgreSQL suite against isolated `bikes_test`         |
-| `pnpm test:e2e`          | Playwright journeys against `next dev` on port 3100         |
-| `pnpm test:e2e:install`  | Download Chromium for local Playwright runs                 |
-| `pnpm format`            | Rewrite files with Prettier                                 |
-| `pnpm format:check`      | Fail if anything is unformatted                             |
-| `pnpm env:check`         | Validate environment configuration without starting the app |
-| `pnpm db:generate`       | Generate the Prisma client into `src/generated/`            |
-| `pnpm db:migrate`        | Create and apply a development migration                    |
-| `pnpm db:migrate:deploy` | Apply committed migrations (safe on an empty database)      |
-| `pnpm db:status`         | Show whether the database is up to date                     |
-| `pnpm check`             | Lint, format check, generate client, build, typecheck, test |
+| Command                  | Does                                                                                      |
+| ------------------------ | ----------------------------------------------------------------------------------------- |
+| `pnpm dev`               | Development server with hot reload                                                        |
+| `pnpm build`             | Production build                                                                          |
+| `pnpm start`             | Serve a production build (run `build` first)                                              |
+| `pnpm lint`              | ESLint, including the architecture boundary rules                                         |
+| `pnpm lint:fix`          | ESLint with autofix                                                                       |
+| `pnpm typecheck`         | `tsc --noEmit`                                                                            |
+| `pnpm test`              | Unit and integration suites (Vitest)                                                      |
+| `pnpm test:unit`         | Domain and application unit tests (no database)                                           |
+| `pnpm test:integration`  | Real PostgreSQL suite against isolated `bikes_test`                                       |
+| `pnpm test:e2e`          | Playwright journeys against `next dev` on port 3100                                       |
+| `pnpm test:e2e:install`  | Download Chromium for local Playwright runs                                               |
+| `pnpm format`            | Rewrite files with Prettier                                                               |
+| `pnpm format:check`      | Fail if anything is unformatted                                                           |
+| `pnpm env:check`         | Validate environment configuration without starting the app                               |
+| `pnpm db:generate`       | Generate the Prisma client into `src/generated/`                                          |
+| `pnpm db:migrate`        | Create and apply a development migration                                                  |
+| `pnpm db:migrate:deploy` | Apply committed migrations (safe on an empty database)                                    |
+| `pnpm db:status`         | Show whether the database is up to date                                                   |
+| `pnpm check`             | Local CI gate (no Playwright): assert-tests, lint, types, unit, integration, build, audit |
+| `pnpm ci:assert-tests`   | Fail if a suite is empty or a spec uses `.skip` / `.only`                                 |
+| `pnpm audit:deps`        | Fail on unreviewed high/critical production advisories                                    |
 
 Before pushing, `pnpm check` is the one command worth remembering.
 

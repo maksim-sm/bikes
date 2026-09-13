@@ -6,6 +6,8 @@ export default defineConfig({
     name: "integration",
     environment: "node",
     include: ["tests/integration/**/*.test.ts"],
+    passWithNoTests: false,
+    allowOnly: !process.env.CI,
     fileParallelism: false,
     pool: "forks",
     maxWorkers: 1,

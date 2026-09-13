@@ -1,0 +1,16 @@
+{
+  "ignore": [
+    {
+      "ghsa": "GHSA-ggr8-5vv4-36mx",
+      "package": "deepmerge-ts",
+      "severity": "high",
+      "reason": "Transitive via Prisma config. We do not merge untrusted recursive objects through that path. Remove when Prisma ships deepmerge-ts >= 8."
+    },
+    {
+      "ghsa": "GHSA-3f6p-5ww8-9rcr",
+      "package": "mysql2",
+      "severity": "high",
+      "reason": "Transitive via Prisma's unused MySQL driver. This shop uses PostgreSQL and @prisma/adapter-pg only."
+    }
+  ]
+}

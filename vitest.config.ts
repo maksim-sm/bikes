@@ -7,6 +7,8 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
     exclude: ["src/**/*.integration.test.ts"],
+    passWithNoTests: false,
+    allowOnly: !process.env.CI,
     env: {
       LOG_LEVEL: "error",
     },

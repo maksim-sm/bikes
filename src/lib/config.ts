@@ -38,12 +38,15 @@ export type Env = {
   AUTH_SECRET: string;
 };
 
-export function isProductionBuildPhase(source: NodeJS.ProcessEnv = process.env): boolean {
+/** Partial process.env bag. Next.js types NODE_ENV as required; tests pass `{}`. */
+export type EnvSource = Record<string, string | undefined>;
+
+export function isProductionBuildPhase(source: EnvSource = process.env): boolean {
   return source.NEXT_PHASE === "phase-production-build";
 }
 
 export function enforceProductionSecrets(
-  source: NodeJS.ProcessEnv = process.env,
+  source: EnvSource = process.env,
   nodeEnv: Env["NODE_ENV"] = (source.NODE_ENV as Env["NODE_ENV"]) ?? "development",
 ): boolean {
   return nodeEnv === "production" && !isProductionBuildPhase(source);
@@ -53,7 +56,7 @@ function blankToUndefined(value: unknown): unknown {
   return value === "" ? undefined : value;
 }
 
-export function parseEnv(source: NodeJS.ProcessEnv): Env {
+export function parseEnv(source: EnvSource): Env {
   const nodeEnvResult = z
     .enum(["development", "test", "production"])
     .default("development")
