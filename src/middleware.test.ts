@@ -52,5 +52,15 @@ describe("middleware security headers", () => {
     expect(csp).toMatch(/'nonce-[A-Za-z0-9+/=]+'/);
     expect(csp).not.toContain("https://");
     expect(response.headers.get("Strict-Transport-Security")).toBeNull();
+    expect(response.headers.get("x-request-id")).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+  });
+
+  it("echoes an incoming request id", () => {
+    const headers = new Headers({ "x-request-id": "rid-from-edge" });
+    const incoming = new NextRequest(new URL("/", "http://localhost:3000"), { headers });
+    const response = middleware(incoming);
+    expect(response.headers.get("x-request-id")).toBe("rid-from-edge");
   });
 });

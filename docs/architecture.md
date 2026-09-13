@@ -102,6 +102,7 @@ tests/
 docs/
   database.md             Migrate, backup, restore, production runbook (ADR-0045)
   deploy.md               Reproducible start, health/ready, rollback (ADR-0046)
+  observability.md        Logs, request ids, ops anomalies (ADR-0047)
 ```
 
 Path aliases are `@/app/*`, `@/modules/*`, `@/lib/*`, and `@/ui`. There is
@@ -434,13 +435,17 @@ pipeline, or log aggregation cluster is in scope.**
 
 - **Structured JSON logging** through `lib/logger.ts` only; no bare `console.log`
   in committed code. Each log line carries a request id, and the user id where
-  known.
-- A request id is generated at the `app/` boundary and threaded through service
-  calls so that one customer's failed checkout can be reconstructed from logs.
-- **Never log** passwords, session tokens, payment card data, provider secrets,
-  or full webhook bodies containing personal data. Notification payloads follow
-  the same rule (`docs/notifications.md`, ADR-0034): reset tokens stay off the
-  outbox row.
+  known. Context is redacted (`src/lib/redact.ts`) before emit.
+- A request id is generated at the `app/` boundary (middleware + Route
+  Handlers) and echoed as `x-request-id` so one customer's failed checkout
+  can be reconstructed from logs.
+- **Never log** passwords, session secrets, API keys, card data, CVV, or
+  full payment tokens. Provider secrets and raw webhook bodies stay off
+  the wire. Notification payloads follow the same rule
+  (`docs/notifications.md`, ADR-0034): reset tokens stay off the outbox row.
+- Unexpected failures emit `error.tracked` (`src/lib/observability.ts`).
+  A vendor sink is not required. Webhook, outbox, inventory, and order
+  anomalies are in `docs/observability.md` (ADR-0047).
 - Customer emails are sent **after** commerce state is committed. A failed send
   is a `FAILED` outbox row, not a rolled-back order.
 - Log at the boundaries: one line per inbound request, one per outbound

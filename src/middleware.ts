@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { env, publicOriginIsHttps } from "@/lib/config";
+import { REQUEST_ID_HEADER, readRequestId } from "@/lib/http";
 import {
   applyStaticSecurityHeaders,
   contentSecurityPolicy,
@@ -50,14 +51,17 @@ export function middleware(request: NextRequest): NextResponse {
     allowUnsafeEval: env.NODE_ENV === "development",
   });
 
+  const requestId = readRequestId(request.headers);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set(REQUEST_ID_HEADER, requestId);
   requestHeaders.set("Content-Security-Policy", csp);
 
   const response = NextResponse.next({
     request: { headers: requestHeaders },
   });
   applyStaticSecurityHeaders(response.headers);
+  response.headers.set(REQUEST_ID_HEADER, requestId);
   response.headers.set("Content-Security-Policy", csp);
   if (enforceHttps) {
     response.headers.set("Strict-Transport-Security", HSTS_HEADER);

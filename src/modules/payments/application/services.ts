@@ -1,4 +1,5 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import { requireOrderManagementRole, type Principal } from "@/modules/identity";
 import {
   applyProviderEvent,
@@ -279,6 +280,12 @@ export function createPaymentServices(deps: {
         if (!payment) {
           throw new NotFoundError("payment not found for replayed event");
         }
+        logger.info("payment.webhook.replayed", {
+          paymentId: payment.id,
+          status: payment.status,
+          providerEventId: verified.providerEventId,
+          rawType: verified.rawType,
+        });
         return payment;
       }
 
@@ -303,6 +310,12 @@ export function createPaymentServices(deps: {
         providerPaymentId: verified.providerPaymentId,
         rawType: verified.rawType,
         status: verified.status,
+      });
+      logger.info("payment.webhook.applied", {
+        paymentId: updated.id,
+        status: updated.status,
+        providerEventId: verified.providerEventId,
+        rawType: verified.rawType,
       });
       return updated;
     },

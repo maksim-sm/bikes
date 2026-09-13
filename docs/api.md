@@ -184,6 +184,7 @@ webhook bodies.
 | POST   | `/api/v1/payments`                            | public           | Start a provider payment; IP-limited    |
 | GET    | `/api/v1/payments/:id`                        | public           | Return landing; ignores `?status=`      |
 | POST   | `/api/v1/payments/webhooks`                   | public           | Provider webhook (signature + IP limit) |
+| GET    | `/api/v1/admin/ops`                           | admin            | Failed outbox, inventory/order anomalies |
 
 New external endpoints are Route Handlers that reuse `withRoute` and a DTO.
 They are not added “because REST”.

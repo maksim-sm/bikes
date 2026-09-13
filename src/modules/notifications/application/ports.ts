@@ -34,6 +34,7 @@ export interface NotificationRepository {
     entityType: NotificationEntityType,
     entityId: string,
   ): Promise<NotificationRecord[]>;
+  listFailed(limit?: number): Promise<NotificationRecord[]>;
 }
 
 export interface NotificationChannel {

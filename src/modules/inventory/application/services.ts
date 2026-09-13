@@ -1,6 +1,10 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
 import { actorUserId, requireInventoryRole, type Principal } from "@/modules/identity";
 import {
+  detectInventoryAnomalies,
+  type InventoryAnomaly,
+} from "../domain/anomalies";
+import {
   assertPositiveQuantity,
   available,
   nextReservationStatus,
@@ -69,6 +73,7 @@ export interface InventoryServices {
   listAvailabilityByVariantIds(
     variantIds: readonly string[],
   ): Promise<Array<{ variantId: string; available: number }>>;
+  listAnomalies(principal: Principal): Promise<InventoryAnomaly[]>;
 }
 
 /**
@@ -258,6 +263,18 @@ export function createInventoryServices(deps: {
 
     async listDueActive() {
       return deps.inventory.listDueActive(deps.clock.now());
+    },
+
+    async listAnomalies(principal) {
+      requireInventoryRole(principal);
+      const items = await deps.inventory.listItems();
+      const dueActive = await deps.inventory.listDueActive(deps.clock.now());
+      return detectInventoryAnomalies({
+        now: deps.clock.now(),
+        items,
+        dueActive,
+        variantIdByItemId: new Map(items.map((item) => [item.id, item.variantId])),
+      });
     },
 
     async expireDue() {
