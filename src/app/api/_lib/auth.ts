@@ -1,7 +1,6 @@
 import {
-  SESSION_COOKIE_NAME,
   createSessionServices,
-  readCookieValue,
+  readSessionTokenFromHeader,
   type Principal,
 } from "@/modules/identity";
 import { getAuthServices } from "./compose";
@@ -28,7 +27,7 @@ export type AuthPolicy =
 
 export async function resolvePrincipal(headers: Headers): Promise<Principal> {
   const auth = await getAuthServices();
-  return auth.resolve(readCookieValue(headers.get("cookie"), SESSION_COOKIE_NAME));
+  return auth.resolve(readSessionTokenFromHeader(headers.get("cookie")));
 }
 
 export function enforcePolicy(principal: Principal, policy: AuthPolicy): Principal {

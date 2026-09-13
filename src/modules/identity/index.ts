@@ -86,6 +86,7 @@ export {
 } from "./infrastructure/memory-customer-repository";
 export {
   MIN_PASSWORD_LENGTH,
+  HOST_SESSION_COOKIE_NAME,
   SESSION_COOKIE_NAME,
   SESSION_TTL_MS,
   STAFF_SESSION_IDLE_MS,
@@ -99,10 +100,13 @@ export {
 export {
   clearedSessionCookie,
   readCookieValue,
+  readSessionTokenFromHeader,
   serializeCookie,
   sessionCookie,
+  sessionCookieName,
   type HttpOnlyCookie,
   type SessionCookie,
+  type SessionCookieName,
 } from "./domain/cookie";
 export { createAuthServices, type AuthServices } from "./application/auth-services";
 export {

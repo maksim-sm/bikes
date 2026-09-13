@@ -11,11 +11,11 @@ example `v5.0.0-1.2.4`).
 
 ## Target level
 
-| Level  | Meaning here                                                                                           |
-| ------ | ------------------------------------------------------------------------------------------------------ |
-| **L1** | Current bar. A public bicycle shop that does not store card data.                                      |
-| **L2** | Next bar for staff and for any live payment provider. MFA, CSP, HSTS preload, distributed rate limits. |
-| **L3** | Out of scope. Hardware authenticators, per-response CSP nonces, field-level adaptive auth.             |
+| Level  | Meaning here                                                                                      |
+| ------ | ------------------------------------------------------------------------------------------------- |
+| **L1** | Current bar. A public bicycle shop that does not store card data.                                 |
+| **L2** | Next bar for staff and for any live payment provider. MFA, HSTS preload, distributed rate limits. |
+| **L3** | Out of scope. Hardware authenticators, field-level adaptive auth.                                 |
 
 Chapters that do not apply: **V9** (self-contained tokens / JWT), **V10**
 (OAuth / OIDC), **V17** (WebRTC). The app uses opaque hashed sessions and no
@@ -42,30 +42,23 @@ Ordered by impact if this build were exposed on the public internet.
    called at runtime. `POST /api/v1/payments/webhooks` accepts
    `x-mock-signature: ok`. A live provider must replace this before any real
    money moves.
-2. **No application security headers** (`v5.0.0-3.4.1`, `v5.0.0-3.4.3`,
-   `v5.0.0-3.4.4`). Architecture §14 says CSP is set at the edge.
-   `next.config.ts` only disables `X-Powered-By`. There is no `middleware.ts`.
-   HSTS is L1 and missing in-repo.
-3. **JSON-LD script context** (`v5.0.0-1.2.3`).
-   `src/app/_lib/seo/json-ld.tsx` uses `dangerouslySetInnerHTML` with
-   `JSON.stringify`. Staff-edited product descriptions are not escaped for a
-   `</script>` breakout. React text nodes elsewhere are safe.
-4. **Cookie name has no `__Secure-` / `__Host-` prefix** (`v5.0.0-3.3.1`).
-   `bikes_session` is httpOnly and SameSite=Lax; `Secure` is set when
-   `NODE_ENV=production` or `APP_URL` is https. L1 also requires a cookie
-   prefix.
-5. **Server-action rate keys are process-global** (`v5.0.0-6.3.1`). API login
+2. **Server-action rate keys are process-global** (`v5.0.0-6.3.1`). API login
    keys by IP (`clientRateKey`). HTML login/register/admin login use static
    keys such as `"account-login"`. One shared in-memory bucket for all
    visitors, and no checkout throttle despite architecture §14.
-6. **Demo passwords live in source** (`v5.0.0-6.3.2`, `v5.0.0-13` secrets).
+3. **Demo passwords live in source** (`v5.0.0-6.3.2`, `v5.0.0-13` secrets).
    `StaffPass12` / `CustomerPass12` are compiled constants. Demo login buttons
    are compiled out of production, but `createDemoAuthServices()` still seeds
    those users whenever `NODE_ENV !== "production"`.
-7. **Public payment status by id** (`v5.0.0-8.2.2`).
+4. **Public payment status by id** (`v5.0.0-8.2.2`).
    `GET /api/v1/payments/:id` is `public` and returns `orderId`, status, and
    amount. UUIDs reduce guessability; it is still an unauthenticated object
    read.
+
+Closed in ADR-0041: document CSP with a per-request nonce, HSTS on https,
+`nosniff` / frame / referrer / permissions headers, `__Host-` cookies,
+JSON-LD `\u003c` escaping, and production startup failure when
+`DATABASE_URL`, https `APP_URL`, or `AUTH_SECRET` is missing.
 
 What is already in good shape: parameterized Prisma (including catalog FTS),
 Argon2id at OWASP parameters, hashed session tokens, Origin CSRF on `/api`
@@ -99,8 +92,12 @@ SVG placeholders XML-escape text. The only `dangerouslySetInnerHTML` is
 JSON-LD. No WYSIWYG sanitizer is required today because there is no rich text
 (`v5.0.0-1.3.1` N/A).
 
-CSP, `frame-ancestors`, `X-Content-Type-Options` on HTML, and Referrer-Policy
-are not set in this repository. Media GET sets `nosniff`.
+`src/middleware.ts` sets a per-request CSP (`object-src 'none'`,
+`base-uri 'none'`, `frame-ancestors 'none'`, nonce + `'strict-dynamic'`),
+`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+`Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy`.
+JSON-LD scripts take the request nonce. Media GET also sets `nosniff`.
+The CSP does not allow third-party script hosts.
 
 ### CSRF — V3.3.2, V3.5.1–3.5.3
 
@@ -137,16 +134,17 @@ non-production.
 ### Session security — V7, V3.3
 
 Lucia/Oslo pattern: 32-byte CSPRNG token, SHA-256 digest in `auth_sessions`.
-Cookie `bikes_session`: httpOnly, SameSite=Lax, Secure when production or
-https `APP_URL`. New session on login. Logout and password reset revoke
-backend rows.
+Cookie `bikes_session` on http, `__Host-bikes_session` on https: httpOnly,
+SameSite=Lax, `Secure` + `Path=/` + no `Domain` when production or https
+`APP_URL`. Guest carts use `bikes_guest` / `__Host-bikes_guest` with an
+HMAC-SHA-256 of `AUTH_SECRET`. New session on login. Logout and password
+reset revoke backend rows.
 
 Customer: 14-day absolute, no idle timeout (documented). Staff: 12-hour
 absolute, 30-minute idle, `lastSeenAt` on `resolve` (ADR-0029).
 
-Gaps: no `__Host-` / `__Secure-` prefix; no documented concurrent-session
-cap; no admin UI to revoke another user’s sessions; customer logout-all
-exists, staff does not.
+Gaps: no documented concurrent-session cap; no admin UI to revoke another
+user’s sessions; customer logout-all exists, staff does not.
 
 ### Authorization and access control — V8
 
@@ -175,13 +173,15 @@ Gaps: no documented malware scan (`v5.0.0-5.4.3` L2); no per-user quota
 ### Secrets — V11, V13
 
 `src/lib/config.ts` validates `NODE_ENV`, `APP_URL`, `APP_LOCALE`,
-`LOG_LEVEL`, `DATABASE_URL`. `.env` is gitignored. Session tokens are not
-JWTs, so `AUTH_SECRET` is unused (commented in `.env.example`).
+`LOG_LEVEL`, `DATABASE_URL`, and `AUTH_SECRET`. `.env` is gitignored.
+Production `next start` (not `next build`) requires `DATABASE_URL`, an
+https `APP_URL`, and `AUTH_SECRET` ≥ 32 characters. `AUTH_SECRET` signs
+guest-cart cookies.
 
-Gaps: default `DATABASE_URL` embeds `bikes:bikes`; demo passwords in source;
-`compose.ts` and several app files read `process.env` directly (architecture
-boundary); no payment-provider secret in the schema because the mock is
-always wired.
+Gaps: default `DATABASE_URL` embeds `bikes:bikes` in non-production; demo
+passwords in source; `compose.ts` still reads `process.env` for the demo
+stack (architecture boundary); no payment-provider secret in the schema
+because the mock is always wired.
 
 ### Logging — V16.2–16.3
 
@@ -232,19 +232,19 @@ primary implementation site, not an exhaustive list.
 
 ### Injection and encoding
 
-| ID          | Requirement (short)                        | Lvl | Status  | Evidence / gap                                                    |
-| ----------- | ------------------------------------------ | --- | ------- | ----------------------------------------------------------------- |
-| 1.1.1       | Canonicalize input once, before validation | 2   | L2+     | Zod at the HTTP boundary; no double-decode pipeline documented.   |
-| 1.1.2       | Encode at the interpreter                  | 2   | L2+     | React + Prisma do this implicitly.                                |
-| 1.2.1       | Context-correct HTML/HTTP encoding         | 1   | **Met** | React text nodes; no user HTML.                                   |
-| 1.2.2       | URL encoding; no `javascript:`             | 1   | **Met** | App Router `href` values are app paths; media keys validated.     |
-| 1.2.3       | Safe JS/JSON embedding                     | 1   | **Gap** | `JsonLd` stringifies into a script tag without `\u003c` escaping. |
-| 1.2.4       | Parameterized SQL / ORM                    | 1   | **Met** | Prisma; bound `$queryRaw` for FTS and expiry.                     |
-| 1.2.5       | OS command injection                       | 1   | **N/A** | No OS command API in `src/`.                                      |
-| 1.2.6–1.2.8 | LDAP / XPath / LaTeX                       | 2   | **N/A** | Not used.                                                         |
-| 1.3.1       | HTML sanitizer for WYSIWYG                 | 1   | **N/A** | No rich-text input.                                               |
-| 1.3.2       | No `eval` / dynamic code                   | 1   | **Met** | None in application code.                                         |
-| 1.5.1       | XXE-safe XML                               | 1   | **N/A** | No XML parser on untrusted input.                                 |
+| ID          | Requirement (short)                        | Lvl | Status  | Evidence / gap                                                  |
+| ----------- | ------------------------------------------ | --- | ------- | --------------------------------------------------------------- |
+| 1.1.1       | Canonicalize input once, before validation | 2   | L2+     | Zod at the HTTP boundary; no double-decode pipeline documented. |
+| 1.1.2       | Encode at the interpreter                  | 2   | L2+     | React + Prisma do this implicitly.                              |
+| 1.2.1       | Context-correct HTML/HTTP encoding         | 1   | **Met** | React text nodes; no user HTML.                                 |
+| 1.2.2       | URL encoding; no `javascript:`             | 1   | **Met** | App Router `href` values are app paths; media keys validated.   |
+| 1.2.3       | Safe JS/JSON embedding                     | 1   | **Met** | `serializeJsonLd` escapes `<` / `>` to `\u003c` / `\u003e`.     |
+| 1.2.4       | Parameterized SQL / ORM                    | 1   | **Met** | Prisma; bound `$queryRaw` for FTS and expiry.                   |
+| 1.2.5       | OS command injection                       | 1   | **N/A** | No OS command API in `src/`.                                    |
+| 1.2.6–1.2.8 | LDAP / XPath / LaTeX                       | 2   | **N/A** | Not used.                                                       |
+| 1.3.1       | HTML sanitizer for WYSIWYG                 | 1   | **N/A** | No rich-text input.                                             |
+| 1.3.2       | No `eval` / dynamic code                   | 1   | **Met** | None in application code.                                       |
+| 1.5.1       | XXE-safe XML                               | 1   | **N/A** | No XML parser on untrusted input.                               |
 
 ### Validation and business logic
 
@@ -260,24 +260,24 @@ primary implementation site, not an exhaustive list.
 
 ### XSS, cookies, CSRF, headers
 
-| ID    | Requirement (short)                 | Lvl | Status      | Evidence / gap                                                           |
-| ----- | ----------------------------------- | --- | ----------- | ------------------------------------------------------------------------ |
-| 3.2.1 | Correct content context             | 1   | **Partial** | Media `nosniff` + attachment-like types; HTML pages have no CSP sandbox. |
-| 3.2.2 | Text via safe DOM APIs              | 1   | **Met**     | React `textContent` semantics.                                           |
-| 3.3.1 | `Secure` + `__Secure-` / `__Host-`  | 1   | **Gap**     | Secure in prod; name is `bikes_session`.                                 |
-| 3.3.2 | SameSite matches purpose            | 2   | L2+         | `Lax` on the session cookie.                                             |
-| 3.3.4 | HttpOnly for session tokens         | 2   | L2+         | Set; token never in JSON.                                                |
-| 3.4.1 | HSTS ≥ 1 year                       | 1   | **Gap**     | Not in `next.config.ts` or middleware.                                   |
-| 3.4.2 | CORS allow-list, not `*` + secrets  | 1   | **Met**     | No open CORS; API is same-origin.                                        |
-| 3.4.3 | CSP with `object-src` / `base-uri`  | 2   | L2+         | Claimed at the edge; **absent in repo**.                                 |
-| 3.4.4 | `X-Content-Type-Options: nosniff`   | 2   | L2+         | Media only.                                                              |
-| 3.4.5 | Referrer-Policy                     | 2   | L2+         | Not set.                                                                 |
-| 3.4.6 | `frame-ancestors`                   | 2   | L2+         | Not set.                                                                 |
-| 3.5.1 | CSRF token or non-safelisted header | 1   | **Partial** | Origin check on `/api`; server actions are framework-only.               |
-| 3.5.2 | CORS-preflight not the only gate    | 1   | **Met**     | Mutations are JSON/form POST with Origin check.                          |
-| 3.5.3 | Unsafe methods for mutations        | 1   | **Met**     | POST/PATCH/DELETE; GET payment return is read/poll.                      |
-| 3.7.1 | No Flash / ActiveX / applets        | 2   | L2+         | React 19 only.                                                           |
-| 3.7.2 | External redirect allow-list        | 2   | L2+         | Staff-entered tracking URLs can be any https URL.                        |
+| ID    | Requirement (short)                 | Lvl | Status      | Evidence / gap                                                |
+| ----- | ----------------------------------- | --- | ----------- | ------------------------------------------------------------- |
+| 3.2.1 | Correct content context             | 1   | **Met**     | JSON-LD is escaped + nonced; media and HTML send `nosniff`.   |
+| 3.2.2 | Text via safe DOM APIs              | 1   | **Met**     | React `textContent` semantics.                                |
+| 3.3.1 | `Secure` + `__Secure-` / `__Host-`  | 1   | **Met**     | `__Host-bikes_session` / `__Host-bikes_guest` when https.     |
+| 3.3.2 | SameSite matches purpose            | 2   | L2+         | `Lax` on the session cookie.                                  |
+| 3.3.4 | HttpOnly for session tokens         | 2   | L2+         | Set; token never in JSON.                                     |
+| 3.4.1 | HSTS ≥ 1 year                       | 1   | **Met**     | `max-age=31536000; includeSubDomains` when https is enforced. |
+| 3.4.2 | CORS allow-list, not `*` + secrets  | 1   | **Met**     | No open CORS; API is same-origin.                             |
+| 3.4.3 | CSP with `object-src` / `base-uri`  | 2   | **Met**     | Nonce CSP in `src/middleware.ts`; no third-party hosts.       |
+| 3.4.4 | `X-Content-Type-Options: nosniff`   | 2   | **Met**     | Middleware + `next.config.ts` on `/:path*`; media GET also.   |
+| 3.4.5 | Referrer-Policy                     | 2   | **Met**     | `strict-origin-when-cross-origin`.                            |
+| 3.4.6 | `frame-ancestors`                   | 2   | **Met**     | `'none'` plus `X-Frame-Options: DENY`.                        |
+| 3.5.1 | CSRF token or non-safelisted header | 1   | **Partial** | Origin check on `/api`; server actions are framework-only.    |
+| 3.5.2 | CORS-preflight not the only gate    | 1   | **Met**     | Mutations are JSON/form POST with Origin check.               |
+| 3.5.3 | Unsafe methods for mutations        | 1   | **Met**     | POST/PATCH/DELETE; GET payment return is read/poll.           |
+| 3.7.1 | No Flash / ActiveX / applets        | 2   | L2+         | React 19 only.                                                |
+| 3.7.2 | External redirect allow-list        | 2   | L2+         | Staff-entered tracking URLs can be any https URL.             |
 
 ### API and webhooks
 
@@ -358,12 +358,12 @@ primary implementation site, not an exhaustive list.
 
 ### Secrets and configuration
 
-| Topic                           | ASVS                  | Status      | Evidence / gap                                                            |
-| ------------------------------- | --------------------- | ----------- | ------------------------------------------------------------------------- |
-| Secrets only from validated env | Architecture §14, V13 | **Partial** | `config.ts` is the declared gate; `compose.ts` still reads `process.env`. |
-| No secrets in git               | Architecture §14      | **Partial** | `.env` ignored; demo passwords and default DB URL are committed.          |
-| Payment provider secret         | V13 / V11.1           | **Gap**     | No env hook; mock always selected.                                        |
-| `AUTH_SECRET`                   | —                     | **N/A**     | Opaque DB sessions; listed unused in `.env.example`.                      |
+| Topic                           | ASVS                  | Status      | Evidence / gap                                                                    |
+| ------------------------------- | --------------------- | ----------- | --------------------------------------------------------------------------------- |
+| Secrets only from validated env | Architecture §14, V13 | **Partial** | `config.ts` validates production secrets; `compose.ts` still reads `process.env`. |
+| No secrets in git               | Architecture §14      | **Partial** | `.env` ignored; demo passwords and default DB URL are committed.                  |
+| Payment provider secret         | V13 / V11.1           | **Gap**     | No env hook; mock always selected.                                                |
+| `AUTH_SECRET`                   | V13                   | **Met**     | Required ≥32 chars on `next start`; signs guest-cart cookies.                     |
 
 ### Logging and errors
 
@@ -406,16 +406,16 @@ primary implementation site, not an exhaustive list.
 
 Keep these visible so §14 is not treated as implemented fact.
 
-| Claim in `docs/architecture.md` §14  | Finding                                                |
-| ------------------------------------ | ------------------------------------------------------ |
-| CSP and security headers at the edge | Not in this repository.                                |
-| Rate-limit checkout                  | Not implemented.                                       |
-| Secrets only via `lib/config.ts`     | `compose.ts` and several app files read `process.env`. |
-| Webhooks verify provider signatures  | Code path yes; production compose still uses the mock. |
+| Claim in `docs/architecture.md` §14 | Finding                                                 |
+| ----------------------------------- | ------------------------------------------------------- |
+| Rate-limit checkout                 | Not implemented.                                        |
+| Secrets only via `lib/config.ts`    | `compose.ts` still reads `process.env` for demo wiring. |
+| Webhooks verify provider signatures | Code path yes; production compose still uses the mock.  |
 
 ## When this document is wrong
 
-Re-run the review when any of these land: a real `PaymentProvider`, CSP/HSTS
-in `next.config.ts` or the host, `__Host-bikes_session`, MFA, a seed pipeline
-that removes demo passwords from production builds, or checkout rate limits.
-Update the checklist rows; do not silently edit an Accepted ADR.
+Re-run the review when any of these land: a real `PaymentProvider`, HSTS
+preload, MFA, a seed pipeline that removes demo passwords from production
+builds, or checkout rate limits. Update the checklist rows; do not silently
+edit an Accepted ADR. Headers, `__Host-` cookies, JSON-LD escaping, and
+production secret validation closed in ADR-0041.

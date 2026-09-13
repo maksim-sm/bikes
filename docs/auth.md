@@ -4,7 +4,8 @@ Status: authoritative companion to ADR-0016 and ADR-0017.
 
 ## Principals
 
-Resolved once per request from the `bikes_session` httpOnly cookie.
+Resolved once per request from the session httpOnly cookie (`bikes_session` on
+http, `__Host-bikes_session` on https; ADR-0041).
 
 | `Principal.type` | Meaning                      |
 | ---------------- | ---------------------------- |
