@@ -1,5 +1,5 @@
 import type { Metadata, Route } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getCatalogServices } from "@/app/api/_lib/compose";
 import { Breadcrumbs, storefrontCrumbs } from "@/app/_lib/seo/breadcrumbs";
 import {
@@ -56,7 +56,7 @@ export function catalogLandingCopy(
     };
   }
   if (decision.pathKind === "type" && decision.filters.bicycleType) {
-    const name = t.bicycleType[decision.filters.bicycleType];
+    const name = t.catalog.typeLanding[decision.filters.bicycleType];
     return {
       title: interpolate(t.catalog.typeTitle, { name }),
       description: interpolate(t.catalog.typeDescription, { name }),
@@ -123,7 +123,7 @@ export async function CatalogRoutePage(input: {
     notFound();
   }
   if (decision.redirectTo) {
-    redirect(decision.redirectTo as Route);
+    permanentRedirect(decision.redirectTo as Route);
   }
 
   const catalog = await getCatalogServices();

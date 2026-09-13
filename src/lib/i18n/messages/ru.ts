@@ -198,8 +198,15 @@ export const ru = {
     categoryDescription: "{name} — велосипеды с доставкой по Беларуси.",
     brandTitle: "Велосипеды {name}",
     brandDescription: "{name} — велосипеды с доставкой по Беларуси.",
-    typeTitle: "{name} велосипеды",
-    typeDescription: "{name} велосипеды с доставкой по Беларуси.",
+    typeTitle: "{name}",
+    typeDescription: "{name} с доставкой по Беларуси.",
+    typeLanding: {
+      ROAD: "Шоссейные велосипеды",
+      MTB: "Горные велосипеды",
+      GRAVEL: "Гравел-велосипеды",
+      CITY: "Городские велосипеды",
+      KIDS: "Детские велосипеды",
+    },
   },
 
   product: {

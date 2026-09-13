@@ -20,7 +20,8 @@ category landings; this record defines which catalog URLs may be indexed.
    appears in the sitemap. Unknown slugs 404.
 2. **A single landing query alias redirects to the path.**
    `/catalog?category=road` (and the brand / type / `bicycleType` equivalents)
-   308 to the landing, preserving only utility query string when present.
+   permanently redirect to the landing, preserving only utility query string
+   when present.
    Default `page=1` and default sort are stripped the same way.
 3. **Everything else is `noindex, follow`.** Two or more landing dimensions,
    search (`q`), price, availability, frame/wheel/spec filters, non-default
