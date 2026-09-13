@@ -186,6 +186,7 @@ decide it. See `src/modules/README.md` for the internal layering rules.
 - `docs/BASELINE.md` — the pre-implementation audit.
 - `docs/notifications.md` — transactional email outbox and attempt history.
 - `docs/seo.md` — storefront metadata, sitemap, robots, and structured data.
+- `docs/security.md` — OWASP ASVS 5.0 L1 checklist and code-review findings.
 
 ## Status
 

@@ -505,6 +505,13 @@ Rules:
   `latest` npm tag currently resolves to a release candidate, so versions are
   pinned and prereleases are not adopted accidentally.
 
+The verification record for these rules is the OWASP ASVS 5.0 checklist in
+`docs/security.md` (ADR-0040). Several bullets above are still intent: CSP and
+HSTS are not set in this repository, checkout is not rate-limited, compose
+still selects the mock payment provider, and a few app files read
+`process.env` outside `lib/config.ts`. Treat a **Gap** row in the checklist as
+authoritative over a §14 sentence until the code catches up.
+
 ## 15. Deployment model
 
 **One application, one database, one deployment unit.** No queue, no worker
