@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { listCommittedMigrations } from "../../scripts/committed-migrations";
 import { ensureTestDatabase, TEST_DATABASE_URL } from "./harness";
 
 describe("committed migrations on bikes_test", () => {
@@ -29,13 +30,7 @@ describe("committed migrations on bikes_test", () => {
        ORDER BY finished_at`,
     );
     expect(applied.rows.map((row) => row.migration_name)).toEqual(
-      expect.arrayContaining([
-        "20260911162929_init",
-        "20260911165056_inventory_foundations",
-        "20260912160000_payment_status_lifecycle",
-        "20260912180000_delivery_configuration",
-        "20260913060000_notification_outbox",
-      ]),
+      listCommittedMigrations(process.cwd()),
     );
   });
 

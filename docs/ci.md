@@ -14,6 +14,7 @@ critical stage is a failure.
 | 1. Install                 | all   | `pnpm install --frozen-lockfile`          | yes       |
 | 2. Lint (and format)       | check | `pnpm lint`, `pnpm format:check`          | yes       |
 | 3. Typecheck               | check | `pnpm db:generate`, `pnpm typecheck`      | yes       |
+| 3b. Schema from migrations | check | `pnpm db:reproduce` (ADR-0045)            | yes       |
 | 4. Unit tests              | check | `pnpm test:unit`                          | yes       |
 | 5. Integration tests       | check | `pnpm test:integration`                   | yes       |
 | 6. Build                   | check | `pnpm build`                              | yes       |
@@ -31,6 +32,10 @@ should watch **CI**, not an individual stage.
 - **Lint** includes the architecture boundary rules. Format check is
   beside it so Prettier cannot be “fixed later.”
 - **Typecheck** runs after `prisma generate` so `src/generated/` exists.
+- **Schema from migrations** creates empty `bikes_reproduce`, applies
+  every committed folder, checks `_prisma_migrations` against the tree,
+  then drops the database. A schema that cannot be reproduced is a red
+  build.
 - **Unit** is Vitest against `src/**/*.test.ts` with `passWithNoTests:
 false`. An empty suite fails.
 - **Integration** is Vitest against `tests/integration/**` on the CI
@@ -48,8 +53,9 @@ false`. An empty suite fails.
 ## Local vs CI
 
 `pnpm check` is the laptop gate: assert-tests, lint, format, generate,
-typecheck, unit, integration, build, audit. It needs local PostgreSQL
-for integration tests. It does not run Playwright.
+typecheck, reproduce schema, unit, integration, build, audit. It needs
+local PostgreSQL (`CREATEDB`) for `db:reproduce` and integration tests.
+It does not run Playwright.
 
 `pnpm test:e2e` is optional on a laptop (install Chromium first). On
 GitHub Actions it is mandatory.

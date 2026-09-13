@@ -24,12 +24,16 @@
     "test:e2e:install": "playwright install chromium",
     "ci:assert-tests": "tsx scripts/assert-no-skipped-tests.ts",
     "audit:deps": "tsx scripts/audit-deps.ts",
-    "check": "pnpm run ci:assert-tests && pnpm run lint && pnpm run format:check && pnpm run db:generate && pnpm run typecheck && pnpm run test:unit && pnpm run test:integration && pnpm run build && pnpm run audit:deps",
+    "check": "pnpm run ci:assert-tests && pnpm run lint && pnpm run format:check && pnpm run db:generate && pnpm run typecheck && pnpm run db:reproduce && pnpm run test:unit && pnpm run test:integration && pnpm run build && pnpm run audit:deps",
     "env:check": "tsx --env-file-if-exists=.env.local scripts/check-env.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:status": "prisma migrate status",
+    "db:verify": "tsx --env-file-if-exists=.env.local scripts/verify-migrations.ts",
+    "db:reproduce": "tsx --env-file-if-exists=.env.local scripts/reproduce-database.ts",
+    "db:backup": "tsx --env-file-if-exists=.env.local scripts/backup-db.ts",
+    "db:restore": "tsx --env-file-if-exists=.env.local scripts/restore-db.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

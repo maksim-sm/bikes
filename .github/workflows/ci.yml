@@ -59,6 +59,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Generate Prisma client
         run: pnpm db:generate
+      - name: Reproduce schema from migrations
+        run: pnpm db:reproduce
       - name: Lint
         run: pnpm lint
       - name: Format

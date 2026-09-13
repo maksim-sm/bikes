@@ -74,7 +74,8 @@ reads them.
 
 Developer workstation. Copy `.env.example` to `.env.local`. PostgreSQL
 must be reachable at `DATABASE_URL`. `pnpm db:migrate:deploy` applies
-committed migrations. `pnpm dev` serves the demo catalogue, demo
+committed migrations; `pnpm db:verify` checks they match the schema
+(`docs/database.md`). `pnpm dev` serves the demo catalogue, demo
 identity, and mock payment stack (`NODE_ENV !== "production"`).
 
 Demo staff: `staff@bikes.local` / `StaffPass12`. Demo customer:
@@ -109,7 +110,7 @@ A staging host is not provisioned in this repository yet (hosting is
 still unresolved in architecture §16). The contract is:
 
 1. Apply migrations to the **staging** database before the new build
-   receives traffic.
+   receives traffic (`pnpm db:migrate:deploy`, then `pnpm db:verify`).
 2. Run `NODE_ENV=production pnpm env:check` (no `NEXT_PHASE`) against
    the staging secret set. Fail the deploy if it fails.
 3. `next start` the same artifact that CI built.
@@ -126,11 +127,14 @@ into Postgres. That is a follow-up, not a reason to skip the definition.
 Live storefront. Same artifact, different secrets and hostname.
 
 1. Migrations on the production database, backward-compatible with the
-   outgoing build (architecture §15).
+   outgoing build (architecture §15). Follow the runbook in
+   `docs/database.md`: on-demand backup, `migrate deploy`, `db:verify`.
 2. `NODE_ENV=production pnpm env:check` against production secrets.
 3. `next start`. HTTPS redirect and HSTS apply (ADR-0041).
-4. Automated backups; restoration tested before real orders.
-5. Rollback is redeploying the previous build.
+4. Automated backups; restoration tested before real orders
+   (ADR-0045).
+5. Rollback is redeploying the previous build, or restoring the
+   pre-migration dump if the data is wrong.
 
 Compose still wires the mock payment provider in every environment.
 A live provider must land before money moves (`docs/security.md`).
@@ -180,5 +184,6 @@ licence to add more ad-hoc reads.
 - ADR-0043 (this strategy)
 - ADR-0041 (production secret enforcement)
 - ADR-0038 / ADR-0039 (test databases and Playwright)
+- ADR-0045 / `docs/database.md` (migrate, backup, restore)
 - `docs/architecture.md` §14–§16
 - `pnpm env:check`
