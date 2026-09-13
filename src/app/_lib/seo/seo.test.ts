@@ -82,6 +82,13 @@ describe("structured data", () => {
     expect(
       catalogItemListJsonLd([{ slug: "emonda", name: "Émonda", brandName: "Trek" }]).url,
     ).toBe("http://localhost:3000/catalog");
+    expect(
+      catalogItemListJsonLd([{ slug: "emonda", name: "Émonda", brandName: "Trek" }], {
+        name: "Велосипеды Trek",
+        description: "Trek",
+        path: "/catalog/brand/trek",
+      }).url,
+    ).toBe("http://localhost:3000/catalog/brand/trek");
   });
 
   it("falls back to a brand plus name when image alt is blank", () => {

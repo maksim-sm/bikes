@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-09-13
 - Amends: [ADR-0002](0002-nextjs-app-router.md), [ADR-0009](0009-russian-first-i18n.md)
+- Amended by: [ADR-0036](0036-faceted-navigation-seo.md)
 
 ## Context
 

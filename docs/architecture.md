@@ -416,8 +416,9 @@ building an unused translation pipeline now.
   modelled with a locale column from the first migration, even while only `ru`
   rows exist. Retrofitting this into a populated catalogue is painful.
 - Public pages set title, description, canonical, and Open Graph. `robots.txt`
-  and the sitemap list only the storefront. Product and store JSON-LD live in
-  `app/_lib/seo` (`docs/seo.md`, ADR-0035).
+  and the sitemap list only the storefront. Catalog indexation is a closed set
+  of path landings — not a facet cartesian product (`docs/seo.md`, ADR-0035,
+  ADR-0036). Product and store JSON-LD live in `app/_lib/seo`.
 
 ## 12. Observability
 

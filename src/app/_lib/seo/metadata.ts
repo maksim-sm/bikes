@@ -8,6 +8,7 @@ export function publicPageMetadata(input: {
   description: string;
   path: string;
   image?: { url: string; alt: string };
+  robots?: { index: boolean; follow: boolean };
 }): Metadata {
   const url = absoluteUrl(input.path);
   const image = input.image
@@ -29,5 +30,6 @@ export function publicPageMetadata(input: {
       type: "website",
       ...(image ? { images: [image] } : {}),
     },
+    ...(input.robots ? { robots: input.robots } : {}),
   };
 }

@@ -42,6 +42,21 @@ one query per product. With `q`, the default sort is `relevance`.
 to build the storefront filters. Specifications that are not columns yet stay
 off the query string (no EAV).
 
+Storefront navigation uses a **closed set of path landings** so filters do not
+create an indexable cartesian product (`docs/seo.md`, ADR-0036):
+
+| Landing                        | Path                                            |
+| ------------------------------ | ----------------------------------------------- |
+| Full catalog                   | `/catalog`                                      |
+| One category (and descendants) | `/catalog/category/{slug}`                      |
+| One brand                      | `/catalog/brand/{slug}`                         |
+| One bicycle type               | `/catalog/type/{road\|mtb\|gravel\|city\|kids}` |
+
+`/catalog?category=`, `?brand=`, and `?type=` / `?bicycleType=` redirect to the
+matching landing. Search, price, availability, sort, pagination, and stacked
+landings render the filtered list but send `noindex, follow` and canonicalize
+to the nearest landing. Those URLs are not in `/sitemap.xml`.
+
 ## Product detail
 
 Storefront pages under `/products/[slug]` are Server Components. They load a

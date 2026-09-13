@@ -1,6 +1,6 @@
 # ADR-0002: Next.js App Router as the application framework
 
-- Status: Accepted (amended by [ADR-0035](0035-technical-seo.md))
+- Status: Accepted (amended by [ADR-0035](0035-technical-seo.md), [ADR-0036](0036-faceted-navigation-seo.md))
 - Date: 2026-09-11
 
 ## Context

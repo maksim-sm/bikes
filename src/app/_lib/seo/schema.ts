@@ -99,13 +99,14 @@ export function productJsonLd(input: {
 
 export function catalogItemListJsonLd(
   products: readonly { slug: string; name: string; brandName: string }[],
+  landing?: { name: string; description: string; path: string },
 ): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: t.catalog.title,
-    description: t.catalog.description,
-    url: absoluteUrl("/catalog"),
+    name: landing?.name ?? t.catalog.title,
+    description: landing?.description ?? t.catalog.description,
+    url: absoluteUrl(landing?.path ?? "/catalog"),
     mainEntity: {
       "@type": "ItemList",
       itemListElement: products.map((product, index) => ({
