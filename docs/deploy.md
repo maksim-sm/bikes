@@ -2,7 +2,8 @@
 
 Status: authoritative companion to ADR-0046, `docs/environments.md`,
 `docs/database.md`, and `docs/ci.md`. Hosting is still unresolved
-(`docs/architecture.md` §16). This document is the platform-neutral
+(`docs/architecture.md` §16). Do not treat a green CI run as
+production readiness (`docs/pre-production-audit.md`). This document is the platform-neutral
 procedure. Swap in the host's secret store and process supervisor when
 that ADR lands. Do not invent a second compile on the server.
 
