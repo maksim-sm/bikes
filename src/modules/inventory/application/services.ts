@@ -1,9 +1,6 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
 import { actorUserId, requireInventoryRole, type Principal } from "@/modules/identity";
-import {
-  detectInventoryAnomalies,
-  type InventoryAnomaly,
-} from "../domain/anomalies";
+import { detectInventoryAnomalies, type InventoryAnomaly } from "../domain/anomalies";
 import {
   assertPositiveQuantity,
   available,

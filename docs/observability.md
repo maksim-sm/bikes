@@ -45,10 +45,10 @@ data or secrets to that vendor either.
 
 ## Health checks
 
-| Path          | Role       | 200                                      |
-| ------------- | ---------- | ---------------------------------------- |
-| `/api/health` | liveness   | Process up (including while draining)    |
-| `/api/ready`  | readiness  | Postgres `SELECT 1` and not draining     |
+| Path          | Role      | 200                                   |
+| ------------- | --------- | ------------------------------------- |
+| `/api/health` | liveness  | Process up (including while draining) |
+| `/api/ready`  | readiness | Postgres `SELECT 1` and not draining  |
 
 See `docs/deploy.md`.
 
@@ -57,11 +57,11 @@ See `docs/deploy.md`.
 `POST /api/v1/payments/webhooks` never logs `rawBody` or signature
 headers.
 
-| Message                     | When                                      |
-| --------------------------- | ----------------------------------------- |
-| `payment.webhook.applied`   | Verified event stored; status applied     |
-| `payment.webhook.replayed`  | Idempotent duplicate                      |
-| `payment.webhook.rejected`  | Invalid signature or payload              |
+| Message                    | When                                  |
+| -------------------------- | ------------------------------------- |
+| `payment.webhook.applied`  | Verified event stored; status applied |
+| `payment.webhook.replayed` | Idempotent duplicate                  |
+| `payment.webhook.rejected` | Invalid signature or payload          |
 
 Fields: `paymentId`, `status`, `providerEventId`, `rawType`, `reason`.
 No PAN, no token, no payload JSON.

@@ -71,7 +71,9 @@ export default async function AdminOpsPage() {
           </thead>
           <tbody>
             {snapshot.inventory.map((row, index) => (
-              <tr key={`${row.code}-${row.variantId ?? row.reservationId ?? String(index)}`}>
+              <tr
+                key={`${row.code}-${row.variantId ?? row.reservationId ?? String(index)}`}
+              >
                 <td>{inventoryLabel[row.code] ?? row.code}</td>
                 <td>{row.variantId ?? row.reservationId ?? "—"}</td>
               </tr>
