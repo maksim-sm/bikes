@@ -6,7 +6,7 @@ import {
   HSTS_HEADER,
 } from "@/lib/security-headers";
 
-export const HTTPS_EXEMPT = new Set(["/api/health"]);
+export const HTTPS_EXEMPT = new Set(["/api/health", "/api/ready"]);
 
 export function httpsEnforced(
   nodeEnv: string = env.NODE_ENV,

@@ -143,7 +143,8 @@ webhook bodies.
 
 | Method | Path                                          | Policy           | Purpose                                 |
 | ------ | --------------------------------------------- | ---------------- | --------------------------------------- |
-| GET    | `/api/health`                                 | public           | Process liveness                        |
+| GET    | `/api/health`                                 | public           | Process liveness (200 while draining)   |
+| GET    | `/api/ready`                                  | public           | Readiness (Postgres; 503 if not ready)  |
 | GET    | `/api/v1/session`                             | public           | Resolved principal                      |
 | POST   | `/api/v1/auth/register`                       | public           | Register (always same shape)            |
 | POST   | `/api/v1/auth/login`                          | public           | Login; merge guest cart; set cookie     |

@@ -59,9 +59,10 @@ describe("parseEnv", () => {
   });
 
   it("accepts a complete production configuration", () => {
-    const env = parseEnv({ ...validProduction });
+    const env = parseEnv({ ...validProduction, BUILD_ID: "abc123def" });
     expect(env.APP_URL).toBe("https://bikes.example.by");
     expect(env.AUTH_SECRET).toBe(validProduction.AUTH_SECRET);
     expect(env.DATABASE_URL.startsWith("postgres")).toBe(true);
+    expect(env.BUILD_ID).toBe("abc123def");
   });
 });
