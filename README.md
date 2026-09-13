@@ -34,8 +34,9 @@ pnpm db:migrate:deploy
 pnpm dev
 ```
 
-The site is then at http://localhost:3000 and the health endpoint at
-http://localhost:3000/api/health.
+The site is then at http://localhost:3000, liveness at
+http://localhost:3000/api/health, and readiness at
+http://localhost:3000/api/ready. Production start is `docs/deploy.md`.
 
 PostgreSQL must be running and match `DATABASE_URL` in `.env.local`. The default
 is `postgresql://bikes:bikes@localhost:5432/bikes`. `pnpm db:migrate:deploy`
@@ -63,11 +64,12 @@ database role (Prisma's shadow database). Backup and restore are in
 | `pnpm format`            | Rewrite files with Prettier                                                                       |
 | `pnpm format:check`      | Fail if anything is unformatted                                                                   |
 | `pnpm env:check`         | Validate environment configuration without starting the app                                       |
+| `pnpm deploy:prepare`    | Production env + migrate + verify (does not start HTTP; see `docs/deploy.md`)                     |
 | `pnpm db:generate`       | Generate the Prisma client into `src/generated/`                                                  |
 | `pnpm db:migrate`        | Create and apply a development migration                                                          |
 | `pnpm db:migrate:deploy` | Apply committed migrations (safe on an empty database)                                            |
 | `pnpm db:status`         | Show whether the database is up to date                                                           |
-| `pnpm db:verify`         | Deploy, match every committed folder, diff against the schema                                     |
+| `pnpm db:verify`         | Deploy and match every committed folder to `_prisma_migrations`                                   |
 | `pnpm db:reproduce`      | Create empty `bikes_reproduce`, verify, drop                                                      |
 | `pnpm db:backup`         | Custom-format `pg_dump` of `DATABASE_URL`                                                         |
 | `pnpm db:restore`        | Restore a dump (requires `CONFIRM_RESTORE=yes`)                                                   |

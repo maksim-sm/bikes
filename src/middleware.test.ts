@@ -26,7 +26,9 @@ describe("HTTPS enforcement", () => {
     expect(shouldRedirectHttpToHttps("/", "http", true)).toBe(true);
     expect(shouldRedirectHttpToHttps("/", "https", true)).toBe(false);
     expect(shouldRedirectHttpToHttps("/api/health", "http", true)).toBe(false);
+    expect(shouldRedirectHttpToHttps("/api/ready", "http", true)).toBe(false);
     expect(HTTPS_EXEMPT.has("/api/health")).toBe(true);
+    expect(HTTPS_EXEMPT.has("/api/ready")).toBe(true);
     expect(shouldRedirectHttpToHttps("/", "http", false)).toBe(false);
   });
 });

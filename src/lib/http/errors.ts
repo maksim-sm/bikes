@@ -4,6 +4,7 @@ import {
   NotFoundError,
   RateLimitedError,
   UnauthenticatedError,
+  UnavailableError,
   ValidationError,
   isAppError,
 } from "@/lib/errors";
@@ -33,6 +34,7 @@ const STATUS_BY_CODE: Record<string, number> = {
   not_found: 404,
   conflict: 409,
   rate_limited: 429,
+  unavailable: 503,
 };
 
 /**
@@ -66,5 +68,6 @@ export {
   NotFoundError,
   RateLimitedError,
   UnauthenticatedError,
+  UnavailableError,
   ValidationError,
 };

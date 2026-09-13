@@ -43,6 +43,7 @@ the secret store are the disambiguation.
 | `LOG_LEVEL`    | Logger threshold                                     | `debug`                     | `error` (Vitest)                             | `info`                          | `info` or `warn`                   |
 | `DATABASE_URL` | Application PostgreSQL                               | local default allowed       | CI service URL                               | **required**, staging-only user | **required**, production-only user |
 | `AUTH_SECRET`  | Guest-cart HMAC (≥32 characters)                     | compiled-in default allowed | not required for `next build`                | **required**, unique            | **required**, unique               |
+| `BUILD_ID`     | Artifact identity (git SHA / image digest)           | optional                    | optional                                     | recommended                     | recommended                        |
 
 Empty strings are treated as missing. Production `next start` fails if
 `DATABASE_URL`, https `APP_URL`, or `AUTH_SECRET` is absent.
@@ -58,6 +59,10 @@ Empty strings are treated as missing. Production `next start` fails if
 | `CI`                      | GitHub Actions | Playwright                    | Retries and reporters.                             |
 | `NEXT_PHASE`              | Next.js        | `config.ts`                   | Detects `next build`. Do not set by hand.          |
 | `NEXT_RUNTIME`            | Next.js        | `instrumentation.ts`          | Skips Node config on the edge runtime.             |
+
+Deploy (`docs/deploy.md`): inject the catalogue into the process of
+`pnpm deploy:prepare` and `pnpm start`. Do not compile secrets into
+`.next`.
 
 ### Not validated yet (shape only)
 
@@ -110,10 +115,10 @@ A staging host is not provisioned in this repository yet (hosting is
 still unresolved in architecture §16). The contract is:
 
 1. Apply migrations to the **staging** database before the new build
-   receives traffic (`pnpm db:migrate:deploy`, then `pnpm db:verify`).
+   receives traffic (`NODE_ENV=production pnpm deploy:prepare`).
 2. Run `NODE_ENV=production pnpm env:check` (no `NEXT_PHASE`) against
    the staging secret set. Fail the deploy if it fails.
-3. `next start` the same artifact that CI built.
+3. `next start` the same artifact that CI built. Wait for `/api/ready`.
 4. Do not copy production customer PII onto staging unless it is
    sanitized first.
 5. Do not point Playwright at staging by default. E2E depends on the
@@ -127,10 +132,11 @@ into Postgres. That is a follow-up, not a reason to skip the definition.
 Live storefront. Same artifact, different secrets and hostname.
 
 1. Migrations on the production database, backward-compatible with the
-   outgoing build (architecture §15). Follow the runbook in
-   `docs/database.md`: on-demand backup, `migrate deploy`, `db:verify`.
+   outgoing build (architecture §15). Follow `docs/deploy.md`: on-demand
+   backup, then `NODE_ENV=production pnpm deploy:prepare`.
 2. `NODE_ENV=production pnpm env:check` against production secrets.
-3. `next start`. HTTPS redirect and HSTS apply (ADR-0041).
+3. `next start`. Wait for `/api/ready`. HTTPS redirect and HSTS apply
+   (ADR-0041).
 4. Automated backups; restoration tested before real orders
    (ADR-0045).
 5. Rollback is redeploying the previous build, or restoring the
@@ -185,5 +191,6 @@ licence to add more ad-hoc reads.
 - ADR-0041 (production secret enforcement)
 - ADR-0038 / ADR-0039 (test databases and Playwright)
 - ADR-0045 / `docs/database.md` (migrate, backup, restore)
+- ADR-0046 / `docs/deploy.md` (prepare, health, ready, rollback)
 - `docs/architecture.md` §14–§16
 - `pnpm env:check`

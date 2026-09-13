@@ -167,10 +167,11 @@ feature work.
    This is the only write. Do not run `migrate dev`.
 6. **Verify.** `DATABASE_URL=<production> pnpm db:verify`.
 7. **Config.** `NODE_ENV=production pnpm env:check` against production
-   secrets (no `NEXT_PHASE`).
+   secrets (no `NEXT_PHASE`). Prefer `pnpm deploy:prepare` which also
+   migrates and verifies (`docs/deploy.md`).
 8. **Start** the new artifact (`next start`). HTTPS and HSTS apply
    (ADR-0041).
-9. **Smoke.** `/api/health`, storefront home, one published product,
+9. **Smoke.** `/api/ready` then `/api/health`, storefront home, one published product,
    staff can open the admin queue. No demo accounts exist here.
 10. **Abort.** If smoke fails and the schema is still backward
     compatible, redeploy the previous build and leave the schema. If

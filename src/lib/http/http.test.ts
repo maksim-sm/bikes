@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ConflictError, RateLimitedError, ValidationError } from "@/lib/errors";
+import {
+  ConflictError,
+  RateLimitedError,
+  UnavailableError,
+  ValidationError,
+} from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { failure, readRequestId, success } from "./envelope";
 import { toHttpError } from "./errors";
@@ -43,6 +48,11 @@ describe("error mapping", () => {
       code: "rate_limited",
       message: t.errors.rate_limited,
       retryAfterSec: 42,
+    });
+    expect(toHttpError(new UnavailableError("not ready"))).toEqual({
+      status: 503,
+      code: "unavailable",
+      message: t.errors.unavailable,
     });
   });
 });

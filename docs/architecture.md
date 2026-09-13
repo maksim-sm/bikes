@@ -101,6 +101,7 @@ tests/
   integration/            Cross-module tests against a real database
 docs/
   database.md             Migrate, backup, restore, production runbook (ADR-0045)
+  deploy.md               Reproducible start, health/ready, rollback (ADR-0046)
 ```
 
 Path aliases are `@/app/*`, `@/modules/*`, `@/lib/*`, and `@/ui`. There is
@@ -445,7 +446,8 @@ pipeline, or log aggregation cluster is in scope.**
 - Log at the boundaries: one line per inbound request, one per outbound
   third-party call with its duration and outcome, one per domain error. Not one
   per function.
-- `GET /api/health` reports application liveness and database connectivity, for
+- `GET /api/health` reports process liveness. `GET /api/ready` reports
+  database connectivity and drain state, for
   the deployment platform to poll.
 - Unhandled exceptions are captured by an error reporting service once one is
   chosen; until then they are logged with full context server-side and surfaced
@@ -553,13 +555,16 @@ fleet, no cache tier until a measured problem demands one.
 - Configuration is entirely environment variables, validated at startup by
   `lib/config.ts`. The same build artifact runs in any environment.
 - CI runs the stages in `docs/ci.md` on every pull request. Deployment
-  happens from the main branch after the `CI` gate is green.
+  happens from the main branch after the `CI` gate is green. The
+  platform-neutral procedure is `docs/deploy.md` (ADR-0046): one CI
+  artifact, injected env, `pnpm deploy:prepare`, then `pnpm start`.
 - Database backups are automated and restoration is tested at least once before
   the store accepts real orders. An untested backup is not a backup.
   Policy and the production migrate runbook: `docs/database.md`.
 - Rollback is redeploying the previous build, or restoring the
   pre-migration dump if data is wrong. This is only safe because of the
-  migration rule above. There are no down migrations.
+  migration rule above. There are no down migrations. Graceful drain:
+  `/api/ready` goes 503; `/api/health` stays 200.
 
 ## 16. Unresolved decisions
 

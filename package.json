@@ -26,6 +26,7 @@
     "audit:deps": "tsx scripts/audit-deps.ts",
     "check": "pnpm run ci:assert-tests && pnpm run lint && pnpm run format:check && pnpm run db:generate && pnpm run typecheck && pnpm run db:reproduce && pnpm run test:unit && pnpm run test:integration && pnpm run build && pnpm run audit:deps",
     "env:check": "tsx --env-file-if-exists=.env.local scripts/check-env.ts",
+    "deploy:prepare": "tsx --env-file-if-exists=.env.local scripts/prepare-deploy.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",

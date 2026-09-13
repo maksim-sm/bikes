@@ -36,6 +36,7 @@ export type Env = {
   LOG_LEVEL: "debug" | "info" | "warn" | "error";
   DATABASE_URL: string;
   AUTH_SECRET: string;
+  BUILD_ID?: string;
 };
 
 /** Partial process.env bag. Next.js types NODE_ENV as required; tests pass `{}`. */
@@ -81,6 +82,7 @@ export function parseEnv(source: EnvSource): Env {
     LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
     DATABASE_URL: strict ? postgresUrl : postgresUrl.default(DEV_DATABASE_URL),
     AUTH_SECRET: strict ? authSecret : authSecret.default(DEV_AUTH_SECRET),
+    BUILD_ID: z.string().min(1).max(64).optional(),
   });
 
   const parsed = schema.safeParse({
@@ -90,11 +92,16 @@ export function parseEnv(source: EnvSource): Env {
     LOG_LEVEL: blankToUndefined(source.LOG_LEVEL),
     DATABASE_URL: blankToUndefined(source.DATABASE_URL),
     AUTH_SECRET: blankToUndefined(source.AUTH_SECRET),
+    BUILD_ID: blankToUndefined(source.BUILD_ID),
   });
   if (!parsed.success) {
     throw invalidEnv(parsed.error.issues);
   }
-  return parsed.data;
+  const { BUILD_ID, ...required } = parsed.data;
+  if (BUILD_ID === undefined) {
+    return required;
+  }
+  return { ...required, BUILD_ID };
 }
 
 function invalidEnv(issues: readonly { path: PropertyKey[]; message: string }[]): Error {
