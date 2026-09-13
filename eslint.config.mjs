@@ -20,6 +20,8 @@ export default tseslint.config(
   {
     ignores: [
       ".next/**",
+      ".next-e2e/**",
+      ".next-headers/**",
       "node_modules/**",
       "next-env.d.ts",
       "src/generated/**",

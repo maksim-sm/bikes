@@ -32,6 +32,8 @@ canonical URLs, sitemap, robots, and structured data.
 `docs/environments.md` defines local, test, staging, and production,
 and who owns each secret. `docs/ci.md` defines the required CI stages.
 `docs/pre-production-audit.md` is the go-live gate (ADR-0049).
+`docs/release-candidate-review.md` re-validates that gate against
+`9ad77d5` with command evidence (ADR-0050).
 `docs/performance.md` records Core Web Vitals, query, and cache measurements
 (ADR-0037): no Redis or search engine until those numbers demand one.
 
@@ -576,9 +578,10 @@ fleet, no cache tier until a measured problem demands one
 - Database backups are automated and restoration is tested at least once before
   the store accepts real orders. An untested backup is not a backup.
   Policy and the production migrate runbook: `docs/database.md`.
-  The 2026-09-13 audit (`docs/pre-production-audit.md`) records that
-  this gate is **not yet evidenced** and that the shop is **not
-  production ready** while blockers remain.
+  The 2026-09-13 audit (`docs/pre-production-audit.md`) and the
+  release-candidate review (`docs/release-candidate-review.md`,
+  ADR-0050) record that this gate is **not yet evidenced** and that
+  the shop is **not production ready** while blockers remain.
 - Rollback is redeploying the previous build, or restoring the
   pre-migration dump if data is wrong. This is only safe because of the
   migration rule above. There are no down migrations. Graceful drain:
