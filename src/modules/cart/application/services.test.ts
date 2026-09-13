@@ -293,4 +293,21 @@ describe("cart services", () => {
     expect(merged.items).toEqual([]);
     expect(await repo.findByActor(guest)).toBeNull();
   });
+
+  it("counts a missing catalogue variant as zero in the subtotal", async () => {
+    const repo = createMemoryCartRepository();
+    const existing = await repo.create(customer);
+    existing.items = [{ variantId: "gone", quantity: 2 }];
+    await repo.save(existing);
+    const services = createCartServices({
+      carts: repo,
+      catalog: catalogWith([]),
+      pricing: createPricingServices(),
+    });
+    const view = await services.getCartView(customer);
+    expect(view.items[0]?.issues).toContain("variant_missing");
+    expect(view.items[0]?.unitPriceMinor).toBe(0);
+    expect(view.items[0]?.lineTotalMinor).toBe(0);
+    expect(view.subtotalMinor).toBe(0);
+  });
 });
