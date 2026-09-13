@@ -40,6 +40,18 @@ export async function selectSellableVariant(page: Page) {
   await page.locator(`input[name="color"][value="${SELLABLE.color}"]`).check();
 }
 
+/** Demo wishlist is process-global; clear a leftover item before adding. */
+export async function saveSellableToWishlist(page: Page) {
+  const add = page.getByRole("button", { name: t.product.wishlistAdd });
+  const remove = page.getByRole("button", { name: t.product.wishlistRemove });
+  if (await remove.isVisible()) {
+    await remove.click();
+    await expect(add).toBeVisible();
+  }
+  await add.click();
+  await expect(remove).toBeVisible();
+}
+
 export async function addSellableToCart(page: Page) {
   await selectSellableVariant(page);
   await page.getByRole("button", { name: t.actions.addToCart }).click();

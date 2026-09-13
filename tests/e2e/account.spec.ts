@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { DEMO_ORDER_NUMBER, loginDemoCustomer, SELLABLE, t } from "./helpers";
+import {
+  DEMO_ORDER_NUMBER,
+  loginDemoCustomer,
+  saveSellableToWishlist,
+  SELLABLE,
+  t,
+} from "./helpers";
 
 test("demo customer sees order history and can save a wishlist", async ({ page }) => {
   await loginDemoCustomer(page);
@@ -18,10 +24,7 @@ test("demo customer sees order history and can save a wishlist", async ({ page }
 
   await page.goto(`/products/${SELLABLE.slug}`);
   await expect(page.getByRole("heading", { name: SELLABLE.name })).toBeVisible();
-  await page.getByRole("button", { name: t.product.wishlistAdd }).click();
-  await expect(
-    page.getByRole("button", { name: t.product.wishlistRemove }),
-  ).toBeVisible();
+  await saveSellableToWishlist(page);
 
   await page.goto("/account/wishlist");
   await expect(page.getByRole("heading", { name: t.account.wishlist })).toBeVisible();

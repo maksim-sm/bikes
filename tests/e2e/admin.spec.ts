@@ -23,8 +23,10 @@ test("staff opens the seeded order, saves notes, and sees the payment fixture", 
   await expect(
     page.getByRole("heading", { name: `${t.account.order} ${DEMO_ORDER_NUMBER}` }),
   ).toBeVisible();
-  await expect(page.getByText(t.account.paymentSucceeded)).toBeVisible();
-  await expect(page.getByText(t.checkout.paymentCash)).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: t.account.paymentSucceeded }).first(),
+  ).toBeVisible();
+  await expect(page.getByText(t.checkout.paymentCash).first()).toBeVisible();
 
   const notes = page.getByRole("textbox", { name: t.admin.staffNotes });
   await notes.fill("E2E: заказ проверен, можно собирать.");
