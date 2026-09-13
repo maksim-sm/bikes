@@ -65,6 +65,16 @@ export function MediaImage({
   });
   return (
     // eslint-disable-next-line @next/next/no-img-element -- opaque media keys, not static files
-    <img className={className} {...attrs} />
+    <img
+      className={className}
+      src={attrs.src}
+      alt={attrs.alt}
+      width={attrs.width}
+      height={attrs.height}
+      sizes={attrs.sizes}
+      decoding={attrs.decoding}
+      loading={attrs.loading}
+      fetchPriority={attrs.fetchPriority}
+    />
   );
 }
