@@ -28,7 +28,7 @@ emails, and in-app copy. `docs/notifications.md` defines the
 transactional email outbox. `docs/seo.md` defines storefront metadata,
 canonical URLs, sitemap, robots, and structured data.
 `docs/environments.md` defines local, test, staging, and production,
-and who owns each secret.
+and who owns each secret. `docs/ci.md` defines the required CI stages.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -471,11 +471,14 @@ Rules:
 - Third-party providers are exercised through the interfaces in sections 8–10
   using mock implementations. We never call a live payment provider in a test.
 - Every bug fix lands with a test that fails without the fix.
-- CI starts PostgreSQL 16 and runs lint, typecheck, unit, and integration on
-  every pull request (`pnpm check`). Playwright is a second CI job
-  (`pnpm test:e2e`). It drives `next dev` on port 3100 so the demo catalog,
-  identity, and cash payment fixture exist; a production start against empty
-  PostgreSQL cannot exercise these journeys yet (ADR-0039).
+- CI starts PostgreSQL 16 and runs install, lint, typecheck, unit,
+  integration, and build as named steps (`docs/ci.md`, ADR-0044).
+  Playwright is a required second job (`pnpm test:e2e`) on Chromium. It
+  drives `next dev` on port 3100 so the demo catalog, identity, and cash
+  payment fixture exist; a production start against empty PostgreSQL
+  cannot exercise these journeys yet (ADR-0039). A third job audits
+  production dependencies and refuses skipped specs. The `CI` gate job
+  fails if any of those three is skipped.
 - End-to-end specs live in `tests/e2e/` and run one worker at a time because
   the demo cart and inventory are process-global.
 
@@ -544,8 +547,8 @@ fleet, no cache tier until a measured problem demands one.
   so that a rollback does not strand the schema.
 - Configuration is entirely environment variables, validated at startup by
   `lib/config.ts`. The same build artifact runs in any environment.
-- CI runs install, lint, typecheck, build, unit, and integration on every pull
-  request. Deployment happens from the main branch after those pass.
+- CI runs the stages in `docs/ci.md` on every pull request. Deployment
+  happens from the main branch after the `CI` gate is green.
 - Database backups are automated and restoration is tested at least once before
   the store accepts real orders. An untested backup is not a backup.
 - Rollback is redeploying the previous build. This is only safe because of the

@@ -92,7 +92,8 @@ CI (`.github/workflows/ci.yml`) starts PostgreSQL 16 and sets
 `pnpm check` compiles with `next build` and does **not** need
 `AUTH_SECRET`. Integration tests talk only to `bikes_test` (ADR-0038).
 Playwright drives `next dev` on port 3100 so the demo stack exists
-(ADR-0039).
+(ADR-0039). GitHub Actions always runs that e2e job; the `CI` gate
+fails if it is skipped (`docs/ci.md`, ADR-0044).
 
 Test credentials in the workflow are ephemeral container defaults
 (`bikes` / `bikes`). That is acceptable because the database dies with
