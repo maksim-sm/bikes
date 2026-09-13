@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
-import {
-  CatalogRoutePage,
-  catalogGenerateMetadata,
-  catalogPageDynamic,
-} from "../../_lib/catalog-page";
+import { CatalogRoutePage, catalogGenerateMetadata } from "../../_lib/catalog-page";
 import type { CatalogSearchParams } from "@/app/_lib/seo/facets";
 
-export const dynamic = catalogPageDynamic;
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ type: string }>;

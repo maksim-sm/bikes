@@ -37,8 +37,6 @@ import {
 import { MediaImage } from "../../_lib/media-image";
 import styles from "../catalog.module.css";
 
-export const catalogPageDynamic = "force-dynamic" as const;
-
 export function catalogLandingCopy(
   decision: CatalogSeoDecision,
   names: { categoryName?: string; brandName?: string },
