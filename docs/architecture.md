@@ -100,6 +100,7 @@ scripts/                  Operational scripts, run outside the application
 tests/
   integration/            Cross-module tests against a real database
 docs/
+  database.md             Migrate, backup, restore, production runbook (ADR-0045)
 ```
 
 Path aliases are `@/app/*`, `@/modules/*`, `@/lib/*`, and `@/ui`. There is
@@ -239,6 +240,9 @@ imported nowhere but module repositories.
   SQL files and must not be discarded on regenerate. No schema change is
   applied by hand to any environment, and migrations must be
   backward-compatible with the currently deployed application version.
+  Workflow, verification, backups, restore, rollback, and the production
+  runbook are in `docs/database.md` (ADR-0045). An empty PostgreSQL 16
+  database plus `pnpm db:migrate:deploy` is a complete schema.
 
 ## 6. API boundary
 
@@ -471,8 +475,9 @@ Rules:
 - Third-party providers are exercised through the interfaces in sections 8–10
   using mock implementations. We never call a live payment provider in a test.
 - Every bug fix lands with a test that fails without the fix.
-- CI starts PostgreSQL 16 and runs install, lint, typecheck, unit,
-  integration, and build as named steps (`docs/ci.md`, ADR-0044).
+- CI starts PostgreSQL 16 and runs install, lint, typecheck, migration
+  verify, unit, integration, and build as named steps (`docs/ci.md`,
+  ADR-0044, ADR-0045).
   Playwright is a required second job (`pnpm test:e2e`) on Chromium. It
   drives `next dev` on port 3100 so the demo catalog, identity, and cash
   payment fixture exist; a production start against empty PostgreSQL
@@ -551,8 +556,10 @@ fleet, no cache tier until a measured problem demands one.
   happens from the main branch after the `CI` gate is green.
 - Database backups are automated and restoration is tested at least once before
   the store accepts real orders. An untested backup is not a backup.
-- Rollback is redeploying the previous build. This is only safe because of the
-  migration rule above.
+  Policy and the production migrate runbook: `docs/database.md`.
+- Rollback is redeploying the previous build, or restoring the
+  pre-migration dump if data is wrong. This is only safe because of the
+  migration rule above. There are no down migrations.
 
 ## 16. Unresolved decisions
 
