@@ -7,8 +7,10 @@ import { z } from "zod";
  * misconfigured deployment fails at startup with a readable message rather than
  * at 2am inside a checkout request.
  *
- * Production (`next start`) requires DATABASE_URL, an https APP_URL, and
- * AUTH_SECRET. `next build` sets NODE_ENV=production but NEXT_PHASE is
+ * Named environments (local, test, staging, production) are documented in
+ * docs/environments.md (ADR-0043). Production `next start` — staging and
+ * live — requires DATABASE_URL, an https APP_URL, and AUTH_SECRET.
+ * `next build` sets NODE_ENV=production but NEXT_PHASE is
  * `phase-production-build`; secrets are not demanded then so CI can compile
  * without live credentials (ADR-0041).
  */

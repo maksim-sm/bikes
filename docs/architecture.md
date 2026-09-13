@@ -27,6 +27,8 @@ and session timeout. `docs/i18n.md` defines catalogues, formatting,
 emails, and in-app copy. `docs/notifications.md` defines the
 transactional email outbox. `docs/seo.md` defines storefront metadata,
 canonical URLs, sitemap, robots, and structured data.
+`docs/environments.md` defines local, test, staging, and production,
+and who owns each secret.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -529,9 +531,14 @@ fleet, no cache tier until a measured problem demands one.
   one unit to a single hosting target. The specific platform is unresolved (see
   section 16) and this contract deliberately avoids depending on any
   platform-specific primitive beyond standard Node.js hosting.
-- Environments: local development, and production. A staging environment is
-  added when there is something to stage; two environments that drift are worse
-  than one.
+- **Named environments:** local, test, staging, and production
+  (`docs/environments.md`, ADR-0043). Local is `next dev`. Test is CI and
+  the automated suites. Staging and production both run `NODE_ENV=production`
+  on the same build artifact, each with its own database and secrets.
+  Staging is defined before it is provisioned; hosting remains unresolved
+  (section 16).
+- **One application, one database per environment.** Staging must not
+  share `DATABASE_URL` or `AUTH_SECRET` with production.
 - **Migrations run as an explicit step before the new application version
   receives traffic**, and must be backward-compatible with the outgoing version
   so that a rollback does not strand the schema.

@@ -61,3 +61,4 @@ Rules:
 | [0040](0040-asvs-l1-security-baseline.md)               | ASVS 5.0 L1 as the current security bar         | Accepted (amended by [0041](0041-security-headers-and-production-secrets.md), [0042](0042-in-process-abuse-controls.md))    |
 | [0041](0041-security-headers-and-production-secrets.md) | Security headers and production secrets         | Accepted                                                                                                                    |
 | [0042](0042-in-process-abuse-controls.md)               | In-process abuse controls for auth and commerce | Accepted                                                                                                                    |
+| [0043](0043-four-environment-strategy.md)               | Local, test, staging, and production            | Accepted                                                                                                                    |
