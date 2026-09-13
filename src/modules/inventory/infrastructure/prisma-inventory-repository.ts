@@ -1,4 +1,5 @@
 import { prisma, type PrismaClient } from "@/lib/db";
+import { withDeadlockRetry } from "@/lib/db-retry";
 import { mapInventoryWriteError } from "../application/inventory-errors";
 import type { InventoryRepository } from "../application/ports";
 import type {
@@ -96,17 +97,19 @@ export function createPrismaInventoryRepository(
     },
     async insertActive(input) {
       try {
-        const row = await client.inventoryReservation.create({
-          data: {
-            inventoryItemId: input.inventoryItemId,
-            quantity: input.quantity,
-            expiresAt: input.expiresAt,
-            status: "ACTIVE",
-            ...(input.cartId !== undefined ? { cartId: input.cartId } : {}),
-            ...(input.orderId !== undefined ? { orderId: input.orderId } : {}),
-          },
+        return await withDeadlockRetry(async () => {
+          const row = await client.inventoryReservation.create({
+            data: {
+              inventoryItemId: input.inventoryItemId,
+              quantity: input.quantity,
+              expiresAt: input.expiresAt,
+              status: "ACTIVE",
+              ...(input.cartId !== undefined ? { cartId: input.cartId } : {}),
+              ...(input.orderId !== undefined ? { orderId: input.orderId } : {}),
+            },
+          });
+          return toReservation(row);
         });
-        return toReservation(row);
       } catch (error) {
         mapInventoryWriteError(error);
       }
@@ -117,11 +120,13 @@ export function createPrismaInventoryRepository(
     },
     async saveReservation(reservation) {
       try {
-        const row = await client.inventoryReservation.update({
-          where: { id: reservation.id },
-          data: { status: reservation.status, expiresAt: reservation.expiresAt },
+        return await withDeadlockRetry(async () => {
+          const row = await client.inventoryReservation.update({
+            where: { id: reservation.id },
+            data: { status: reservation.status, expiresAt: reservation.expiresAt },
+          });
+          return toReservation(row);
         });
-        return toReservation(row);
       } catch (error) {
         mapInventoryWriteError(error);
       }

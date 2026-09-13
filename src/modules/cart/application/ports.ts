@@ -6,6 +6,12 @@ export interface CartRepository {
   create(actor: CartActor): Promise<Cart>;
   save(cart: Cart): Promise<Cart>;
   clear(id: string): Promise<void>;
+  /**
+   * Atomically take the lines for checkout. Concurrent claims on the
+   * same cart: one receives the items, the rest receive an empty list.
+   */
+  claimForCheckout(id: string): Promise<Cart | null>;
+  restoreItems(id: string, items: Cart["items"]): Promise<void>;
   delete(cart: Cart): Promise<void>;
   transferToCustomer(cartId: string, userId: string): Promise<Cart>;
 }

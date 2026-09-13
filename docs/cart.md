@@ -29,7 +29,9 @@ price.
 
 `GET /api/v1/cart` returns the same view as a DTO. Guest tokens and user
 ids are not in the JSON. `/cart` links to `/checkout` when every line is
-purchasable. Checkout recomputes prices again (`docs/checkout.md`).
+purchasable. Checkout **claims** the lines (`claimForCheckout`) so a
+double click cannot place two orders (`docs/checkout.md`,
+`docs/failure-modes.md`).
 
 ## Login merge
 

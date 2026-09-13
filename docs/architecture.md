@@ -18,6 +18,8 @@ and commit. `docs/api.md` is the external HTTP contract. `docs/auth.md`
 defines principals, staff titles, and customer isolation. `docs/catalog.md`
 defines storefront listing filters (PostgreSQL, not Elasticsearch).
 `docs/checkout.md` defines server-controlled order placement.
+`docs/failure-modes.md` defines timeout, webhook, deadlock, and race
+outcomes.
 `docs/payments.md` defines the replaceable payment provider port.
 `docs/delivery.md` defines methods, zones, free-delivery thresholds, and
 staff shipment assignment. `docs/account.md` defines the customer
@@ -493,6 +495,10 @@ Rules:
   fails if any of those three is skipped.
 - End-to-end specs live in `tests/e2e/` and run one worker at a time because
   the demo cart and inventory are process-global.
+- Failure modes (provider timeout, duplicate/delayed webhooks, deadlock
+  retry, email/storage outage, double-click checkout, last-unit race,
+  cancel-during-pay, repeated refund) have named deterministic outcomes
+  in `docs/failure-modes.md` (ADR-0048).
 
 ## 14. Security rules
 

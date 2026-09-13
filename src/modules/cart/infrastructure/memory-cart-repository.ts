@@ -10,8 +10,20 @@ function cartKey(cart: Cart): string {
   return cart.userId ? `user:${cart.userId}` : `guest:${cart.guestToken}`;
 }
 
+function serializeByKey<T>(
+  tails: Map<string, Promise<unknown>>,
+  key: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const previous = tails.get(key) ?? Promise.resolve();
+  const next = previous.catch(() => undefined).then(operation);
+  tails.set(key, next);
+  return next;
+}
+
 export function createMemoryCartRepository(): CartRepository {
   const carts = new Map<string, Cart>();
+  const tails = new Map<string, Promise<unknown>>();
   let seq = 0;
   return {
     async findByActor(actor) {
@@ -47,6 +59,28 @@ export function createMemoryCartRepository(): CartRepository {
       }
       cart.items = [];
       carts.set(cartKey(cart), cart);
+    },
+    async claimForCheckout(id) {
+      return serializeByKey(tails, id, async () => {
+        const cart = [...carts.values()].find((item) => item.id === id);
+        if (!cart) {
+          return null;
+        }
+        const items = cart.items.map((item) => ({ ...item }));
+        cart.items = [];
+        carts.set(cartKey(cart), cart);
+        return { ...cart, items };
+      });
+    },
+    async restoreItems(id, items) {
+      return serializeByKey(tails, id, async () => {
+        const cart = [...carts.values()].find((item) => item.id === id);
+        if (!cart) {
+          throw new NotFoundError("cart not found", { cartId: id });
+        }
+        cart.items = items.map((item) => ({ ...item }));
+        carts.set(cartKey(cart), cart);
+      });
     },
     async delete(cart) {
       for (const [key, existing] of carts) {
