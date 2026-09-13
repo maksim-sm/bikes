@@ -19,7 +19,8 @@ export interface AdminNavItem {
     | "/admin/inventory"
     | "/admin/customers"
     | "/admin/staff"
-    | "/admin/audit";
+    | "/admin/audit"
+    | "/admin/ops";
   capability: AdminNavCapability;
   labelKey:
     | "products"
@@ -29,7 +30,8 @@ export interface AdminNavItem {
     | "inventory"
     | "customers"
     | "staff"
-    | "audit";
+    | "audit"
+    | "ops";
 }
 
 export const ADMIN_NAV: readonly AdminNavItem[] = [
@@ -41,6 +43,7 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { href: "/admin/customers", capability: "read_any_customer", labelKey: "customers" },
   { href: "/admin/staff", capability: "admin", labelKey: "staff" },
   { href: "/admin/audit", capability: "admin", labelKey: "audit" },
+  { href: "/admin/ops", capability: "admin", labelKey: "ops" },
 ];
 
 export function canManageCatalog(principal: Principal): boolean {

@@ -50,9 +50,7 @@ export interface AuthMailer {
   }): Promise<void>;
 }
 
-export interface RateLimiter {
-  consume(key: string): Promise<{ ok: true } | { ok: false; retryAfterSec: number }>;
-}
+export type { RateLimiter } from "@/lib/abuse";
 
 export interface SecurityLog {
   record(

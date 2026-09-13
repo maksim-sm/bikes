@@ -11,6 +11,7 @@ import {
 } from "@/lib/http";
 import { serializeCookie, type HttpOnlyCookie } from "@/modules/identity";
 import type { Principal } from "@/modules/identity";
+import { trackError } from "@/lib/observability";
 import {
   enforcePolicy,
   principalUserId,
@@ -79,6 +80,9 @@ export function withRoute<T>(
       return json(status, body, requestId, result.cookies);
     } catch (error) {
       const view = toHttpError(error);
+      if (view.status >= 500) {
+        trackError(error, { requestId, method: request.method, path });
+      }
       logRequestError({
         requestId,
         method: request.method,
@@ -95,7 +99,13 @@ export function withRoute<T>(
         durationMs: Date.now() - started,
         ...(userId !== undefined ? { userId } : {}),
       });
-      return json(view.status, failure(requestId, view.code, view.message), requestId);
+      return json(
+        view.status,
+        failure(requestId, view.code, view.message),
+        requestId,
+        [],
+        view.retryAfterSec,
+      );
     }
   };
 }
@@ -105,6 +115,7 @@ export function json(
   body: unknown,
   requestId: string,
   cookies: HttpOnlyCookie[] = [],
+  retryAfterSec?: number,
 ): Response {
   const headers = new Headers({
     [REQUEST_ID_HEADER]: requestId,
@@ -113,6 +124,9 @@ export function json(
   });
   for (const cookie of cookies) {
     headers.append("set-cookie", serializeCookie(cookie));
+  }
+  if (retryAfterSec !== undefined) {
+    headers.set("Retry-After", String(retryAfterSec));
   }
   return new Response(JSON.stringify(body), { status, headers });
 }

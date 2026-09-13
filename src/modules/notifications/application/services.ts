@@ -7,6 +7,7 @@ import {
   type NotificationEvent,
   type NotificationRecord,
 } from "../domain/notification";
+import { logger } from "@/lib/logger";
 import type { Clock, NotificationChannel, NotificationRepository } from "./ports";
 
 export interface DispatchNotificationInput {
@@ -29,6 +30,7 @@ export interface NotificationServices {
     entityType: NotificationEntityType,
     entityId: string,
   ): Promise<NotificationRecord[]>;
+  listFailed(limit?: number): Promise<NotificationRecord[]>;
 }
 
 export function createNotificationServices(deps: {
@@ -113,6 +115,12 @@ export function createNotificationServices(deps: {
             error: lastError,
             createdAt: failedAt,
           });
+          logger.warn("notification.failed", {
+            notificationId: record.id,
+            event: input.event,
+            entityType: input.entityType,
+            entityId: input.entityId,
+          });
           return (
             (await deps.notifications.findByIdempotencyKey(idempotencyKey)) ?? failed
           );
@@ -124,6 +132,10 @@ export function createNotificationServices(deps: {
 
     async listByEntity(entityType, entityId) {
       return deps.notifications.listByEntity(entityType, entityId);
+    },
+
+    async listFailed(limit = 50) {
+      return deps.notifications.listFailed(limit);
     },
   };
 }

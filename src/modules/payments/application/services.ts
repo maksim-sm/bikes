@@ -1,4 +1,10 @@
-import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
+import {
+  ConflictError,
+  NotFoundError,
+  UnavailableError,
+  ValidationError,
+} from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import { requireOrderManagementRole, type Principal } from "@/modules/identity";
 import {
   applyProviderEvent,
@@ -56,6 +62,30 @@ export interface PaymentServices {
   expireDue(): Promise<number>;
   expireOpenForOrders(orderIds: readonly string[]): Promise<number>;
   cancelOpenForOrder(orderId: string): Promise<void>;
+}
+
+function isProviderTimeout(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("timeout") ||
+    message.includes("etimedout") ||
+    message.includes("timed out") ||
+    message.includes("econnreset")
+  );
+}
+
+async function callProvider<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (isProviderTimeout(error)) {
+      throw new UnavailableError("payment provider timed out");
+    }
+    throw error;
+  }
 }
 
 async function emitPayment(
@@ -153,7 +183,9 @@ export function createPaymentServices(deps: {
 
   async function syncFromProvider(payment: Payment): Promise<Payment> {
     const providerPaymentId = requireProviderPaymentId(payment);
-    const status = await deps.provider.getPaymentStatus({ providerPaymentId });
+    const status = await callProvider(() =>
+      deps.provider.getPaymentStatus({ providerPaymentId }),
+    );
     const synced = await applyRemoteStatus(payment, status, "lenient");
     return expireLocally(synced);
   }
@@ -168,13 +200,15 @@ export function createPaymentServices(deps: {
       }
       const due = await deps.orders.amountDueMinor(orderId);
       const idempotencyKey = paymentAttemptIdempotencyKey(orderId, existing.length + 1);
-      const created = await deps.provider.createPayment({
-        orderId,
-        amountMinor: due.amountMinor,
-        currency: due.currency,
-        returnUrl,
-        idempotencyKey,
-      });
+      const created = await callProvider(() =>
+        deps.provider.createPayment({
+          orderId,
+          amountMinor: due.amountMinor,
+          currency: due.currency,
+          returnUrl,
+          idempotencyKey,
+        }),
+      );
       const payment = await deps.payments.save({
         id: created.paymentId,
         orderId,
@@ -208,7 +242,9 @@ export function createPaymentServices(deps: {
       const providerPaymentId = requireProviderPaymentId(payment);
       let status: NormalizedPaymentStatus;
       try {
-        status = await deps.provider.cancelPayment({ providerPaymentId });
+        status = await callProvider(() =>
+          deps.provider.cancelPayment({ providerPaymentId }),
+        );
       } catch (error) {
         if (error instanceof Error && error.message === "payment_not_found") {
           throw new NotFoundError("provider payment not found", { paymentId });
@@ -248,11 +284,13 @@ export function createPaymentServices(deps: {
       const providerPaymentId = requireProviderPaymentId(payment);
       let status: NormalizedPaymentStatus;
       try {
-        status = await deps.provider.refundPayment({
-          providerPaymentId,
-          amountMinor,
-          idempotencyKey: refundIdempotencyKey(payment.id, amountMinor),
-        });
+        status = await callProvider(() =>
+          deps.provider.refundPayment({
+            providerPaymentId,
+            amountMinor,
+            idempotencyKey: refundIdempotencyKey(payment.id, amountMinor),
+          }),
+        );
       } catch (error) {
         if (error instanceof Error && error.message === "payment_not_found") {
           throw new NotFoundError("provider payment not found", { paymentId });
@@ -279,6 +317,12 @@ export function createPaymentServices(deps: {
         if (!payment) {
           throw new NotFoundError("payment not found for replayed event");
         }
+        logger.info("payment.webhook.replayed", {
+          paymentId: payment.id,
+          status: payment.status,
+          providerEventId: verified.providerEventId,
+          rawType: verified.rawType,
+        });
         return payment;
       }
 
@@ -303,6 +347,12 @@ export function createPaymentServices(deps: {
         providerPaymentId: verified.providerPaymentId,
         rawType: verified.rawType,
         status: verified.status,
+      });
+      logger.info("payment.webhook.applied", {
+        paymentId: updated.id,
+        status: updated.status,
+        providerEventId: verified.providerEventId,
+        rawType: verified.rawType,
       });
       return updated;
     },

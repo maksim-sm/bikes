@@ -1,5 +1,5 @@
 const SENSITIVE_KEY =
-  /password|passwd|secret|token|cookie|authorization|session|card|pan|cvv|cvc|iban|providerpayload|rawbody|rawtoken|passwordhash/i;
+  /password|passwd|secret|token|cookie|authorization|session|apikey|card|pan|cvv|cvc|iban|providerpayload|rawbody|rawtoken|passwordhash|clientsecret|paymenttoken/i;
 
 export function isSensitiveAuditKey(key: string): boolean {
   return SENSITIVE_KEY.test(key.replaceAll("_", "").replaceAll("-", ""));

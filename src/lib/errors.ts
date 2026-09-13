@@ -48,6 +48,11 @@ export class RateLimitedError extends AppError {
   readonly code = "rate_limited";
 }
 
+/** The process is draining or a dependency is not accepting traffic. */
+export class UnavailableError extends AppError {
+  readonly code = "unavailable";
+}
+
 export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
 }

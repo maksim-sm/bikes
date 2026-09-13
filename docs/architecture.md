@@ -18,6 +18,8 @@ and commit. `docs/api.md` is the external HTTP contract. `docs/auth.md`
 defines principals, staff titles, and customer isolation. `docs/catalog.md`
 defines storefront listing filters (PostgreSQL, not Elasticsearch).
 `docs/checkout.md` defines server-controlled order placement.
+`docs/failure-modes.md` defines timeout, webhook, deadlock, and race
+outcomes.
 `docs/payments.md` defines the replaceable payment provider port.
 `docs/delivery.md` defines methods, zones, free-delivery thresholds, and
 staff shipment assignment. `docs/account.md` defines the customer
@@ -27,6 +29,9 @@ and session timeout. `docs/i18n.md` defines catalogues, formatting,
 emails, and in-app copy. `docs/notifications.md` defines the
 transactional email outbox. `docs/seo.md` defines storefront metadata,
 canonical URLs, sitemap, robots, and structured data.
+`docs/environments.md` defines local, test, staging, and production,
+and who owns each secret. `docs/ci.md` defines the required CI stages.
+`docs/pre-production-audit.md` is the go-live gate (ADR-0049).
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -98,6 +103,9 @@ scripts/                  Operational scripts, run outside the application
 tests/
   integration/            Cross-module tests against a real database
 docs/
+  database.md             Migrate, backup, restore, production runbook (ADR-0045)
+  deploy.md               Reproducible start, health/ready, rollback (ADR-0046)
+  observability.md        Logs, request ids, ops anomalies (ADR-0047)
 ```
 
 Path aliases are `@/app/*`, `@/modules/*`, `@/lib/*`, and `@/ui`. There is
@@ -237,6 +245,9 @@ imported nowhere but module repositories.
   SQL files and must not be discarded on regenerate. No schema change is
   applied by hand to any environment, and migrations must be
   backward-compatible with the currently deployed application version.
+  Workflow, verification, backups, restore, rollback, and the production
+  runbook are in `docs/database.md` (ADR-0045). An empty PostgreSQL 16
+  database plus `pnpm db:migrate:deploy` is a complete schema.
 
 ## 6. API boundary
 
@@ -427,19 +438,24 @@ pipeline, or log aggregation cluster is in scope.**
 
 - **Structured JSON logging** through `lib/logger.ts` only; no bare `console.log`
   in committed code. Each log line carries a request id, and the user id where
-  known.
-- A request id is generated at the `app/` boundary and threaded through service
-  calls so that one customer's failed checkout can be reconstructed from logs.
-- **Never log** passwords, session tokens, payment card data, provider secrets,
-  or full webhook bodies containing personal data. Notification payloads follow
-  the same rule (`docs/notifications.md`, ADR-0034): reset tokens stay off the
-  outbox row.
+  known. Context is redacted (`src/lib/redact.ts`) before emit.
+- A request id is generated at the `app/` boundary (middleware + Route
+  Handlers) and echoed as `x-request-id` so one customer's failed checkout
+  can be reconstructed from logs.
+- **Never log** passwords, session secrets, API keys, card data, CVV, or
+  full payment tokens. Provider secrets and raw webhook bodies stay off
+  the wire. Notification payloads follow the same rule
+  (`docs/notifications.md`, ADR-0034): reset tokens stay off the outbox row.
+- Unexpected failures emit `error.tracked` (`src/lib/observability.ts`).
+  A vendor sink is not required. Webhook, outbox, inventory, and order
+  anomalies are in `docs/observability.md` (ADR-0047).
 - Customer emails are sent **after** commerce state is committed. A failed send
   is a `FAILED` outbox row, not a rolled-back order.
 - Log at the boundaries: one line per inbound request, one per outbound
   third-party call with its duration and outcome, one per domain error. Not one
   per function.
-- `GET /api/health` reports application liveness and database connectivity, for
+- `GET /api/health` reports process liveness. `GET /api/ready` reports
+  database connectivity and drain state, for
   the deployment platform to poll.
 - Unhandled exceptions are captured by an error reporting service once one is
   chosen; until then they are logged with full context server-side and surfaced
@@ -453,7 +469,7 @@ Weighted toward the layers where ecommerce bugs actually cost money.
 | ----------- | ---------------------- | ------------------------------------------------------------------------------------------ | -------------------- |
 | Unit        | Vitest                 | Pricing arithmetic, VAT, delivery cost rules, order state transitions, cart quantity rules | Milliseconds, no I/O |
 | Integration | Vitest + real Postgres | Repositories and service use cases against actual SQL, including transaction rollback      | Seconds              |
-| End-to-end  | Playwright             | Browse, add to cart, checkout with the mock payment provider                               | Slowest; few of them |
+| End-to-end  | Playwright             | Browse, search, cart, checkout, account, wishlist, admin order processing                  | Slowest; few of them |
 
 Rules:
 
@@ -462,16 +478,28 @@ Rules:
   take dependencies as arguments rather than reaching for global state.
 - **Repositories are integration-tested against real PostgreSQL**, never a mock
   or SQLite substitute. A repository test that does not run SQL tests nothing.
-  Each test runs in a transaction that is rolled back.
+  Cross-module cases live in `tests/integration/` and use an isolated
+  `bikes_test` database (ADR-0038). Sequential repository tests truncate
+  commerce tables between cases; concurrent reservation tests commit so two
+  clients can race.
 - Third-party providers are exercised through the interfaces in sections 8–10
   using mock implementations. We never call a live payment provider in a test.
 - Every bug fix lands with a test that fails without the fix.
-- CI runs lint, typecheck, unit, and integration on every pull request.
-  End-to-end tests run against a built application.
-- Note the standing constraint from `docs/BASELINE.md`: the audit machine has
-  neither Docker nor PostgreSQL installed, so the integration tier cannot run
-  until a database is provisioned. Resolving that is a prerequisite for
-  trustworthy data-layer work, not an afterthought.
+- CI starts PostgreSQL 16 and runs install, lint, typecheck, migration
+  verify, unit, integration, and build as named steps (`docs/ci.md`,
+  ADR-0044, ADR-0045).
+  Playwright is a required second job (`pnpm test:e2e`) on Chromium. It
+  drives `next dev` on port 3100 so the demo catalog, identity, and cash
+  payment fixture exist; a production start against empty PostgreSQL
+  cannot exercise these journeys yet (ADR-0039). A third job audits
+  production dependencies and refuses skipped specs. The `CI` gate job
+  fails if any of those three is skipped.
+- End-to-end specs live in `tests/e2e/` and run one worker at a time because
+  the demo cart and inventory are process-global.
+- Failure modes (provider timeout, duplicate/delayed webhooks, deadlock
+  retry, email/storage outage, double-click checkout, last-unit race,
+  cancel-during-pay, repeated refund) have named deterministic outcomes
+  in `docs/failure-modes.md` (ADR-0048).
 
 ## 14. Security rules
 
@@ -485,21 +513,36 @@ Rules:
   a form field, or a hidden input.
 - **Secrets come only from validated environment variables** through
   `lib/config.ts`, which fails fast at startup if a required variable is missing.
-  No secret is committed, and `.env.example` lists names with empty values.
+  Production `next start` requires `DATABASE_URL`, an https `APP_URL`, and
+  `AUTH_SECRET` (ADR-0041). No secret is committed, and `.env.example` lists
+  names with empty values.
 - **Prices and stock are recomputed server-side on every cart read and at
   checkout.** A cart submitted from the browser is a list of product ids and
   quantities, never prices. This is the most commonly exploited weakness in
   small ecommerce builds.
 - **Webhooks verify provider signatures** before any processing, and are
   idempotent.
-- **Mutations are CSRF-protected**, cookies are httpOnly/Secure/SameSite, and
-  security headers including a Content-Security-Policy are set at the edge.
+- **Mutations are CSRF-protected**. Cookies are httpOnly, `SameSite=Lax`, and
+  `Secure` with a `__Host-` prefix when the origin is https (ADR-0041).
+- **Security headers** (CSP with a per-request nonce, HSTS on https,
+  `X-Frame-Options`, `nosniff`, Referrer-Policy, Permissions-Policy) are set
+  in `src/middleware.ts` and `next.config.ts`. The CSP does not allow
+  third-party scripts.
 - **Personal data is minimised.** Store what fulfilment requires. Card data is
   never stored or logged; it is handled by the provider.
-- Rate-limit authentication attempts and checkout submission.
+- Rate-limit authentication attempts, checkout submission, payment
+  initiation, and payment webhooks through `src/lib/abuse` (ADR-0042).
+  The default backend is in-process memory; Redis is not required at this
+  scale.
 - Dependency updates are reviewed; the baseline audit notes that `prisma`'s
   `latest` npm tag currently resolves to a release candidate, so versions are
   pinned and prereleases are not adopted accidentally.
+
+The verification record for these rules is the OWASP ASVS 5.0 checklist in
+`docs/security.md` (ADR-0040, ADR-0041, ADR-0042). Remaining intent, not
+yet code: compose still selects the mock payment provider. Treat a **Gap**
+row in the checklist as authoritative over a §14 sentence until the code
+catches up.
 
 ## 15. Deployment model
 
@@ -510,20 +553,33 @@ fleet, no cache tier until a measured problem demands one.
   one unit to a single hosting target. The specific platform is unresolved (see
   section 16) and this contract deliberately avoids depending on any
   platform-specific primitive beyond standard Node.js hosting.
-- Environments: local development, and production. A staging environment is
-  added when there is something to stage; two environments that drift are worse
-  than one.
+- **Named environments:** local, test, staging, and production
+  (`docs/environments.md`, ADR-0043). Local is `next dev`. Test is CI and
+  the automated suites. Staging and production both run `NODE_ENV=production`
+  on the same build artifact, each with its own database and secrets.
+  Staging is defined before it is provisioned; hosting remains unresolved
+  (section 16).
+- **One application, one database per environment.** Staging must not
+  share `DATABASE_URL` or `AUTH_SECRET` with production.
 - **Migrations run as an explicit step before the new application version
   receives traffic**, and must be backward-compatible with the outgoing version
   so that a rollback does not strand the schema.
 - Configuration is entirely environment variables, validated at startup by
   `lib/config.ts`. The same build artifact runs in any environment.
-- CI runs install, lint, typecheck, build, unit, and integration on every pull
-  request. Deployment happens from the main branch after those pass.
+- CI runs the stages in `docs/ci.md` on every pull request. Deployment
+  happens from the main branch after the `CI` gate is green. The
+  platform-neutral procedure is `docs/deploy.md` (ADR-0046): one CI
+  artifact, injected env, `pnpm deploy:prepare`, then `pnpm start`.
 - Database backups are automated and restoration is tested at least once before
   the store accepts real orders. An untested backup is not a backup.
-- Rollback is redeploying the previous build. This is only safe because of the
-  migration rule above.
+  Policy and the production migrate runbook: `docs/database.md`.
+  The 2026-09-13 audit (`docs/pre-production-audit.md`) records that
+  this gate is **not yet evidenced** and that the shop is **not
+  production ready** while blockers remain.
+- Rollback is redeploying the previous build, or restoring the
+  pre-migration dump if data is wrong. This is only safe because of the
+  migration rule above. There are no down migrations. Graceful drain:
+  `/api/ready` goes 503; `/api/health` stays 200.
 
 ## 16. Unresolved decisions
 

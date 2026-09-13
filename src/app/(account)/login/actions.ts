@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { serverActionRateKey } from "@/app/api/_lib/abuse";
 import { getAuthServices } from "@/app/api/_lib/compose";
 import { mergeGuestCartForPrincipal } from "@/app/_lib/complete-login";
 import { cookieSecurity, writeSessionCookie } from "@/app/_lib/session";
@@ -24,7 +25,7 @@ async function signIn(email: string, password: string): Promise<LoginState> {
       email,
       password,
       requestId: "account-login",
-      rateKey: "account-login",
+      rateKey: await serverActionRateKey("login"),
       secureCookie: cookieSecurity(),
     });
     await writeSessionCookie(result.cookie);
@@ -38,6 +39,9 @@ async function signIn(email: string, password: string): Promise<LoginState> {
   } catch (error) {
     if (isAppError(error) && error.code === "conflict") {
       return { ok: false, message: t.account.loginUnverified };
+    }
+    if (isAppError(error) && error.code === "rate_limited") {
+      return { ok: false, message: t.errors.rate_limited };
     }
     return { ok: false, message: t.account.loginFailed };
   }

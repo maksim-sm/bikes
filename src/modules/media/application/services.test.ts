@@ -64,6 +64,62 @@ describe("media services", () => {
     );
   });
 
+  it("object storage failure on put leaves no asset row", async () => {
+    const assets = createMemoryMediaRepository();
+    const media = createMediaServices({
+      store: {
+        async put() {
+          throw new Error("object_storage_unavailable");
+        },
+        async get() {
+          return null;
+        },
+        async delete() {},
+      },
+      assets,
+      references: createMemoryMediaReferences(),
+      clock: { now: () => now },
+    });
+    await expect(
+      media.upload(manager, { bytes: PNG_1X1, filename: "a.png" }),
+    ).rejects.toThrow("object_storage_unavailable");
+    expect(await assets.findByKey("2026/09/placeholder.png")).toBeNull();
+  });
+
+  it("deletes the object when metadata persist fails after put", async () => {
+    const inner = createMemoryMediaStore();
+    const written: string[] = [];
+    const media = createMediaServices({
+      store: {
+        async put(key, bytes, contentType) {
+          written.push(key);
+          return inner.put(key, bytes, contentType);
+        },
+        get: (key) => inner.get(key),
+        delete: (key) => inner.delete(key),
+      },
+      assets: {
+        async save() {
+          throw new Error("media_catalog_unavailable");
+        },
+        async findByKey() {
+          return null;
+        },
+        async findById() {
+          return null;
+        },
+        async delete() {},
+      },
+      references: createMemoryMediaReferences(),
+      clock: { now: () => now },
+    });
+    await expect(
+      media.upload(manager, { bytes: PNG_1X1, filename: "a.png" }),
+    ).rejects.toThrow("media_catalog_unavailable");
+    expect(written).toHaveLength(1);
+    expect(await inner.get(written[0]!)).toBeNull();
+  });
+
   it("deletes unused objects and refuses keys that still illustrate a product", async () => {
     const store = createMemoryMediaStore();
     const assets = createMemoryMediaRepository();

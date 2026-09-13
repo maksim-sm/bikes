@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma, type PrismaClient } from "@/lib/db";
 import type { AuthUser, StoredAuthToken, StoredSession } from "../domain/auth";
 import type { StaffRole } from "../domain/roles";
 import type {
@@ -44,24 +44,26 @@ function toUser(row: {
   };
 }
 
-export function createPrismaUserAccounts(): UserAccountRepository {
+export function createPrismaUserAccounts(
+  client: PrismaClient = prisma,
+): UserAccountRepository {
   return {
     async findByEmail(email) {
-      const row = await prisma.user.findUnique({
+      const row = await client.user.findUnique({
         where: { email },
         include: { staffRoles: true },
       });
       return row ? toUser(row) : null;
     },
     async findById(id) {
-      const row = await prisma.user.findUnique({
+      const row = await client.user.findUnique({
         where: { id },
         include: { staffRoles: true },
       });
       return row ? toUser(row) : null;
     },
     async listStaff() {
-      const rows = await prisma.user.findMany({
+      const rows = await client.user.findMany({
         where: { role: "STAFF" },
         include: { staffRoles: true },
         orderBy: { email: "asc" },
@@ -69,7 +71,7 @@ export function createPrismaUserAccounts(): UserAccountRepository {
       return rows.map(toUser);
     },
     async create(input) {
-      const row = await prisma.user.create({
+      const row = await client.user.create({
         data: {
           ...(input.id ? { id: input.id } : {}),
           email: input.email,
@@ -81,7 +83,7 @@ export function createPrismaUserAccounts(): UserAccountRepository {
       return toUser(row);
     },
     async save(user) {
-      const row = await prisma.user.update({
+      const row = await client.user.update({
         where: { id: user.id },
         data: {
           passwordHash: user.passwordHash,
@@ -99,10 +101,10 @@ export function createPrismaUserAccounts(): UserAccountRepository {
   };
 }
 
-export function createPrismaSessions(): SessionRepository {
+export function createPrismaSessions(client: PrismaClient = prisma): SessionRepository {
   return {
     async insert(session: StoredSession) {
-      await prisma.authSession.create({
+      await client.authSession.create({
         data: {
           id: session.id,
           userId: session.userId,
@@ -113,7 +115,7 @@ export function createPrismaSessions(): SessionRepository {
       });
     },
     async findByTokenHash(tokenHash) {
-      const row = await prisma.authSession.findUnique({ where: { tokenHash } });
+      const row = await client.authSession.findUnique({ where: { tokenHash } });
       if (!row) {
         return null;
       }
@@ -127,19 +129,19 @@ export function createPrismaSessions(): SessionRepository {
       };
     },
     async touch(id, at) {
-      await prisma.authSession.update({
+      await client.authSession.update({
         where: { id },
         data: { lastSeenAt: at },
       });
     },
     async revoke(id, at) {
-      await prisma.authSession.update({
+      await client.authSession.update({
         where: { id },
         data: { revokedAt: at },
       });
     },
     async revokeAllForUser(userId, at) {
-      const result = await prisma.authSession.updateMany({
+      const result = await client.authSession.updateMany({
         where: { userId, revokedAt: null },
         data: { revokedAt: at },
       });
@@ -148,10 +150,12 @@ export function createPrismaSessions(): SessionRepository {
   };
 }
 
-export function createPrismaAuthTokens(): AuthTokenRepository {
+export function createPrismaAuthTokens(
+  client: PrismaClient = prisma,
+): AuthTokenRepository {
   return {
     async insert(token: StoredAuthToken) {
-      await prisma.authToken.create({
+      await client.authToken.create({
         data: {
           id: token.id,
           userId: token.userId,
@@ -162,7 +166,7 @@ export function createPrismaAuthTokens(): AuthTokenRepository {
       });
     },
     async findByHash(tokenHash) {
-      const row = await prisma.authToken.findUnique({ where: { tokenHash } });
+      const row = await client.authToken.findUnique({ where: { tokenHash } });
       if (!row) {
         return null;
       }
@@ -176,7 +180,7 @@ export function createPrismaAuthTokens(): AuthTokenRepository {
       };
     },
     async consume(id, at) {
-      await prisma.authToken.update({
+      await client.authToken.update({
         where: { id },
         data: { consumedAt: at },
       });

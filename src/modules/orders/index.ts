@@ -8,6 +8,11 @@
  */
 
 export {
+  detectOrderAnomalies,
+  type OrderAnomaly,
+  type OrderAnomalyCode,
+} from "./domain/anomalies";
+export {
   formatOrderNumber,
   normalizeStaffNotes,
   orderMatchesAdminQuery,

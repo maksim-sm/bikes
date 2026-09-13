@@ -40,7 +40,9 @@ provider JSON to find the attempt.
 Money is integer kopeks. A browser return URL is a hint, never confirmation.
 `GET /api/v1/payments/:id` calls `observeReturn`, which polls the provider
 and ignores query claims such as `?status=succeeded`. Webhook handlers stay
-public and authenticate the provider signature.
+public and authenticate the provider signature. Applied, replayed, and
+rejected webhooks are logged without the raw body
+(`docs/observability.md`).
 
 ## Lifecycle
 
@@ -65,6 +67,9 @@ only when the provider reports them. A new attempt is allowed after
 A `CREATED` / `PENDING` attempt times out after 15 minutes (`expiresAt`).
 `expireDue` and `observeReturn` apply `EXPIRED`. Abandoned checkouts (the
 inventory hold expired first) are closed by `expireOpenForOrders`.
+A provider network timeout is `UnavailableError` (HTTP 503) and does not
+write a new attempt. Duplicate webhooks return the stored row. A success
+webhook after `EXPIRED` or `CANCELLED` is ignored (`docs/failure-modes.md`).
 
 Staff start refunds from `/admin/orders/:id` via `refundAsStaff`, which
 requires `manage_orders` and then calls `refundPayment`. The console shows

@@ -1,8 +1,8 @@
+import { assertRateLimit, emailRatePart } from "@/lib/abuse";
 import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
-  RateLimitedError,
   UnauthenticatedError,
   ValidationError,
 } from "@/lib/errors";
@@ -131,12 +131,11 @@ export function createAuthServices(deps: {
   dummyPasswordHash: string;
 }): AuthServices {
   async function gate(rateKey: string): Promise<void> {
-    const result = await deps.limiter.consume(rateKey);
-    if (!result.ok) {
-      throw new RateLimitedError("too many attempts", {
-        retryAfterSec: result.retryAfterSec,
-      });
-    }
+    await assertRateLimit(deps.limiter, rateKey);
+  }
+
+  async function gateEmail(email: string): Promise<void> {
+    await assertRateLimit(deps.limiter, `email:${emailRatePart(email)}`);
   }
 
   async function issueSession(
@@ -179,6 +178,7 @@ export function createAuthServices(deps: {
     async register(input) {
       await gate(input.rateKey);
       const email = normalizeEmail(input.email);
+      await gateEmail(email);
       try {
         assertPasswordPolicy(input.password);
       } catch {
@@ -208,6 +208,7 @@ export function createAuthServices(deps: {
     async login(input) {
       await gate(input.rateKey);
       const email = normalizeEmail(input.email);
+      await gateEmail(email);
       const user = await deps.users.findByEmail(email);
       const hash = user?.passwordHash ?? deps.dummyPasswordHash;
       const matches = await deps.passwords.verify(hash, input.password);
@@ -261,6 +262,7 @@ export function createAuthServices(deps: {
     async requestPasswordReset(input) {
       await gate(input.rateKey);
       const email = normalizeEmail(input.email);
+      await gateEmail(email);
       const user = await deps.users.findByEmail(email);
       if (user && user.disabledAt === null) {
         const rawToken = await issueOneTime(user, "PASSWORD_RESET");
@@ -334,6 +336,7 @@ export function createAuthServices(deps: {
     async resendVerification(input) {
       await gate(input.rateKey);
       const email = normalizeEmail(input.email);
+      await gateEmail(email);
       const user = await deps.users.findByEmail(email);
       if (user && user.emailVerifiedAt === null && user.disabledAt === null) {
         const rawToken = await issueOneTime(user, "EMAIL_VERIFY");

@@ -13,6 +13,12 @@ export function orderCartAdapter(carts: CartRepository): OrderCart {
     async clear(cartId) {
       await carts.clear(cartId);
     },
+    async claim(cartId) {
+      return carts.claimForCheckout(cartId);
+    },
+    async restore(cartId, items) {
+      await carts.restoreItems(cartId, items);
+    },
   };
 }
 

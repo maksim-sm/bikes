@@ -56,4 +56,5 @@ logs the action URL.
 
 Each notification is `PENDING` while the channel runs, then `SENT` or
 `FAILED`. Every send writes a `notification_attempts` row. `listByEntity` is
-the read path for tests and a later admin view — this prompt does not add UI.
+the read path for tests. Failed rows are listed for admin on
+`/admin/ops` and `GET /api/v1/admin/ops` (`docs/observability.md`).

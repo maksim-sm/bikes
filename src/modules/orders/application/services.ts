@@ -155,102 +155,109 @@ export function createOrderServices(deps: {
       mapCheckoutValidation(error);
     }
 
-    const cart = await deps.carts.getCartById(input.cartId);
+    const cart = await deps.carts.claim(input.cartId);
     if (!cart || cart.items.length === 0) {
       throw new ValidationError("cart is empty");
     }
-    assertOwnsCart(cart, input);
 
-    const now = deps.clock.now();
-    const lines: OrderLine[] = [];
-    for (const item of cart.items) {
-      const product = await deps.catalog.getProductForVariant(item.variantId);
-      const variant = product ? findActiveVariant(product, item.variantId) : null;
-      if (!product || !variant || !isListedOnStorefront(product, now)) {
-        throw new ConflictError("variant is not purchasable", {
-          variantId: item.variantId,
-        });
-      }
-      const available = await deps.inventory.getAvailable(item.variantId);
-      if (available < item.quantity) {
-        throw new ConflictError("insufficient available inventory", {
-          variantId: item.variantId,
-          available,
-        });
-      }
-      lines.push({
-        variantId: variant.id,
-        sku: variant.sku,
-        productName: product.name,
-        brandName: product.brandName,
-        frameSize: variant.frameSize,
-        color: variant.color,
-        quantity: item.quantity,
-        unitPriceMinor: variant.listPriceMinor,
-        lineTotalMinor: lineTotalMinor(variant.listPriceMinor, item.quantity),
-      });
-    }
-
-    const quote = await deps.delivery.quote({
-      methodCode: input.deliveryMethodCode,
-      destination: { region: destination.region, city: destination.city },
-      itemCount: cart.items.length,
-      subtotalMinor: lines.reduce((sum, line) => sum + line.lineTotalMinor, 0),
-    });
-    if (!quote) {
-      throw new ConflictError("delivery method is unavailable for this destination");
-    }
-
-    const totals = checkoutTotals(
-      lines.map((line) => line.lineTotalMinor),
-      quote.costMinor,
-    );
-    const sequence = await deps.orders.nextSequence(now);
-    const order: Order = {
-      id: crypto.randomUUID(),
-      number: formatOrderNumber(now, sequence),
-      userId: input.actorUserId,
-      status: "PLACED",
-      paymentStatus: "PENDING",
-      fulfillmentStatus: "UNFULFILLED",
-      currency: "BYN",
-      ...totals,
-      deliveryMethodCode: input.deliveryMethodCode,
-      deliveryMethodName: quote.methodName,
-      customerEmail: customer.customerEmail,
-      customerName: customer.customerName,
-      customerPhone: customer.customerPhone,
-      paymentMethodCode,
-      staffNotes: null,
-      shipping: {
-        recipientName: destination.recipientName,
-        phone: destination.phone,
-        countryCode: "BY",
-        region: destination.region,
-        city: destination.city,
-        street: destination.street,
-        postalCode: destination.postalCode,
-      },
-      items: lines,
-    };
-
-    const saved = await deps.orders.save(order);
+    let placed = false;
     try {
-      for (const line of saved.items) {
-        await deps.inventory.reserveForOrder({
-          variantId: line.variantId,
-          quantity: line.quantity,
-          orderId: saved.id,
+      assertOwnsCart(cart, input);
+      const now = deps.clock.now();
+      const lines: OrderLine[] = [];
+      for (const item of cart.items) {
+        const product = await deps.catalog.getProductForVariant(item.variantId);
+        const variant = product ? findActiveVariant(product, item.variantId) : null;
+        if (!product || !variant || !isListedOnStorefront(product, now)) {
+          throw new ConflictError("variant is not purchasable", {
+            variantId: item.variantId,
+          });
+        }
+        const available = await deps.inventory.getAvailable(item.variantId);
+        if (available < item.quantity) {
+          throw new ConflictError("insufficient available inventory", {
+            variantId: item.variantId,
+            available,
+          });
+        }
+        lines.push({
+          variantId: variant.id,
+          sku: variant.sku,
+          productName: product.name,
+          brandName: product.brandName,
+          frameSize: variant.frameSize,
+          color: variant.color,
+          quantity: item.quantity,
+          unitPriceMinor: variant.listPriceMinor,
+          lineTotalMinor: lineTotalMinor(variant.listPriceMinor, item.quantity),
         });
       }
-    } catch (error) {
-      await deps.inventory.cancelForOrder(saved.id);
-      await deps.orders.save({ ...saved, status: "CANCELLED" });
-      throw error;
+
+      const quote = await deps.delivery.quote({
+        methodCode: input.deliveryMethodCode,
+        destination: { region: destination.region, city: destination.city },
+        itemCount: cart.items.length,
+        subtotalMinor: lines.reduce((sum, line) => sum + line.lineTotalMinor, 0),
+      });
+      if (!quote) {
+        throw new ConflictError("delivery method is unavailable for this destination");
+      }
+
+      const totals = checkoutTotals(
+        lines.map((line) => line.lineTotalMinor),
+        quote.costMinor,
+      );
+      const sequence = await deps.orders.nextSequence(now);
+      const order: Order = {
+        id: crypto.randomUUID(),
+        number: formatOrderNumber(now, sequence),
+        userId: input.actorUserId,
+        status: "PLACED",
+        paymentStatus: "PENDING",
+        fulfillmentStatus: "UNFULFILLED",
+        currency: "BYN",
+        ...totals,
+        deliveryMethodCode: input.deliveryMethodCode,
+        deliveryMethodName: quote.methodName,
+        customerEmail: customer.customerEmail,
+        customerName: customer.customerName,
+        customerPhone: customer.customerPhone,
+        paymentMethodCode,
+        staffNotes: null,
+        shipping: {
+          recipientName: destination.recipientName,
+          phone: destination.phone,
+          countryCode: "BY",
+          region: destination.region,
+          city: destination.city,
+          street: destination.street,
+          postalCode: destination.postalCode,
+        },
+        items: lines,
+      };
+
+      const saved = await deps.orders.save(order);
+      try {
+        for (const line of saved.items) {
+          await deps.inventory.reserveForOrder({
+            variantId: line.variantId,
+            quantity: line.quantity,
+            orderId: saved.id,
+          });
+        }
+      } catch (error) {
+        await deps.inventory.cancelForOrder(saved.id);
+        await deps.orders.save({ ...saved, status: "CANCELLED" });
+        throw error;
+      }
+      placed = true;
+      await emitOrder(deps.notify, saved, "order.created");
+      return saved;
+    } finally {
+      if (!placed) {
+        await deps.carts.restore(input.cartId, cart.items);
+      }
     }
-    await deps.carts.clear(input.cartId);
-    await emitOrder(deps.notify, saved, "order.created");
-    return saved;
   }
 
   return {

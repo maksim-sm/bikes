@@ -14,6 +14,10 @@ async function main(): Promise<void> {
     console.log(`  LOG_LEVEL  ${env.LOG_LEVEL}`);
     const database = new URL(env.DATABASE_URL);
     console.log(`  DATABASE   ${database.host}${database.pathname}`);
+    console.log(`  AUTH_SECRET set (${String(env.AUTH_SECRET.length)} chars)`);
+    if (env.BUILD_ID !== undefined) {
+      console.log(`  BUILD_ID   ${env.BUILD_ID}`);
+    }
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);

@@ -2,6 +2,7 @@ import { customerPrincipal, staffPrincipal, type Principal } from "./principal";
 import type { StaffRole } from "./roles";
 
 export const SESSION_COOKIE_NAME = "bikes_session";
+export const HOST_SESSION_COOKIE_NAME = "__Host-bikes_session";
 export const MIN_PASSWORD_LENGTH = 10;
 export const MAX_PASSWORD_LENGTH = 128;
 /** Absolute lifetime for a customer session. */

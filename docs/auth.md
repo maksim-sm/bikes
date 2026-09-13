@@ -1,10 +1,11 @@
 # Authentication and authorization
 
-Status: authoritative companion to ADR-0016 and ADR-0017.
+Status: authoritative companion to ADR-0016, ADR-0017, and ADR-0042.
 
 ## Principals
 
-Resolved once per request from the `bikes_session` httpOnly cookie.
+Resolved once per request from the session httpOnly cookie (`bikes_session` on
+http, `__Host-bikes_session` on https; ADR-0041).
 
 | `Principal.type` | Meaning                      |
 | ---------------- | ---------------------------- |
@@ -28,6 +29,11 @@ staff may read any order. Admin and manager may read customer records for
 support.
 
 The raw session token and password hashes never appear in JSON.
+
+Login, registration, password reset, and admin login are rate-limited
+through `src/lib/abuse` (IP plus a hashed email). Checkout, payment start,
+and payment webhooks share the same port. The default backend is in-process
+memory (ADR-0042).
 
 Customer sessions last 14 days. Staff sessions last at most 12 hours and
 end after 30 minutes without a server-side `resolve` (ADR-0029). The admin

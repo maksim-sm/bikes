@@ -4,6 +4,7 @@ import {
   NotFoundError,
   RateLimitedError,
   UnauthenticatedError,
+  UnavailableError,
   ValidationError,
   isAppError,
 } from "@/lib/errors";
@@ -13,6 +14,17 @@ export interface HttpErrorView {
   status: number;
   code: string;
   message: string;
+  retryAfterSec?: number;
+}
+
+export function retryAfterSeconds(error: unknown): number | undefined {
+  if (!isAppError(error) || error.code !== "rate_limited") {
+    return undefined;
+  }
+  const value = error.context.retryAfterSec;
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(1, Math.floor(value))
+    : undefined;
 }
 
 const STATUS_BY_CODE: Record<string, number> = {
@@ -22,6 +34,7 @@ const STATUS_BY_CODE: Record<string, number> = {
   not_found: 404,
   conflict: 409,
   rate_limited: 429,
+  unavailable: 503,
 };
 
 /**
@@ -30,10 +43,12 @@ const STATUS_BY_CODE: Record<string, number> = {
  */
 export function toHttpError(error: unknown): HttpErrorView {
   if (isAppError(error)) {
+    const retryAfterSec = retryAfterSeconds(error);
     return {
       status: STATUS_BY_CODE[error.code] ?? 400,
       code: error.code,
       message: systemMessage(error.code),
+      ...(retryAfterSec !== undefined ? { retryAfterSec } : {}),
     };
   }
   return {
@@ -53,5 +68,6 @@ export {
   NotFoundError,
   RateLimitedError,
   UnauthenticatedError,
+  UnavailableError,
   ValidationError,
 };

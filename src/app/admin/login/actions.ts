@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { serverActionRateKey } from "@/app/api/_lib/abuse";
 import { getAuthServices } from "@/app/api/_lib/compose";
 import { mergeGuestCartForPrincipal } from "@/app/_lib/complete-login";
 import {
@@ -29,7 +30,7 @@ async function signIn(email: string, password: string): Promise<LoginState> {
       email,
       password,
       requestId: "admin-login",
-      rateKey: "admin-login",
+      rateKey: await serverActionRateKey("admin-login"),
       secureCookie: cookieSecurity(),
     });
     if (!canAccessAdmin(result.principal)) {
@@ -47,6 +48,9 @@ async function signIn(email: string, password: string): Promise<LoginState> {
     }
     home = adminHomePath(result.principal);
   } catch (error) {
+    if (isAppError(error) && error.code === "rate_limited") {
+      return { ok: false, message: t.errors.rate_limited };
+    }
     if (isAppError(error)) {
       return { ok: false, message: t.admin.loginFailed };
     }
@@ -74,9 +78,14 @@ export async function demoStaffLoginAction(): Promise<LoginState> {
 
 export async function staffLogoutAction(): Promise<void> {
   const { cookies } = await import("next/headers");
-  const { SESSION_COOKIE_NAME } = await import("@/modules/identity");
+  const { HOST_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME } = await import(
+    "@/modules/identity"
+  );
   const store = await cookies();
-  const token = store.get(SESSION_COOKIE_NAME)?.value ?? null;
+  const token =
+    store.get(HOST_SESSION_COOKIE_NAME)?.value ??
+    store.get(SESSION_COOKIE_NAME)?.value ??
+    null;
   const auth = await getAuthServices();
   const result = await auth.logout({
     rawToken: token,

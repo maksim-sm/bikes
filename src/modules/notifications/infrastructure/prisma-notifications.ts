@@ -124,5 +124,14 @@ export function createPrismaNotificationRepository(
       });
       return rows.map(toRecord);
     },
+    async listFailed(limit = 50) {
+      const rows = await client.notification.findMany({
+        where: { status: "FAILED" },
+        include: withAttempts,
+        orderBy: { updatedAt: "desc" },
+        take: limit,
+      });
+      return rows.map(toRecord);
+    },
   };
 }

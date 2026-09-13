@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import robots from "@/app/robots";
 import { t } from "@/lib/i18n";
+import { serializeJsonLd } from "./json-ld";
 import {
   breadcrumbJsonLd,
   catalogItemListJsonLd,
@@ -98,5 +99,13 @@ describe("structured data", () => {
     expect(imageAlt({ alt: "Вид спереди", brandName: "Trek", name: "Émonda" })).toBe(
       "Вид спереди",
     );
+  });
+
+  it("escapes script-breaking characters in JSON-LD", () => {
+    const html = serializeJsonLd({
+      description: "</script><script>alert(1)</script>",
+    });
+    expect(html).not.toContain("</script>");
+    expect(html).toContain("\\u003c/script\\u003e");
   });
 });

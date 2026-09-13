@@ -22,6 +22,7 @@ excluded from indexing.
 | `/admin/customers`            | `read_any_customer`  | Customer lookup (access is audited)          |
 | `/admin/staff`                | `admin`              | Staff titles                                 |
 | `/admin/audit`                | `admin`              | Historical audit log                         |
+| `/admin/ops`                  | `admin`              | Failed mail, inventory and order anomalies   |
 | `/admin/forbidden`            | signed-in staff      | Wrong capability for the requested page      |
 
 Demo staff: `staff@bikes.local` / `StaffPass12` (admin title).

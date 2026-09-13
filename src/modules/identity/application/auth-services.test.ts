@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ConflictError,
   ForbiddenError,
+  RateLimitedError,
   UnauthenticatedError,
   ValidationError,
 } from "@/lib/errors";
@@ -62,7 +63,18 @@ describe("customer authentication", () => {
     });
     expect(loggedIn.cookie.httpOnly).toBe(true);
     expect(loggedIn.cookie.sameSite).toBe("lax");
+    expect(loggedIn.cookie.name).toBe("bikes_session");
     expect(loggedIn.principal.type).toBe("customer");
+
+    const secure = await auth.login({
+      email: "ivan@example.by",
+      password: "correct-horse",
+      requestId: "r4-secure",
+      rateKey: "ip:1-secure",
+      secureCookie: true,
+    });
+    expect(secure.cookie.name).toBe("__Host-bikes_session");
+    expect(secure.cookie.secure).toBe(true);
 
     const principal = await auth.resolve(loggedIn.cookie.value);
     expect(principal).toEqual(loggedIn.principal);
@@ -412,6 +424,41 @@ describe("customer authentication", () => {
     expect(rows[0]?.payload).toEqual({ email: "reset@example.by" });
     expect(JSON.stringify(rows[0])).not.toContain("correct-horse");
     expect(channel.sent[0]?.hasToken).toBe(true);
+  });
+
+  it("rate-limits login by key and by email", async () => {
+    const auth = createAuthServices({
+      users: createMemoryUserAccounts(),
+      sessions: createMemorySessions(),
+      tokens: createMemoryAuthTokens(),
+      passwords: createArgon2PasswordHasher({ cheap: true }),
+      tokensDigest: createSha256TokenDigest(),
+      mailer: createCapturingMailer(),
+      limiter: createMemoryRateLimiter({ limit: 1, windowMs: 60_000 }),
+      log: createSecurityLog(),
+      clock: { now: () => new Date() },
+      dummyPasswordHash: await createArgon2PasswordHasher({ cheap: true }).hash(
+        "timing-pad",
+      ),
+    });
+    await expect(
+      auth.login({
+        email: "a@example.by",
+        password: "correct-horse",
+        requestId: "r1",
+        rateKey: "login:1.1.1.1",
+        secureCookie: false,
+      }),
+    ).rejects.toBeInstanceOf(UnauthenticatedError);
+    await expect(
+      auth.login({
+        email: "b@example.by",
+        password: "correct-horse",
+        requestId: "r2",
+        rateKey: "login:1.1.1.1",
+        secureCookie: false,
+      }),
+    ).rejects.toBeInstanceOf(RateLimitedError);
   });
 
   it("rejects short passwords", async () => {

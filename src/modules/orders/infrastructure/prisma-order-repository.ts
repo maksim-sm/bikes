@@ -160,6 +160,10 @@ export function createPrismaOrderRepository(
           paymentStatus: order.paymentStatus,
           fulfillmentStatus: order.fulfillmentStatus,
           staffNotes: order.staffNotes,
+          cancelledAt:
+            order.status === "CANCELLED" ? (existing.cancelledAt ?? new Date()) : null,
+          completedAt:
+            order.status === "COMPLETED" ? (existing.completedAt ?? new Date()) : null,
         },
         include: { items: true },
       });

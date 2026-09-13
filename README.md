@@ -34,54 +34,72 @@ pnpm db:migrate:deploy
 pnpm dev
 ```
 
-The site is then at http://localhost:3000 and the health endpoint at
-http://localhost:3000/api/health.
+The site is then at http://localhost:3000, liveness at
+http://localhost:3000/api/health, and readiness at
+http://localhost:3000/api/ready. Production start is `docs/deploy.md`.
 
 PostgreSQL must be running and match `DATABASE_URL` in `.env.local`. The default
 is `postgresql://bikes:bikes@localhost:5432/bikes`. `pnpm db:migrate:deploy`
-applies committed migrations to an empty database; `pnpm db:migrate` is the
-development command that also creates new migrations and needs `CREATEDB` on
-the database role (Prisma's shadow database).
+applies committed migrations to an empty database; `pnpm db:reproduce`
+proves that on a throwaway database. `pnpm db:migrate` is the development
+command that also creates new migrations and needs `CREATEDB` on the
+database role (Prisma's shadow database). Backup and restore are in
+`docs/database.md`.
 
 ## Scripts
 
-| Command                  | Does                                                        |
-| ------------------------ | ----------------------------------------------------------- |
-| `pnpm dev`               | Development server with hot reload                          |
-| `pnpm build`             | Production build                                            |
-| `pnpm start`             | Serve a production build (run `build` first)                |
-| `pnpm lint`              | ESLint, including the architecture boundary rules           |
-| `pnpm lint:fix`          | ESLint with autofix                                         |
-| `pnpm typecheck`         | `tsc --noEmit`                                              |
-| `pnpm test`              | Unit tests for domain and application services (Vitest)     |
-| `pnpm format`            | Rewrite files with Prettier                                 |
-| `pnpm format:check`      | Fail if anything is unformatted                             |
-| `pnpm env:check`         | Validate environment configuration without starting the app |
-| `pnpm db:generate`       | Generate the Prisma client into `src/generated/`            |
-| `pnpm db:migrate`        | Create and apply a development migration                    |
-| `pnpm db:migrate:deploy` | Apply committed migrations (safe on an empty database)      |
-| `pnpm db:status`         | Show whether the database is up to date                     |
-| `pnpm check`             | Lint, format check, generate client, build, typecheck, test |
+| Command                  | Does                                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------- |
+| `pnpm dev`               | Development server with hot reload                                                                |
+| `pnpm build`             | Production build                                                                                  |
+| `pnpm start`             | Serve a production build (run `build` first)                                                      |
+| `pnpm lint`              | ESLint, including the architecture boundary rules                                                 |
+| `pnpm lint:fix`          | ESLint with autofix                                                                               |
+| `pnpm typecheck`         | `tsc --noEmit`                                                                                    |
+| `pnpm test`              | Unit and integration suites (Vitest)                                                              |
+| `pnpm test:unit`         | Domain and application unit tests (no database)                                                   |
+| `pnpm test:integration`  | Real PostgreSQL suite against isolated `bikes_test`                                               |
+| `pnpm test:e2e`          | Playwright journeys against `next dev` on port 3100                                               |
+| `pnpm test:e2e:install`  | Download Chromium for local Playwright runs                                                       |
+| `pnpm format`            | Rewrite files with Prettier                                                                       |
+| `pnpm format:check`      | Fail if anything is unformatted                                                                   |
+| `pnpm env:check`         | Validate environment configuration without starting the app                                       |
+| `pnpm deploy:prepare`    | Production env + migrate + verify (does not start HTTP; see `docs/deploy.md`)                     |
+| `pnpm db:generate`       | Generate the Prisma client into `src/generated/`                                                  |
+| `pnpm db:migrate`        | Create and apply a development migration                                                          |
+| `pnpm db:migrate:deploy` | Apply committed migrations (safe on an empty database)                                            |
+| `pnpm db:status`         | Show whether the database is up to date                                                           |
+| `pnpm db:verify`         | Deploy and match every committed folder to `_prisma_migrations`                                   |
+| `pnpm db:reproduce`      | Create empty `bikes_reproduce`, verify, drop                                                      |
+| `pnpm db:backup`         | Custom-format `pg_dump` of `DATABASE_URL`                                                         |
+| `pnpm db:restore`        | Restore a dump (requires `CONFIRM_RESTORE=yes`)                                                   |
+| `pnpm check`             | Local CI gate (no Playwright): assert-tests, lint, types, verify, unit, integration, build, audit |
+| `pnpm ci:assert-tests`   | Fail if a suite is empty or a spec uses `.skip` / `.only`                                         |
+| `pnpm audit:deps`        | Fail on unreviewed high/critical production advisories                                            |
 
 Before pushing, `pnpm check` is the one command worth remembering.
 
-`pnpm db:migrate` and `pnpm db:migrate:deploy` write to the database. Everything
-else is safe to run repeatedly: none of the remaining scripts call a third-party
-service or delete anything. `pnpm format` is the only non-database command that
+`pnpm db:migrate`, `pnpm db:migrate:deploy`, and `pnpm test:integration` write
+to PostgreSQL. Integration tests use isolated `bikes_test`, never the
+development `bikes` database. Everything else is safe to run repeatedly: none
+of the remaining scripts call a third-party service or delete anything.
+`pnpm format` is the only non-database command that
 modifies files, and only by reformatting them.
 
 ## Configuration
 
-Environment variables are declared, validated, and typed in exactly one place:
-`src/lib/config.ts`. Nothing else in the codebase reads `process.env`.
+Named environments are **local**, **test**, **staging**, and **production**
+(`docs/environments.md`, ADR-0043). Application variables are declared,
+validated, and typed in exactly one place: `src/lib/config.ts`.
 
 Validation runs once at startup, so a missing or malformed value fails
-immediately with a message naming the variable, rather than surfacing as a
-confusing error later. `.env.example` documents every variable; copy it to
-`.env.local`, which is git-ignored.
+immediately with a message naming the variable. `.env.example` documents
+every variable and who owns it; copy it to `.env.local`, which is
+git-ignored.
 
 To add a variable: add it to the schema in `src/lib/config.ts`, add it to
-`.env.example`, and read it through `env` rather than `process.env`.
+`.env.example` and `docs/environments.md`, and read it through `env`
+rather than `process.env`.
 
 ## Project structure
 
@@ -180,6 +198,7 @@ decide it. See `src/modules/README.md` for the internal layering rules.
 - `docs/BASELINE.md` — the pre-implementation audit.
 - `docs/notifications.md` — transactional email outbox and attempt history.
 - `docs/seo.md` — storefront metadata, sitemap, robots, and structured data.
+- `docs/security.md` — OWASP ASVS 5.0 L1 checklist and code-review findings.
 
 ## Status
 

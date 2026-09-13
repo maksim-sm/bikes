@@ -126,6 +126,14 @@ function stack(options?: { now?: Date; holdMs?: number }) {
     async clear() {
       cart.items = [];
     },
+    async claim() {
+      const items = cart.items.map((item) => ({ ...item }));
+      cart.items = [];
+      return { ...cart, items };
+    },
+    async restore(_cartId, items) {
+      cart.items = items.map((item) => ({ ...item }));
+    },
   };
   const catalog: OrderCatalog = {
     async getProductForVariant() {
