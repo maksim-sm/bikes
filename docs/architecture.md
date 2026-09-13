@@ -115,17 +115,17 @@ new module folder with the same shape, or it belongs inside an existing one.
 
 Each module owns a slice of the business and the tables backing it.
 
-| Module      | Owns                                                                                         | Does not own                         |
-| ----------- | -------------------------------------------------------------------------------------------- | ------------------------------------ |
-| `catalog`   | Products, variants (frame size, colour), categories, specifications                          | Prices shown to customers, stock     |
-| `pricing`   | Price calculation, VAT presentation, discounts, currency formatting                          | Product identity                     |
-| `cart`      | Cart aggregate, line items, quantity rules                                                   | Payment, stock decrement             |
-| `orders`    | Order agreement, line-item snapshots, denormalized payment/fulfillment status                | Payment execution, shipment tracking |
-| `payments`  | Payment attempts, webhook events, refunds                                                    | Order status semantics               |
-| `delivery`  | Methods, zones, shipment assignment                                                          | Order status semantics               |
-| `identity`  | Users, sessions, roles, customer profiles, addresses, wishlists                              | Order data                           |
-| `media`     | Image upload, storage references, opaque keys                                                | Which product an image belongs to    |
-| `inventory` | On-hand, reservations, movements (receipt, adjust, reserve, release, commit, return, cancel) | Product identity, order status       |
+| Module          | Owns                                                                                         | Does not own                         |
+| --------------- | -------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `catalog`       | Products, variants (frame size, colour), categories, specifications                          | Prices shown to customers, stock     |
+| `pricing`       | Price calculation, VAT presentation, discounts, currency formatting                          | Product identity                     |
+| `cart`          | Cart aggregate, line items, quantity rules                                                   | Payment, stock decrement             |
+| `orders`        | Order agreement, line-item snapshots, denormalized payment/fulfillment status                | Payment execution, shipment tracking |
+| `payments`      | Payment attempts, webhook events, refunds                                                    | Order status semantics               |
+| `delivery`      | Methods, zones, shipment assignment                                                          | Order status semantics               |
+| `identity`      | Users, sessions, roles, customer profiles, addresses, wishlists                              | Order data                           |
+| `media`         | Image upload, storage references, opaque keys                                                | Which product an image belongs to    |
+| `inventory`     | On-hand, reservations, movements (receipt, adjust, reserve, release, commit, return, cancel) | Product identity, order status       |
 | `audit`         | Append-only change history                                                                   | Domain state itself                  |
 | `notifications` | Transactional email outbox and send attempts                                                 | Order, payment, or user rows         |
 

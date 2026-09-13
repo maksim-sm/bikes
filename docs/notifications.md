@@ -19,19 +19,19 @@ and shipment events happens at compose time via `getPlacedOrder`.
 
 ## Events
 
-| Event                 | When                                              | Entity     |
-| --------------------- | ------------------------------------------------- | ---------- |
-| `order.created`       | Checkout succeeds (after the cart is cleared)     | order      |
-| `payment.pending`     | Attempt is `CREATED` / `PENDING` / `AUTHORIZED`   | payment    |
-| `payment.successful`  | Attempt is `SUCCEEDED`                            | payment    |
-| `payment.failed`      | Attempt is `FAILED` / `EXPIRED` / `CANCELLED`     | payment    |
-| `order.processing`    | Staff assign a shipment                           | order      |
-| `order.shipped`       | Staff mark the shipment shipped                   | order      |
-| `order.delivered`     | Staff mark the shipment delivered                 | order      |
-| `order.cancelled`     | Explicit `cancelOrder`                            | order      |
-| `refund.initiated`    | Attempt is `REFUND_PENDING`, or jumps to refunded | payment    |
-| `refund.completed`    | Attempt is `REFUNDED` / `PARTIALLY_REFUNDED`      | payment    |
-| `password.reset`      | Customer requested a reset                        | user       |
+| Event                | When                                              | Entity  |
+| -------------------- | ------------------------------------------------- | ------- |
+| `order.created`      | Checkout succeeds (after the cart is cleared)     | order   |
+| `payment.pending`    | Attempt is `CREATED` / `PENDING` / `AUTHORIZED`   | payment |
+| `payment.successful` | Attempt is `SUCCEEDED`                            | payment |
+| `payment.failed`     | Attempt is `FAILED` / `EXPIRED` / `CANCELLED`     | payment |
+| `order.processing`   | Staff assign a shipment                           | order   |
+| `order.shipped`      | Staff mark the shipment shipped                   | order   |
+| `order.delivered`    | Staff mark the shipment delivered                 | order   |
+| `order.cancelled`    | Explicit `cancelOrder`                            | order   |
+| `refund.initiated`   | Attempt is `REFUND_PENDING`, or jumps to refunded | payment |
+| `refund.completed`   | Attempt is `REFUNDED` / `PARTIALLY_REFUNDED`      | payment |
+| `password.reset`     | Customer requested a reset                        | user    |
 
 Checkout that auto-cancels because a later reserve failed does **not** emit
 `order.created` or `order.cancelled`. The customer never had a completed

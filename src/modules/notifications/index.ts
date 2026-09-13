@@ -1,6 +1,5 @@
 export type {
   NotificationChannel,
-  NotificationRecord,
   NotificationRepository,
   NotificationWrite,
 } from "./application/ports";
@@ -18,6 +17,7 @@ export {
   type NotificationAttempt,
   type NotificationEntityType,
   type NotificationEvent,
+  type NotificationRecord,
   type NotificationStatus,
 } from "./domain/notification";
 export {

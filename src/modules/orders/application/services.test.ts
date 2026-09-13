@@ -399,7 +399,9 @@ describe("order services", () => {
     const { services } = setup({ notify });
     const placed = await services.placeOrder(placeInput());
     await services.cancelOrder(placed.id, customerPrincipal("user-1"));
-    const events = (await notify.listByEntity("order", placed.id)).map((row) => row.event);
+    const events = (await notify.listByEntity("order", placed.id)).map(
+      (row) => row.event,
+    );
     expect(events.sort()).toEqual(["order.cancelled", "order.created"]);
   });
 });

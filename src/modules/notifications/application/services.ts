@@ -41,7 +41,10 @@ export function createNotificationServices(deps: {
   return {
     async dispatch(input) {
       try {
-        if (!isNotificationEvent(input.event) || input.recipientEmail.trim().length === 0) {
+        if (
+          !isNotificationEvent(input.event) ||
+          input.recipientEmail.trim().length === 0
+        ) {
           return null;
         }
         const now = clock.now();
@@ -110,7 +113,9 @@ export function createNotificationServices(deps: {
             error: lastError,
             createdAt: failedAt,
           });
-          return (await deps.notifications.findByIdempotencyKey(idempotencyKey)) ?? failed;
+          return (
+            (await deps.notifications.findByIdempotencyKey(idempotencyKey)) ?? failed
+          );
         }
       } catch {
         return null;

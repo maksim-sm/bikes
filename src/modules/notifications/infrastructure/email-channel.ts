@@ -78,7 +78,9 @@ export function createCapturingEmailChannel(): NotificationChannel & {
   };
 }
 
-export function createFailingEmailChannel(message = "smtp_unavailable"): NotificationChannel {
+export function createFailingEmailChannel(
+  message = "smtp_unavailable",
+): NotificationChannel {
   return {
     async send() {
       throw new Error(message);

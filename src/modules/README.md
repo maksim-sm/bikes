@@ -53,16 +53,16 @@ must not import Prisma or `@/lib/db`.
 Customers and wishlist are not their own modules: they are services on
 `identity`, which owns those tables.
 
-| Module      | Owns                                                   |
-| ----------- | ------------------------------------------------------ |
-| `catalog`   | Products, variants, categories, specifications         |
-| `pricing`   | Price calculation, VAT, discounts, currency rules      |
-| `cart`      | Cart aggregate, line items, quantity rules             |
-| `orders`    | Order lifecycle, snapshots, status transitions         |
-| `payments`  | Payment attempts, events, refunds                      |
-| `delivery`  | Methods, zones, shipment assignment                    |
-| `identity`  | Users, sessions, roles, profiles, addresses, wishlists |
-| `media`     | Image storage abstraction                              |
-| `inventory` | On-hand, reservations, movements (per variant)         |
+| Module          | Owns                                                   |
+| --------------- | ------------------------------------------------------ |
+| `catalog`       | Products, variants, categories, specifications         |
+| `pricing`       | Price calculation, VAT, discounts, currency rules      |
+| `cart`          | Cart aggregate, line items, quantity rules             |
+| `orders`        | Order lifecycle, snapshots, status transitions         |
+| `payments`      | Payment attempts, events, refunds                      |
+| `delivery`      | Methods, zones, shipment assignment                    |
+| `identity`      | Users, sessions, roles, profiles, addresses, wishlists |
+| `media`         | Image storage abstraction                              |
+| `inventory`     | On-hand, reservations, movements (per variant)         |
 | `audit`         | Append-only change history (actor + request context)   |
 | `notifications` | Transactional email outbox and send attempts           |

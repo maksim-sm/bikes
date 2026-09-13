@@ -12,11 +12,7 @@ import {
 import { createMemoryNotificationRepository } from "../infrastructure/memory-notifications";
 import { createNotificationServices } from "./services";
 
-function services(
-  channel:
-    | ReturnType<typeof createCapturingEmailChannel>
-    | ReturnType<typeof createFailingEmailChannel> = createCapturingEmailChannel(),
-) {
+function services(channel = createCapturingEmailChannel()) {
   const notifications = createMemoryNotificationRepository();
   return {
     notifications,
@@ -92,7 +88,10 @@ describe("notification dispatch", () => {
   });
 
   it("stores FAILED when the channel throws and never raises to the caller", async () => {
-    const { notify } = services(createFailingEmailChannel("smtp_unavailable"));
+    const notify = createNotificationServices({
+      notifications: createMemoryNotificationRepository(),
+      channel: createFailingEmailChannel("smtp_unavailable"),
+    });
     const failed = await notify.dispatch({
       event: "order.created",
       entityType: "order",
