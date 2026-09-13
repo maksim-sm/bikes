@@ -52,6 +52,7 @@ export default defineConfig({
     env: {
       ...process.env,
       APP_URL: baseURL,
+      BIKES_NEXT_DIST_DIR: ".next-e2e",
     },
   },
 });

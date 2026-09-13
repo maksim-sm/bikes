@@ -27,9 +27,11 @@ Critical journeys are covered by Playwright under `tests/e2e/`.
 
 Binding rules:
 
-1. **The suite starts `next dev` on port 3100.** That is the only mode that
-   serves the demo catalog, demo customer/staff login, seeded order
-   `B-20260912-0001`, and the cash-on-delivery payment fixture.
+1. **The suite starts `next dev` on port 3100** with `BIKES_NEXT_DIST_DIR=.next-e2e`.
+   That is the only mode that serves the demo catalog, demo customer/staff login,
+   seeded order `B-20260912-0001`, and the cash-on-delivery payment fixture. A
+   separate distDir lets the suite run beside a local `pnpm dev` (Next 16 refuses
+   a second server that shares `.next`).
 2. **Workers stay at 1** (`fullyParallel: false`). Shared in-memory stock and
    carts are not isolated between files.
 3. **Selectors use Russian accessible names** from `src/lib/i18n/messages/ru.ts`,
