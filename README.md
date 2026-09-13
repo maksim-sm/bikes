@@ -56,6 +56,8 @@ the database role (Prisma's shadow database).
 | `pnpm test`              | Unit and integration suites (Vitest)                        |
 | `pnpm test:unit`         | Domain and application unit tests (no database)             |
 | `pnpm test:integration`  | Real PostgreSQL suite against isolated `bikes_test`         |
+| `pnpm test:e2e`          | Playwright journeys against `next dev` on port 3100         |
+| `pnpm test:e2e:install`  | Download Chromium for local Playwright runs                 |
 | `pnpm format`            | Rewrite files with Prettier                                 |
 | `pnpm format:check`      | Fail if anything is unformatted                             |
 | `pnpm env:check`         | Validate environment configuration without starting the app |

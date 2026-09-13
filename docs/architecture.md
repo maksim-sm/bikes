@@ -453,7 +453,7 @@ Weighted toward the layers where ecommerce bugs actually cost money.
 | ----------- | ---------------------- | ------------------------------------------------------------------------------------------ | -------------------- |
 | Unit        | Vitest                 | Pricing arithmetic, VAT, delivery cost rules, order state transitions, cart quantity rules | Milliseconds, no I/O |
 | Integration | Vitest + real Postgres | Repositories and service use cases against actual SQL, including transaction rollback      | Seconds              |
-| End-to-end  | Playwright             | Browse, add to cart, checkout with the mock payment provider                               | Slowest; few of them |
+| End-to-end  | Playwright             | Browse, search, cart, checkout, account, wishlist, admin order processing                  | Slowest; few of them |
 
 Rules:
 
@@ -470,7 +470,12 @@ Rules:
   using mock implementations. We never call a live payment provider in a test.
 - Every bug fix lands with a test that fails without the fix.
 - CI starts PostgreSQL 16 and runs lint, typecheck, unit, and integration on
-  every pull request. End-to-end tests run against a built application.
+  every pull request (`pnpm check`). Playwright is a second CI job
+  (`pnpm test:e2e`). It drives `next dev` on port 3100 so the demo catalog,
+  identity, and cash payment fixture exist; a production start against empty
+  PostgreSQL cannot exercise these journeys yet (ADR-0039).
+- End-to-end specs live in `tests/e2e/` and run one worker at a time because
+  the demo cart and inventory are process-global.
 
 ## 14. Security rules
 

@@ -1,1 +1,5 @@
 .src/generated/
+.next-e2e/
+test-results/
+playwright-report/
+blob-report/
