@@ -78,16 +78,18 @@ modifies files, and only by reformatting them.
 
 ## Configuration
 
-Environment variables are declared, validated, and typed in exactly one place:
-`src/lib/config.ts`. Nothing else in the codebase reads `process.env`.
+Named environments are **local**, **test**, **staging**, and **production**
+(`docs/environments.md`, ADR-0043). Application variables are declared,
+validated, and typed in exactly one place: `src/lib/config.ts`.
 
 Validation runs once at startup, so a missing or malformed value fails
-immediately with a message naming the variable, rather than surfacing as a
-confusing error later. `.env.example` documents every variable; copy it to
-`.env.local`, which is git-ignored.
+immediately with a message naming the variable. `.env.example` documents
+every variable and who owns it; copy it to `.env.local`, which is
+git-ignored.
 
 To add a variable: add it to the schema in `src/lib/config.ts`, add it to
-`.env.example`, and read it through `env` rather than `process.env`.
+`.env.example` and `docs/environments.md`, and read it through `env`
+rather than `process.env`.
 
 ## Project structure
 

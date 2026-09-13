@@ -173,7 +173,8 @@ Gaps: no documented malware scan (`v5.0.0-5.4.3` L2); no per-user quota
 ### Secrets — V11, V13
 
 `src/lib/config.ts` validates `NODE_ENV`, `APP_URL`, `APP_LOCALE`,
-`LOG_LEVEL`, `DATABASE_URL`, and `AUTH_SECRET`. `.env` is gitignored.
+`LOG_LEVEL`, `DATABASE_URL`, and `AUTH_SECRET`. Named environments and
+secret ownership are in `docs/environments.md` (ADR-0043). `.env` is gitignored.
 Production `next start` (not `next build`) requires `DATABASE_URL`, an
 https `APP_URL`, and `AUTH_SECRET` ≥ 32 characters. `AUTH_SECRET` signs
 guest-cart cookies.
@@ -364,6 +365,7 @@ primary implementation site, not an exhaustive list.
 | No secrets in git               | Architecture §14      | **Partial** | `.env` ignored; demo passwords and default DB URL are committed.                  |
 | Payment provider secret         | V13 / V11.1           | **Gap**     | No env hook; mock always selected.                                                |
 | `AUTH_SECRET`                   | V13                   | **Met**     | Required ≥32 chars on `next start`; signs guest-cart cookies.                     |
+| Secret ownership                | Architecture §15      | **Met**     | `docs/environments.md`: platform owns prod/staging secrets.                       |
 
 ### Logging and errors
 
