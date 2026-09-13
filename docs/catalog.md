@@ -57,6 +57,10 @@ matching landing. Search, price, availability, sort, pagination, and stacked
 landings render the filtered list but send `noindex, follow` and canonicalize
 to the nearest landing. Those URLs are not in `/sitemap.xml`.
 
+The storefront page size is **24**. Prev/next links use `rel="nofollow"`.
+Listing SQL is one filtered `findMany` with batched includes — not N+1, and
+not a reason to add Redis (`docs/performance.md`).
+
 ## Product detail
 
 Storefront pages under `/products/[slug]` are Server Components. They load a

@@ -27,6 +27,8 @@ and session timeout. `docs/i18n.md` defines catalogues, formatting,
 emails, and in-app copy. `docs/notifications.md` defines the
 transactional email outbox. `docs/seo.md` defines storefront metadata,
 canonical URLs, sitemap, robots, and structured data.
+`docs/performance.md` records Core Web Vitals, query, and cache measurements
+(ADR-0037): no Redis or search engine until those numbers demand one.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -504,7 +506,8 @@ Rules:
 ## 15. Deployment model
 
 **One application, one database, one deployment unit.** No queue, no worker
-fleet, no cache tier until a measured problem demands one.
+fleet, no cache tier until a measured problem demands one
+(`docs/performance.md`, ADR-0037).
 
 - The application is built as a single Next.js production build and deployed as
   one unit to a single hosting target. The specific platform is unresolved (see

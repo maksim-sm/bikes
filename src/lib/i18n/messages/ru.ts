@@ -207,6 +207,10 @@ export const ru = {
       CITY: "Городские велосипеды",
       KIDS: "Детские велосипеды",
     },
+    pagination: "Страницы каталога",
+    previousPage: "Предыдущая страница",
+    nextPage: "Следующая страница",
+    pageOf: "Страница {page} из {pages}",
   },
 
   product: {

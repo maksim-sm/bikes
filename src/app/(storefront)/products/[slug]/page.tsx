@@ -127,6 +127,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     brandName: product.brandName,
                     name: product.name,
                   })}
+                  priority
+                  sizes="(min-width: 768px) 50vw, 100vw"
                 />
               </figure>
             ) : null}
@@ -141,6 +143,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                       brandName: product.brandName,
                       name: product.name,
                     })}
+                    sizes="5.5rem"
                   />
                 ))}
               </div>

@@ -56,3 +56,4 @@ Rules:
 | [0034](0034-transactional-notification-outbox.md)  | Transactional email outbox; send after persist  | Accepted                                                                                                                    |
 | [0035](0035-technical-seo.md)                      | Storefront metadata, sitemap, and JSON-LD       | Accepted (amended by [0036](0036-faceted-navigation-seo.md))                                                                |
 | [0036](0036-faceted-navigation-seo.md)             | Closed catalog landings; no facet URL explosion | Accepted                                                                                                                    |
+| [0037](0037-measure-before-cache-tier.md)          | Measure before Redis or a search engine         | Accepted                                                                                                                    |

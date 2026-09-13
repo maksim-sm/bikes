@@ -1,3 +1,4 @@
+import { cache } from "react";
 import {
   getCatalogInventory,
   getCatalogServices,
@@ -90,7 +91,11 @@ function toPageModel(
   };
 }
 
-export async function loadProductPage(slug: string): Promise<ProductPageModel> {
+/**
+ * One product + inventory + quote read per request.
+ * `generateMetadata` and the page used to each call this and triple the work.
+ */
+export const loadProductPage = cache(async (slug: string): Promise<ProductPageModel> => {
   const catalog = await getCatalogServices();
   const product = await catalog.getProductBySlug(slug);
   const inventory = await getCatalogInventory();
@@ -102,4 +107,4 @@ export async function loadProductPage(slug: string): Promise<ProductPageModel> {
     city: "Минск",
   });
   return toPageModel(product, stock, quotes);
-}
+});

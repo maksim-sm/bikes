@@ -180,6 +180,7 @@ decide it. See `src/modules/README.md` for the internal layering rules.
 - `docs/BASELINE.md` — the pre-implementation audit.
 - `docs/notifications.md` — transactional email outbox and attempt history.
 - `docs/seo.md` — storefront metadata, sitemap, robots, and structured data.
+- `docs/performance.md` — Core Web Vitals, queries, and why Redis is not next.
 
 ## Status
 
