@@ -1,5 +1,6 @@
 import { NotFoundError } from "@/lib/errors";
 import { prisma, type PrismaClient } from "@/lib/db";
+import { withDeadlockRetry } from "@/lib/db-retry";
 import type { Cart } from "../domain/cart";
 import type { CartRepository } from "../application/ports";
 
@@ -73,36 +74,38 @@ export function createPrismaCartRepository(
     },
 
     async save(cart) {
-      await client.$transaction(async (tx) => {
-        await tx.cart.update({
-          where: { id: cart.id },
-          data: { userId: cart.userId, guestToken: cart.guestToken },
-        });
-        const existing = await tx.cartItem.findMany({ where: { cartId: cart.id } });
-        const wanted = new Set(cart.items.map((item) => item.variantId));
-        const stale = existing.filter((row) => !wanted.has(row.productVariantId));
-        if (stale.length > 0) {
-          await tx.cartItem.deleteMany({
-            where: { id: { in: stale.map((row) => row.id) } },
+      await withDeadlockRetry(() =>
+        client.$transaction(async (tx) => {
+          await tx.cart.update({
+            where: { id: cart.id },
+            data: { userId: cart.userId, guestToken: cart.guestToken },
           });
-        }
-        for (const item of cart.items) {
-          await tx.cartItem.upsert({
-            where: {
-              cartId_productVariantId: {
+          const existing = await tx.cartItem.findMany({ where: { cartId: cart.id } });
+          const wanted = new Set(cart.items.map((item) => item.variantId));
+          const stale = existing.filter((row) => !wanted.has(row.productVariantId));
+          if (stale.length > 0) {
+            await tx.cartItem.deleteMany({
+              where: { id: { in: stale.map((row) => row.id) } },
+            });
+          }
+          for (const item of cart.items) {
+            await tx.cartItem.upsert({
+              where: {
+                cartId_productVariantId: {
+                  cartId: cart.id,
+                  productVariantId: item.variantId,
+                },
+              },
+              create: {
                 cartId: cart.id,
                 productVariantId: item.variantId,
+                quantity: item.quantity,
               },
-            },
-            create: {
-              cartId: cart.id,
-              productVariantId: item.variantId,
-              quantity: item.quantity,
-            },
-            update: { quantity: item.quantity },
-          });
-        }
-      });
+              update: { quantity: item.quantity },
+            });
+          }
+        }),
+      );
       return loadById(cart.id);
     },
 
@@ -112,6 +115,35 @@ export function createPrismaCartRepository(
         throw new NotFoundError("cart not found", { cartId: id });
       }
       cart.items = [];
+      await this.save(cart);
+    },
+    async claimForCheckout(id) {
+      return withDeadlockRetry(() =>
+        client.$transaction(async (tx) => {
+          const locked = await tx.$queryRaw<Array<{ id: string }>>`
+            SELECT id FROM carts WHERE id = ${id}::uuid FOR UPDATE
+          `;
+          if (locked.length === 0) {
+            return null;
+          }
+          const row = await tx.cart.findUnique({
+            where: { id },
+            include: { items: { orderBy: itemOrder } },
+          });
+          if (!row) {
+            return null;
+          }
+          await tx.cartItem.deleteMany({ where: { cartId: id } });
+          return toCart(row);
+        }),
+      );
+    },
+    async restoreItems(id, items) {
+      const cart = await this.findById(id);
+      if (!cart) {
+        throw new NotFoundError("cart not found", { cartId: id });
+      }
+      cart.items = items.map((item) => ({ ...item }));
       await this.save(cart);
     },
 

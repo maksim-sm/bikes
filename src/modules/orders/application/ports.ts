@@ -23,6 +23,8 @@ export interface OrderRepository {
 export interface OrderCart {
   getCartById(cartId: string): Promise<Cart | null>;
   clear(cartId: string): Promise<void>;
+  claim(cartId: string): Promise<Cart | null>;
+  restore(cartId: string, items: Cart["items"]): Promise<void>;
 }
 
 export interface OrderCatalog {

@@ -241,6 +241,21 @@ describe("cart services", () => {
     expect(view.subtotalMinor).toBe(300_00);
   });
 
+  it("claimForCheckout gives the lines to only one concurrent caller", async () => {
+    const repo = createMemoryCartRepository();
+    const created = await repo.create(customer);
+    created.items = [{ variantId: "v1", quantity: 2 }];
+    await repo.save(created);
+    const [first, second] = await Promise.all([
+      repo.claimForCheckout(created.id),
+      repo.claimForCheckout(created.id),
+    ]);
+    const taken = [first, second].filter((cart) => (cart?.items.length ?? 0) > 0);
+    expect(taken).toHaveLength(1);
+    expect(taken[0]?.items).toEqual([{ variantId: "v1", quantity: 2 }]);
+    expect((await repo.findById(created.id))?.items).toEqual([]);
+  });
+
   it("merges a guest cart onto the customer cart on login", async () => {
     const repo = createMemoryCartRepository();
     const cart = createCartServices({

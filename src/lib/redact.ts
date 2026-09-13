@@ -29,8 +29,6 @@ export function redactValue(value: unknown): unknown {
   return value;
 }
 
-export function redactContext(
-  context: Record<string, unknown>,
-): Record<string, unknown> {
+export function redactContext(context: Record<string, unknown>): Record<string, unknown> {
   return redactValue(context) as Record<string, unknown>;
 }

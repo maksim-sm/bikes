@@ -75,7 +75,12 @@ export function createMediaServices(deps: {
         createdAt: deps.clock.now(),
       };
       await deps.store.put(key, input.bytes, detected.contentType);
-      return deps.assets.save(asset);
+      try {
+        return await deps.assets.save(asset);
+      } catch (error) {
+        await deps.store.delete(key).catch(() => undefined);
+        throw error;
+      }
     },
 
     async getAsset(key) {

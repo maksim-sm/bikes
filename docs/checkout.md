@@ -28,11 +28,13 @@ those keys.
 
 ## Atomic reservation
 
-1. Persist the order as `PLACED` with snapshotted lines and the server total.
-2. Reserve each line against `orderId`.
-3. If any reserve fails, cancel reservations for that order, mark the order
-   `CANCELLED`, and rethrow.
-4. Clear the cart only after every line is reserved.
+1. **Claim** the cart lines (`claimForCheckout`) so a double click cannot
+   place two orders. The loser sees an empty cart.
+2. Persist the order as `PLACED` with snapshotted lines and the server total.
+3. Reserve each line against `orderId`.
+4. If validation or reserve fails, cancel reservations for that order, mark
+   the order `CANCELLED` when it was saved, **restore** the claimed lines,
+   and rethrow.
 
 Unpaid holds last 15 minutes. Payment timeout, a failed webhook, an expired
 reservation (abandoned checkout), and order cancellation all release those

@@ -87,7 +87,7 @@ describe("notification dispatch", () => {
     expect(listed[0]?.idempotencyKey).toBe("order.created:order:o1");
   });
 
-  it("stores FAILED when the channel throws and never raises to the caller", async () => {
+  it("email provider failure: commerce dispatch records FAILED and does not throw", async () => {
     const notify = createNotificationServices({
       notifications: createMemoryNotificationRepository(),
       channel: createFailingEmailChannel("smtp_unavailable"),

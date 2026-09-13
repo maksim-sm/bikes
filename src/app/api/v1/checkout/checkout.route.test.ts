@@ -126,6 +126,38 @@ describe("checkout HTTP", () => {
     expect(notices[0]?.attempts).toHaveLength(1);
   });
 
+  it("double-click checkout returns one order and one empty-cart error", async () => {
+    seedDemoCommerce();
+    const added = await addCartItem(
+      jsonRequest("/api/v1/cart/items", {
+        variantId: "v-emonda-m-black",
+        quantity: 1,
+      }),
+    );
+    const guestCookie = (added.headers.get("set-cookie") ?? "").split(";")[0]!;
+    const body = {
+      customerEmail: "ira@example.by",
+      customerName: "Ира",
+      customerPhone: "+375291112233",
+      destination: {
+        recipientName: "Ира",
+        phone: "+375291112233",
+        region: "Минск",
+        city: "Минск",
+        street: "Независимости 1",
+        postalCode: "220000",
+      },
+      deliveryMethodCode: "minsk-courier",
+      paymentMethodCode: "cash_on_delivery",
+    };
+    const [first, second] = await Promise.all([
+      checkout(jsonRequest("/api/v1/checkout", body, guestCookie)),
+      checkout(jsonRequest("/api/v1/checkout", body, guestCookie)),
+    ]);
+    const statuses = [first.status, second.status].sort();
+    expect(statuses).toEqual([201, 400]);
+  });
+
   it("rejects an empty cart and invalid customer data", async () => {
     seedDemoCommerce();
 

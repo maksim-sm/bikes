@@ -5,10 +5,7 @@ import { redactContext } from "@/lib/redact";
  * Process-local error sink. A vendor (Sentry, etc.) can replace `report`
  * later; until then every unexpected failure is a JSON `error.tracked` line.
  */
-export function trackError(
-  error: unknown,
-  context: Record<string, unknown> = {},
-): void {
+export function trackError(error: unknown, context: Record<string, unknown> = {}): void {
   const err = error instanceof Error ? error : new Error(String(error));
   logger.error(
     "error.tracked",
