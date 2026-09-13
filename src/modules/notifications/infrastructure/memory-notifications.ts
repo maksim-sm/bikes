@@ -40,5 +40,12 @@ export function createMemoryNotificationRepository(
         .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
         .map((row) => ({ ...row, attempts: [...row.attempts] }));
     },
+    async listFailed(limit = 50) {
+      return [...rows.values()]
+        .filter((row) => row.status === "FAILED")
+        .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime())
+        .slice(0, limit)
+        .map((row) => ({ ...row, attempts: [...row.attempts] }));
+    },
   };
 }

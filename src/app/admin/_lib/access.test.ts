@@ -34,6 +34,7 @@ describe("admin access", () => {
       "/admin/customers",
       "/admin/staff",
       "/admin/audit",
+      "/admin/ops",
     ]);
   });
 });

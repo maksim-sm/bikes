@@ -8,6 +8,11 @@
  */
 
 export {
+  detectInventoryAnomalies,
+  type InventoryAnomaly,
+  type InventoryAnomalyCode,
+} from "./domain/anomalies";
+export {
   applyAdjustment,
   applyCommit,
   applyReceipt,

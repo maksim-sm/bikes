@@ -40,7 +40,9 @@ provider JSON to find the attempt.
 Money is integer kopeks. A browser return URL is a hint, never confirmation.
 `GET /api/v1/payments/:id` calls `observeReturn`, which polls the provider
 and ignores query claims such as `?status=succeeded`. Webhook handlers stay
-public and authenticate the provider signature.
+public and authenticate the provider signature. Applied, replayed, and
+rejected webhooks are logged without the raw body
+(`docs/observability.md`).
 
 ## Lifecycle
 

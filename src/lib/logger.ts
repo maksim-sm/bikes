@@ -1,4 +1,5 @@
 import { env } from "@/lib/config";
+import { redactContext } from "@/lib/redact";
 
 /**
  * Structured JSON logging. Per `docs/architecture.md`, committed code uses this
@@ -30,7 +31,7 @@ function emit(level: LogLevel, message: string, context: LogContext = {}): void 
     level,
     message,
     time: new Date().toISOString(),
-    ...context,
+    ...redactContext(context),
   });
 
   if (level === "error") {

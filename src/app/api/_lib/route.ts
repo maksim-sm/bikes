@@ -11,6 +11,7 @@ import {
 } from "@/lib/http";
 import { serializeCookie, type HttpOnlyCookie } from "@/modules/identity";
 import type { Principal } from "@/modules/identity";
+import { trackError } from "@/lib/observability";
 import {
   enforcePolicy,
   principalUserId,
@@ -79,6 +80,9 @@ export function withRoute<T>(
       return json(status, body, requestId, result.cookies);
     } catch (error) {
       const view = toHttpError(error);
+      if (view.status >= 500) {
+        trackError(error, { requestId, method: request.method, path });
+      }
       logRequestError({
         requestId,
         method: request.method,

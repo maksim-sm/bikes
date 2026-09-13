@@ -9,7 +9,9 @@ export async function register(): Promise<void> {
   const { env, enforceProductionSecrets } = await import("@/lib/config");
   const { logger } = await import("@/lib/logger");
   const { installProcessLifecycle } = await import("@/lib/lifecycle");
+  const { installErrorTracking } = await import("@/lib/observability");
   installProcessLifecycle();
+  installErrorTracking();
 
   if (enforceProductionSecrets()) {
     const { pingDatabase } = await import("@/lib/readiness");

@@ -103,6 +103,8 @@ describe("notification dispatch", () => {
     expect(failed?.lastError).toBe("smtp_unavailable");
     expect(failed?.attempts).toHaveLength(1);
     expect(failed?.attempts[0]?.status).toBe("FAILED");
+    const listed = await notify.listFailed();
+    expect(listed.map((row) => row.id)).toEqual([failed?.id]);
   });
 
   it("does not resend a SENT row and retries a FAILED one", async () => {
