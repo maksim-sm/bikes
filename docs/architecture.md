@@ -462,16 +462,15 @@ Rules:
   take dependencies as arguments rather than reaching for global state.
 - **Repositories are integration-tested against real PostgreSQL**, never a mock
   or SQLite substitute. A repository test that does not run SQL tests nothing.
-  Each test runs in a transaction that is rolled back.
+  Cross-module cases live in `tests/integration/` and use an isolated
+  `bikes_test` database (ADR-0038). Sequential repository tests truncate
+  commerce tables between cases; concurrent reservation tests commit so two
+  clients can race.
 - Third-party providers are exercised through the interfaces in sections 8–10
   using mock implementations. We never call a live payment provider in a test.
 - Every bug fix lands with a test that fails without the fix.
-- CI runs lint, typecheck, unit, and integration on every pull request.
-  End-to-end tests run against a built application.
-- Note the standing constraint from `docs/BASELINE.md`: the audit machine has
-  neither Docker nor PostgreSQL installed, so the integration tier cannot run
-  until a database is provisioned. Resolving that is a prerequisite for
-  trustworthy data-layer work, not an afterthought.
+- CI starts PostgreSQL 16 and runs lint, typecheck, unit, and integration on
+  every pull request. End-to-end tests run against a built application.
 
 ## 14. Security rules
 

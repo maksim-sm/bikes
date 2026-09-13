@@ -1,26 +1,19 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Client } from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { PrismaClient } from "../../../generated/prisma/client";
 import { ConflictError } from "@/lib/errors";
-import { staffPrincipal } from "@/modules/identity";
 import {
   createMemoryPaymentRepository,
   createPaymentServices,
   MockPaymentProvider,
 } from "@/modules/payments";
-import { createPrismaInventoryRepository } from "../infrastructure/prisma-inventory-repository";
 import {
-  createInventoryServices,
-  type InventoryServices,
-  type StockSnapshot,
-} from "./services";
-
-const execFileAsync = promisify(execFile);
-const TEST_DATABASE_URL = "postgresql://bikes:bikes@localhost:5432/bikes_test";
-const clerk = staffPrincipal("inv", ["inventory"]);
+  createTestPrisma,
+  ensureTestDatabase,
+  inventoryFor,
+  resetTestData,
+  seedPublishedVariant,
+} from "./harness";
+import type { InventoryServices, StockSnapshot } from "@/modules/inventory";
+import type { PrismaClient } from "../../src/generated/prisma/client";
 
 function assertSafe(stock: StockSnapshot): void {
   expect(stock.available).toBeGreaterThanOrEqual(0);
@@ -28,75 +21,6 @@ function assertSafe(stock: StockSnapshot): void {
   expect(stock.onHand).toBeGreaterThanOrEqual(0);
   expect(stock.reserved).toBeLessThanOrEqual(stock.onHand);
   expect(stock.available).toBe(stock.onHand - stock.reserved);
-}
-
-function createClient(): PrismaClient {
-  return new PrismaClient({
-    adapter: new PrismaPg({ connectionString: TEST_DATABASE_URL }),
-  });
-}
-
-function inventoryFor(client: PrismaClient): InventoryServices {
-  return createInventoryServices({
-    inventory: createPrismaInventoryRepository(client),
-    clock: { now: () => new Date() },
-  });
-}
-
-async function ensureTestDatabase(): Promise<void> {
-  const admin = new Client({
-    connectionString: "postgresql://bikes:bikes@localhost:5432/postgres",
-  });
-  await admin.connect();
-  const found = await admin.query(
-    "SELECT 1 FROM pg_database WHERE datname = 'bikes_test'",
-  );
-  if (found.rowCount === 0) {
-    await admin.query("CREATE DATABASE bikes_test");
-  }
-  await admin.end();
-  await execFileAsync("pnpm", ["exec", "prisma", "migrate", "deploy"], {
-    env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
-    cwd: process.cwd(),
-  });
-}
-
-async function seedVariant(
-  client: PrismaClient,
-  inventory: InventoryServices,
-  onHand: number,
-): Promise<string> {
-  const suffix = crypto.randomUUID().slice(0, 8);
-  const brand = await client.brand.create({
-    data: { slug: `conc-b-${suffix}`, name: "Trek" },
-  });
-  const category = await client.category.create({
-    data: { slug: `conc-c-${suffix}`, name: "Шоссе" },
-  });
-  const product = await client.product.create({
-    data: {
-      brandId: brand.id,
-      categoryId: category.id,
-      slug: `conc-p-${suffix}`,
-      name: "Émonda",
-      description: "concurrency fixture",
-      bicycleType: "ROAD",
-    },
-  });
-  const variant = await client.productVariant.create({
-    data: {
-      productId: product.id,
-      sku: `CONC-${suffix}`,
-      frameSize: "M",
-      wheelSize: "28",
-      color: "чёрный",
-      listPriceMinor: 349900,
-    },
-  });
-  if (onHand > 0) {
-    await inventory.receiveStock(clerk, { variantId: variant.id, quantity: onHand });
-  }
-  return variant.id;
 }
 
 async function attemptReserve(inventory: InventoryServices, variantId: string) {
@@ -114,18 +38,19 @@ describe("reservation concurrency against PostgreSQL", () => {
   const extraClients: PrismaClient[] = [];
 
   function buyer(): InventoryServices {
-    const client = createClient();
+    const client = createTestPrisma();
     extraClients.push(client);
     return inventoryFor(client);
   }
 
   beforeAll(async () => {
     await ensureTestDatabase();
-    setup = createClient();
+    setup = createTestPrisma();
   }, 60_000);
 
   afterEach(async () => {
     await Promise.all(extraClients.splice(0).map((client) => client.$disconnect()));
+    await resetTestData(setup);
   });
 
   afterAll(async () => {
@@ -133,12 +58,10 @@ describe("reservation concurrency against PostgreSQL", () => {
   });
 
   it("lets only one of two buyers reserve the last unit", async () => {
-    const variantId = await seedVariant(setup, inventoryFor(setup), 1);
-    const left = buyer();
-    const right = buyer();
+    const { variantId } = await seedPublishedVariant(setup, inventoryFor(setup), 1);
     const [first, second] = await Promise.all([
-      attemptReserve(left, variantId),
-      attemptReserve(right, variantId),
+      attemptReserve(buyer(), variantId),
+      attemptReserve(buyer(), variantId),
     ]);
     const won = [first, second].filter((result) => result.ok);
     expect(won).toHaveLength(1);
@@ -148,14 +71,11 @@ describe("reservation concurrency against PostgreSQL", () => {
   });
 
   it("never oversells when many buyers race for one unit", async () => {
-    const variantId = await seedVariant(setup, inventoryFor(setup), 1);
-    const buyers = Array.from({ length: 8 }, () => buyer());
+    const { variantId } = await seedPublishedVariant(setup, inventoryFor(setup), 1);
     const results = await Promise.all(
-      buyers.map((buyer) => attemptReserve(buyer, variantId)),
+      Array.from({ length: 8 }, () => attemptReserve(buyer(), variantId)),
     );
-    const won = results.filter((result) => result.ok);
-    expect(won).toHaveLength(1);
-    expect(won.length).toBeLessThanOrEqual(1);
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
     const stock = await inventoryFor(setup).getAvailability(variantId);
     assertSafe(stock);
     expect(stock.reserved).toBe(1);
@@ -164,7 +84,7 @@ describe("reservation concurrency against PostgreSQL", () => {
 
   it("returns the unit after reservation expiry so the next buyer can take it", async () => {
     const inventory = inventoryFor(setup);
-    const variantId = await seedVariant(setup, inventory, 1);
+    const { variantId } = await seedPublishedVariant(setup, inventory, 1);
     await inventory.reserve({ variantId, quantity: 1, holdMs: -1 });
     expect(await inventory.expireDue()).toBeGreaterThanOrEqual(1);
     const afterExpiry = await inventory.getAvailability(variantId);
@@ -177,7 +97,7 @@ describe("reservation concurrency against PostgreSQL", () => {
 
   it("releases the hold when payment fails so another buyer can reserve", async () => {
     const inventory = inventoryFor(setup);
-    const variantId = await seedVariant(setup, inventory, 1);
+    const { variantId } = await seedPublishedVariant(setup, inventory, 1);
     const hold = await inventory.reserve({ variantId, quantity: 1 });
     const outcomes: string[] = [];
     const payments = createPaymentServices({
@@ -239,7 +159,7 @@ describe("reservation concurrency against PostgreSQL", () => {
 
   it("releases the hold when the order is cancelled", async () => {
     const inventory = inventoryFor(setup);
-    const variantId = await seedVariant(setup, inventory, 1);
+    const { variantId } = await seedPublishedVariant(setup, inventory, 1);
     const hold = await inventory.reserve({ variantId, quantity: 1 });
     await inventory.cancel(hold.id);
     const stock = await inventory.getAvailability(variantId);
@@ -254,7 +174,7 @@ describe("reservation concurrency against PostgreSQL", () => {
 
   it("commits the unit on successful payment and refuses a second buyer", async () => {
     const inventory = inventoryFor(setup);
-    const variantId = await seedVariant(setup, inventory, 1);
+    const { variantId } = await seedPublishedVariant(setup, inventory, 1);
     const hold = await inventory.reserve({ variantId, quantity: 1 });
     const outcomes: string[] = [];
     const payments = createPaymentServices({

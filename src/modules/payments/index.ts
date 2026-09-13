@@ -53,4 +53,5 @@ export {
   type PaymentServices,
 } from "./application/services";
 export { createMemoryPaymentRepository } from "./infrastructure/memory-payment-repository";
+export { createPrismaPaymentRepository } from "./infrastructure/prisma-payment-repository";
 export { MockPaymentProvider } from "./infrastructure/mock-provider";

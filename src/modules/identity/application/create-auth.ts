@@ -1,3 +1,4 @@
+import type { PrismaClient } from "@/lib/db";
 import { createAuthServices, type AuthServices } from "./auth-services";
 import { createArgon2PasswordHasher } from "../infrastructure/argon2-hasher";
 import {
@@ -87,15 +88,17 @@ export async function createDemoAuthServices(options?: {
 
 export async function createPrismaAuthServices(options?: {
   mailer?: AuthMailer;
+  prisma?: PrismaClient;
+  cheapHasher?: boolean;
 }): Promise<AuthServices> {
   const { createPrismaAuthTokens, createPrismaSessions, createPrismaUserAccounts } =
     await import("../infrastructure/prisma-auth-repository");
-  const passwords = createArgon2PasswordHasher();
+  const passwords = createArgon2PasswordHasher({ cheap: options?.cheapHasher ?? false });
   const dummyPasswordHash = await passwords.hash("timing-pad");
   return createAuthServices({
-    users: createPrismaUserAccounts(),
-    sessions: createPrismaSessions(),
-    tokens: createPrismaAuthTokens(),
+    users: createPrismaUserAccounts(options?.prisma),
+    sessions: createPrismaSessions(options?.prisma),
+    tokens: createPrismaAuthTokens(options?.prisma),
     passwords,
     tokensDigest: createSha256TokenDigest(),
     mailer: options?.mailer ?? createLoggingMailer(),

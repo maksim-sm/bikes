@@ -53,7 +53,9 @@ the database role (Prisma's shadow database).
 | `pnpm lint`              | ESLint, including the architecture boundary rules           |
 | `pnpm lint:fix`          | ESLint with autofix                                         |
 | `pnpm typecheck`         | `tsc --noEmit`                                              |
-| `pnpm test`              | Unit tests for domain and application services (Vitest)     |
+| `pnpm test`              | Unit and integration suites (Vitest)                        |
+| `pnpm test:unit`         | Domain and application unit tests (no database)             |
+| `pnpm test:integration`  | Real PostgreSQL suite against isolated `bikes_test`         |
 | `pnpm format`            | Rewrite files with Prettier                                 |
 | `pnpm format:check`      | Fail if anything is unformatted                             |
 | `pnpm env:check`         | Validate environment configuration without starting the app |
@@ -65,9 +67,11 @@ the database role (Prisma's shadow database).
 
 Before pushing, `pnpm check` is the one command worth remembering.
 
-`pnpm db:migrate` and `pnpm db:migrate:deploy` write to the database. Everything
-else is safe to run repeatedly: none of the remaining scripts call a third-party
-service or delete anything. `pnpm format` is the only non-database command that
+`pnpm db:migrate`, `pnpm db:migrate:deploy`, and `pnpm test:integration` write
+to PostgreSQL. Integration tests use isolated `bikes_test`, never the
+development `bikes` database. Everything else is safe to run repeatedly: none
+of the remaining scripts call a third-party service or delete anything.
+`pnpm format` is the only non-database command that
 modifies files, and only by reformatting them.
 
 ## Configuration
