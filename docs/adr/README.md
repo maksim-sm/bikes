@@ -58,3 +58,4 @@ Rules:
 | [0036](0036-faceted-navigation-seo.md)              | Closed catalog landings; no facet URL explosion | Accepted                                                                                                                    |
 | [0038](0038-isolated-postgres-integration-tests.md) | Isolated `bikes_test` integration suite         | Accepted                                                                                                                    |
 | [0039](0039-playwright-e2e-journeys.md)             | Playwright journeys against the demo stack      | Accepted                                                                                                                    |
+| [0040](0040-asvs-l1-security-baseline.md)           | ASVS 5.0 L1 as the current security bar         | Accepted                                                                                                                    |
