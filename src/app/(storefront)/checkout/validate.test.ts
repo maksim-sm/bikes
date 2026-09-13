@@ -56,5 +56,37 @@ describe("checkout form validation", () => {
     expect(mapCheckoutServerFields("checkout email invalid")).toEqual({
       customerEmail: t.form.invalidEmail,
     });
+    expect(mapCheckoutServerFields("checkout_shipping_phone_invalid")).toEqual({
+      shippingPhone: t.form.invalidPhone,
+    });
+    expect(mapCheckoutServerFields("checkout_recipient_required")).toEqual({
+      recipientName: t.form.required,
+    });
+    expect(mapCheckoutServerFields("checkout_payment_invalid")).toEqual({
+      paymentMethodCode: t.form.chooseOption,
+    });
+    expect(mapCheckoutServerFields("checkout_street_required")).toEqual({
+      street: t.form.required,
+    });
+  });
+
+  it("rejects an invalid phone and required address fields when delivery needs a street", () => {
+    expect(
+      validateCheckoutForm({
+        ...valid,
+        customerPhone: "12 345",
+        recipientName: "",
+        shippingPhone: "99",
+        street: "",
+        postalCode: "",
+        addressRequired: true,
+      }),
+    ).toEqual({
+      customerPhone: t.form.invalidPhone,
+      recipientName: t.form.required,
+      shippingPhone: t.form.invalidPhone,
+      street: t.form.required,
+      postalCode: t.form.required,
+    });
   });
 });

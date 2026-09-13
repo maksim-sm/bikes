@@ -54,4 +54,13 @@ describe("catalog search document", () => {
     expect(productMatchesSearch(product, "fx")).toBe(false);
     expect(escapeIlike("50%_off")).toBe("50\\%\\_off");
   });
+
+  it("treats a blank query as a match and requires every token", () => {
+    expect(productMatchesSearch(product, "")).toBe(true);
+    expect(productMatchesSearch(product, "   ")).toBe(true);
+    expect(productMatchesSearch(product, "trek emonda")).toBe(true);
+    expect(productMatchesSearch(product, "trek fx")).toBe(false);
+    expect(productMatchesSearch(product, "чёрный")).toBe(true);
+    expect(escapeIlike("a\\b")).toBe("a\\\\b");
+  });
 });

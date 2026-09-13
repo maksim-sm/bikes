@@ -13,6 +13,7 @@ import {
 import {
   assertCanReadCustomerResource,
   assertCanReadOrder,
+  assertCanWriteCustomerResource,
   requireAdmin,
   requireAnonymous,
   requireCatalogRole,
@@ -66,6 +67,12 @@ describe("authorization helpers", () => {
     expect(() => assertCanReadCustomerResource(guest, "cust-1")).toThrow(
       UnauthenticatedError,
     );
+    expect(() => assertCanWriteCustomerResource(guest, "cust-1")).toThrow(
+      UnauthenticatedError,
+    );
+    expect(() => assertCanWriteCustomerResource(other, "cust-1")).toThrow(ForbiddenError);
+    expect(() => assertCanWriteCustomerResource(customer, "cust-1")).not.toThrow();
+    expect(() => assertCanWriteCustomerResource(manager, "cust-1")).not.toThrow();
   });
 
   it("lets only the owner or order-management staff read an order", () => {
@@ -75,5 +82,8 @@ describe("authorization helpers", () => {
     expect(canReadOrder(orders, "cust-1")).toBe(true);
     expect(hasStaffRole(manager, "order_management")).toBe(true);
     expect(() => assertCanReadOrder(other, "cust-1", "o1")).toThrow(ForbiddenError);
+    expect(() => assertCanReadOrder(guest, "cust-1", "o1")).toThrow(UnauthenticatedError);
+    expect(() => assertCanReadOrder(customer, null, "o1")).toThrow(ForbiddenError);
+    expect(() => assertCanReadOrder(orders, null, "o1")).not.toThrow();
   });
 });

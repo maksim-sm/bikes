@@ -4,6 +4,8 @@ import {
   canCancelPayment,
   canStartPayment,
   canTransition,
+  isPaymentTimedOut,
+  refundStatus,
   type PaymentAttempt,
 } from "./payment";
 import { paymentAttemptIdempotencyKey } from "./provider";
@@ -63,5 +65,32 @@ describe("payment lifecycle", () => {
     expect(canStartPayment([attempt("EXPIRED")])).toBe(true);
     expect(canStartPayment([attempt("CANCELLED")])).toBe(true);
     expect(canStartPayment([attempt("REFUNDED")])).toBe(true);
+    expect(canStartPayment([attempt("SUCCEEDED")])).toBe(false);
+    expect(canStartPayment([attempt("PARTIALLY_REFUNDED")])).toBe(false);
+    expect(canStartPayment([])).toBe(true);
+  });
+
+  it("refunds only a captured amount within the original total", () => {
+    expect(refundStatus(attempt("SUCCEEDED"), 100)).toBe("REFUNDED");
+    expect(refundStatus(attempt("SUCCEEDED"), 40)).toBe("PARTIALLY_REFUNDED");
+    expect(refundStatus(attempt("PARTIALLY_REFUNDED"), 40)).toBe("PARTIALLY_REFUNDED");
+    expect(() => refundStatus(attempt("CREATED"), 40)).toThrow("payment_not_refundable");
+    expect(() => refundStatus(attempt("SUCCEEDED"), 0)).toThrow("refund_out_of_range");
+    expect(() => refundStatus(attempt("SUCCEEDED"), 101)).toThrow("refund_out_of_range");
+  });
+
+  it("times out only an open unpaid attempt whose expiry has passed", () => {
+    const earlier = new Date("2026-09-12T10:14:59.000Z");
+    const later = new Date("2026-09-12T10:15:01.000Z");
+    expect(isPaymentTimedOut(attempt("CREATED"), later)).toBe(true);
+    expect(isPaymentTimedOut(attempt("PENDING"), later)).toBe(true);
+    expect(isPaymentTimedOut(attempt("CREATED"), earlier)).toBe(false);
+    expect(isPaymentTimedOut(attempt("SUCCEEDED"), later)).toBe(false);
+    expect(isPaymentTimedOut({ ...attempt("CREATED"), expiresAt: null }, later)).toBe(
+      false,
+    );
+    expect(
+      isPaymentTimedOut(attempt("CREATED"), new Date("2026-09-12T10:15:00.000Z")),
+    ).toBe(true);
   });
 });
