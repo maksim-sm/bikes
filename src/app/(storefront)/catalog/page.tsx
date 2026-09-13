@@ -51,7 +51,7 @@ export default async function CatalogPage() {
           {items.length === 0 ? (
             <p className={styles.lead}>{t.status.empty}</p>
           ) : (
-            <Grid minColumnWidth="16rem" space={5} as="ul" className={styles.list}>
+            <Grid minColumnWidth="16rem" space={5} as="ul" className={styles.list ?? ""}>
               {items.map((product) => {
                 const price = lowestListPriceMinor(product);
                 const image = [...product.images].sort(

@@ -14,12 +14,14 @@ export default function NotFoundPage() {
   return (
     <StorefrontChrome>
       <Container>
-        <Stack space={5} className={styles.page}>
-          <h1>{t.status.notFound}</h1>
-          <p>
-            <ButtonLink href="/catalog">{t.nav.catalog}</ButtonLink>
-          </p>
-        </Stack>
+        <div className={styles.page}>
+          <Stack space={5}>
+            <h1>{t.status.notFound}</h1>
+            <p>
+              <ButtonLink href="/catalog">{t.nav.catalog}</ButtonLink>
+            </p>
+          </Stack>
+        </div>
       </Container>
     </StorefrontChrome>
   );

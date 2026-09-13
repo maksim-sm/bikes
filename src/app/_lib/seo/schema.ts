@@ -43,7 +43,9 @@ export function websiteJsonLd(): Record<string, unknown> {
   };
 }
 
-export function breadcrumbJsonLd(items: readonly BreadcrumbItem[]): Record<string, unknown> {
+export function breadcrumbJsonLd(
+  items: readonly BreadcrumbItem[],
+): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -119,7 +121,11 @@ export function catalogItemListJsonLd(
   };
 }
 
-export function imageAlt(input: { alt: string; brandName: string; name: string }): string {
+export function imageAlt(input: {
+  alt: string;
+  brandName: string;
+  name: string;
+}): string {
   const trimmed = input.alt.trim();
   if (trimmed.length > 0) {
     return trimmed;

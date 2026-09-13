@@ -79,13 +79,15 @@ describe("structured data", () => {
         item: "http://localhost:3000/catalog",
       },
     ]);
-    expect(catalogItemListJsonLd([{ slug: "emonda", name: "Émonda", brandName: "Trek" }]).url).toBe(
-      "http://localhost:3000/catalog",
-    );
+    expect(
+      catalogItemListJsonLd([{ slug: "emonda", name: "Émonda", brandName: "Trek" }]).url,
+    ).toBe("http://localhost:3000/catalog");
   });
 
   it("falls back to a brand plus name when image alt is blank", () => {
-    expect(imageAlt({ alt: "  ", brandName: "Trek", name: "Émonda" })).toBe("Trek Émonda");
+    expect(imageAlt({ alt: "  ", brandName: "Trek", name: "Émonda" })).toBe(
+      "Trek Émonda",
+    );
     expect(imageAlt({ alt: "Вид спереди", brandName: "Trek", name: "Émonda" })).toBe(
       "Вид спереди",
     );

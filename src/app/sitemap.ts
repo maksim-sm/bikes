@@ -4,7 +4,14 @@ import { absoluteUrl, productPath } from "@/app/_lib/seo/urls";
 
 export const dynamic = "force-dynamic";
 
-const STATIC_PATHS = ["/", "/catalog", "/delivery", "/contacts", "/legal/terms", "/legal/privacy"];
+const STATIC_PATHS = [
+  "/",
+  "/catalog",
+  "/delivery",
+  "/contacts",
+  "/legal/terms",
+  "/legal/privacy",
+];
 
 async function publishedProductSlugs(): Promise<string[]> {
   const catalog = await getCatalogServices();

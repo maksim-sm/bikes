@@ -8,18 +8,18 @@ they render HTML, send `noindex`.
 
 ## What we emit
 
-| Signal              | Where                                              |
-| ------------------- | -------------------------------------------------- |
-| Title / description | `generateMetadata` / `publicPageMetadata`          |
-| Canonical           | `alternates.canonical` on public pages             |
-| Open Graph          | `openGraph` on public pages; product image when set |
-| `robots.txt`        | `src/app/robots.ts`                                |
-| Sitemap             | `src/app/sitemap.ts` — static pages + published slugs |
-| Breadcrumbs         | Visible `<nav>` + `BreadcrumbList` JSON-LD         |
-| Product             | `Product` + `AggregateOffer` JSON-LD               |
-| Store               | `OnlineStore` on storefront chrome; `WebSite` home |
+| Signal              | Where                                                       |
+| ------------------- | ----------------------------------------------------------- |
+| Title / description | `generateMetadata` / `publicPageMetadata`                   |
+| Canonical           | `alternates.canonical` on public pages                      |
+| Open Graph          | `openGraph` on public pages; product image when set         |
+| `robots.txt`        | `src/app/robots.ts`                                         |
+| Sitemap             | `src/app/sitemap.ts` — static pages + published slugs       |
+| Breadcrumbs         | Visible `<nav>` + `BreadcrumbList` JSON-LD                  |
+| Product             | `Product` + `AggregateOffer` JSON-LD                        |
+| Store               | `OnlineStore` on storefront chrome; `WebSite` home          |
 | Image alt           | Required on catalogue images; UI falls back to brand + name |
-| Slugs               | `^[a-z0-9]+(?:-[a-z0-9]+)*$`; uppercase URLs redirect |
+| Slugs               | `^[a-z0-9]+(?:-[a-z0-9]+)*$`; uppercase URLs redirect       |
 
 ## Boundaries
 

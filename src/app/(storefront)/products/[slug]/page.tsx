@@ -1,11 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
 import { notFound, redirect } from "next/navigation";
 import { isAppError } from "@/lib/errors";
 import { interpolate, formatPlural, formatPrice, productPageTitle, t } from "@/lib/i18n";
-import {
-  normalizeProductSlug,
-  PRODUCT_SLUG_PATTERN,
-} from "@/modules/catalog";
+import { normalizeProductSlug, PRODUCT_SLUG_PATTERN } from "@/modules/catalog";
 import { Breadcrumbs, storefrontCrumbs } from "@/app/_lib/seo/breadcrumbs";
 import { JsonLd } from "@/app/_lib/seo/json-ld";
 import { publicPageMetadata } from "@/app/_lib/seo/metadata";
@@ -29,7 +26,7 @@ async function productOrNotFound(slug: string) {
     notFound();
   }
   if (slug !== canonical) {
-    redirect(`/products/${canonical}`);
+    redirect(`/products/${canonical}` as Route);
   }
   try {
     return await loadProductPage(canonical);
@@ -87,7 +84,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const inStock = product.variants.some((variant) => variant.available > 0);
   const crumbs = storefrontCrumbs(
     { name: t.catalog.title, path: "/catalog" },
-    { name: productPageTitle(product.brandName, product.name), path: `/products/${product.slug}` },
+    {
+      name: productPageTitle(product.brandName, product.name),
+      path: `/products/${product.slug}`,
+    },
   );
 
   return (
