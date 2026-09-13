@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isAppError, ValidationError } from "@/lib/errors";
 import { parseWithSchema } from "@/lib/http";
+import { enforceAbuse } from "@/app/api/_lib/abuse";
 import { withRoute } from "@/app/api/_lib/route";
 import { getCartServices, getOrderServices } from "@/app/api/_lib/compose";
 import { actorFromRequest } from "@/app/(storefront)/_lib/cart-actor";
@@ -38,6 +39,7 @@ const checkoutSchema = z.object({
 });
 
 export const POST = withRoute("public", async (ctx) => {
+  await enforceAbuse("checkout", ctx.request);
   const body = parseWithSchema(checkoutSchema, await ctx.request.json());
   const actor = actorFromRequest(ctx.principal, ctx.request.headers.get("cookie"));
   if (!actor) {

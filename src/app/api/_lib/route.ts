@@ -95,7 +95,13 @@ export function withRoute<T>(
         durationMs: Date.now() - started,
         ...(userId !== undefined ? { userId } : {}),
       });
-      return json(view.status, failure(requestId, view.code, view.message), requestId);
+      return json(
+        view.status,
+        failure(requestId, view.code, view.message),
+        requestId,
+        [],
+        view.retryAfterSec,
+      );
     }
   };
 }
@@ -105,6 +111,7 @@ export function json(
   body: unknown,
   requestId: string,
   cookies: HttpOnlyCookie[] = [],
+  retryAfterSec?: number,
 ): Response {
   const headers = new Headers({
     [REQUEST_ID_HEADER]: requestId,
@@ -113,6 +120,9 @@ export function json(
   });
   for (const cookie of cookies) {
     headers.append("set-cookie", serializeCookie(cookie));
+  }
+  if (retryAfterSec !== undefined) {
+    headers.set("Retry-After", String(retryAfterSec));
   }
   return new Response(JSON.stringify(body), { status, headers });
 }

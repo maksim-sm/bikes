@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ConflictError, ValidationError } from "@/lib/errors";
+import { ConflictError, RateLimitedError, ValidationError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { failure, readRequestId, success } from "./envelope";
 import { toHttpError } from "./errors";
@@ -37,6 +37,12 @@ describe("error mapping", () => {
       status: 500,
       code: "internal_error",
       message: t.errors.internal_error,
+    });
+    expect(toHttpError(new RateLimitedError("too many", { retryAfterSec: 42 }))).toEqual({
+      status: 429,
+      code: "rate_limited",
+      message: t.errors.rate_limited,
+      retryAfterSec: 42,
     });
   });
 });

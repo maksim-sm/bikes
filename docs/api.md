@@ -141,47 +141,48 @@ webhook bodies.
 
 ## Resources (v1)
 
-| Method | Path                                          | Policy           | Purpose                                |
-| ------ | --------------------------------------------- | ---------------- | -------------------------------------- |
-| GET    | `/api/health`                                 | public           | Process liveness                       |
-| GET    | `/api/v1/session`                             | public           | Resolved principal                     |
-| POST   | `/api/v1/auth/register`                       | public           | Register (always same shape)           |
-| POST   | `/api/v1/auth/login`                          | public           | Login; merge guest cart; set cookie    |
-| POST   | `/api/v1/auth/logout`                         | public           | Revoke session; clear cookie           |
-| POST   | `/api/v1/auth/email/verify`                   | public           | Confirm email with mailed token        |
-| POST   | `/api/v1/auth/email/resend`                   | public           | Resend verification (opaque)           |
-| POST   | `/api/v1/auth/password/forgot`                | public           | Request reset (opaque)                 |
-| POST   | `/api/v1/auth/password/reset`                 | public           | Set new password; revoke sessions      |
-| POST   | `/api/v1/auth/password/change`                | customer_only    | Change password; revoke other sessions |
-| POST   | `/api/v1/auth/logout-all`                     | customer_only    | Revoke every session; clear cookie     |
-| GET    | `/api/v1/products`                            | public           | Published catalogue, DB-filtered       |
-| GET    | `/api/v1/products/:slug`                      | public           | Published product detail               |
-| GET    | `/api/v1/categories`                          | public           | Category tree for discovery            |
-| GET    | `/api/v1/brands`                              | public           | Brands for discovery                   |
-| GET    | `/api/v1/cart`                                | public           | Cart view; server-side totals          |
-| POST   | `/api/v1/cart/items`                          | public           | Add a line; may set guest cookie       |
-| PATCH  | `/api/v1/cart/items`                          | public           | Quantity or sibling variant            |
-| DELETE | `/api/v1/cart/items`                          | public           | Remove a line                          |
-| GET    | `/api/v1/delivery/quotes`                     | public           | Delivery quotes for a destination      |
-| GET    | `/api/v1/admin/delivery/methods`              | order_management | Configured delivery methods            |
-| GET    | `/api/v1/admin/deliveries`                    | order_management | Shipment for `?orderId=`               |
-| POST   | `/api/v1/admin/deliveries`                    | order_management | Assign a shipment                      |
-| PATCH  | `/api/v1/admin/deliveries`                    | order_management | Update staff-entered tracking          |
-| POST   | `/api/v1/admin/deliveries/ship`               | order_management | Record tracking; mark shipped          |
-| POST   | `/api/v1/checkout`                            | public           | Place order; server totals only        |
-| GET    | `/api/v1/orders`                              | customer_only    | Orders for the signed-in customer      |
-| GET    | `/api/v1/orders/:id`                          | customer         | Order DTO (ownership in service)       |
-| GET    | `/api/v1/orders/:id/shipment`                 | customer         | Tracking facts (no staff notes)        |
-| GET    | `/api/v1/customers/:userId/profile`           | customer         | Profile DTO (self or manager/admin)    |
-| PATCH  | `/api/v1/customers/:userId/profile`           | customer_only    | Update own profile                     |
-| GET    | `/api/v1/customers/:userId/addresses`         | customer         | Address DTOs (self or manager/admin)   |
-| POST   | `/api/v1/customers/:userId/addresses`         | customer_only    | Add an address                         |
-| POST   | `/api/v1/customers/:userId/addresses/default` | customer_only    | Set the default address                |
-| GET    | `/api/v1/customers/:userId/wishlist`          | customer         | Wishlist view (self or manager/admin)  |
-| POST   | `/api/v1/customers/:userId/wishlist`          | customer_only    | Add a product; 409 on duplicate        |
-| DELETE | `/api/v1/customers/:userId/wishlist`          | customer_only    | Remove a product                       |
-| GET    | `/api/v1/payments/:id`                        | public           | Return landing; ignores `?status=`     |
-| POST   | `/api/v1/payments/webhooks`                   | public           | Provider webhook (signature)           |
+| Method | Path                                          | Policy           | Purpose                                 |
+| ------ | --------------------------------------------- | ---------------- | --------------------------------------- |
+| GET    | `/api/health`                                 | public           | Process liveness                        |
+| GET    | `/api/v1/session`                             | public           | Resolved principal                      |
+| POST   | `/api/v1/auth/register`                       | public           | Register (always same shape)            |
+| POST   | `/api/v1/auth/login`                          | public           | Login; merge guest cart; set cookie     |
+| POST   | `/api/v1/auth/logout`                         | public           | Revoke session; clear cookie            |
+| POST   | `/api/v1/auth/email/verify`                   | public           | Confirm email with mailed token         |
+| POST   | `/api/v1/auth/email/resend`                   | public           | Resend verification (opaque)            |
+| POST   | `/api/v1/auth/password/forgot`                | public           | Request reset (opaque)                  |
+| POST   | `/api/v1/auth/password/reset`                 | public           | Set new password; revoke sessions       |
+| POST   | `/api/v1/auth/password/change`                | customer_only    | Change password; revoke other sessions  |
+| POST   | `/api/v1/auth/logout-all`                     | customer_only    | Revoke every session; clear cookie      |
+| GET    | `/api/v1/products`                            | public           | Published catalogue, DB-filtered        |
+| GET    | `/api/v1/products/:slug`                      | public           | Published product detail                |
+| GET    | `/api/v1/categories`                          | public           | Category tree for discovery             |
+| GET    | `/api/v1/brands`                              | public           | Brands for discovery                    |
+| GET    | `/api/v1/cart`                                | public           | Cart view; server-side totals           |
+| POST   | `/api/v1/cart/items`                          | public           | Add a line; may set guest cookie        |
+| PATCH  | `/api/v1/cart/items`                          | public           | Quantity or sibling variant             |
+| DELETE | `/api/v1/cart/items`                          | public           | Remove a line                           |
+| GET    | `/api/v1/delivery/quotes`                     | public           | Delivery quotes for a destination       |
+| GET    | `/api/v1/admin/delivery/methods`              | order_management | Configured delivery methods             |
+| GET    | `/api/v1/admin/deliveries`                    | order_management | Shipment for `?orderId=`                |
+| POST   | `/api/v1/admin/deliveries`                    | order_management | Assign a shipment                       |
+| PATCH  | `/api/v1/admin/deliveries`                    | order_management | Update staff-entered tracking           |
+| POST   | `/api/v1/admin/deliveries/ship`               | order_management | Record tracking; mark shipped           |
+| POST   | `/api/v1/checkout`                            | public           | Place order; server totals only         |
+| GET    | `/api/v1/orders`                              | customer_only    | Orders for the signed-in customer       |
+| GET    | `/api/v1/orders/:id`                          | customer         | Order DTO (ownership in service)        |
+| GET    | `/api/v1/orders/:id/shipment`                 | customer         | Tracking facts (no staff notes)         |
+| GET    | `/api/v1/customers/:userId/profile`           | customer         | Profile DTO (self or manager/admin)     |
+| PATCH  | `/api/v1/customers/:userId/profile`           | customer_only    | Update own profile                      |
+| GET    | `/api/v1/customers/:userId/addresses`         | customer         | Address DTOs (self or manager/admin)    |
+| POST   | `/api/v1/customers/:userId/addresses`         | customer_only    | Add an address                          |
+| POST   | `/api/v1/customers/:userId/addresses/default` | customer_only    | Set the default address                 |
+| GET    | `/api/v1/customers/:userId/wishlist`          | customer         | Wishlist view (self or manager/admin)   |
+| POST   | `/api/v1/customers/:userId/wishlist`          | customer_only    | Add a product; 409 on duplicate         |
+| DELETE | `/api/v1/customers/:userId/wishlist`          | customer_only    | Remove a product                        |
+| POST   | `/api/v1/payments`                            | public           | Start a provider payment; IP-limited    |
+| GET    | `/api/v1/payments/:id`                        | public           | Return landing; ignores `?status=`      |
+| POST   | `/api/v1/payments/webhooks`                   | public           | Provider webhook (signature + IP limit) |
 
 New external endpoints are Route Handlers that reuse `withRoute` and a DTO.
 They are not added “because REST”.

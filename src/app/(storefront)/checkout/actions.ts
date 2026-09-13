@@ -2,6 +2,7 @@
 
 import type { Route } from "next";
 import { redirect } from "next/navigation";
+import { enforceAbuse } from "@/app/api/_lib/abuse";
 import {
   getCartServices,
   getDeliveryServices,
@@ -35,6 +36,9 @@ function failure(error: unknown): CheckoutActionState {
       return { ok: false, message: t.checkout.deliveryUnavailable, fields: {} };
     }
     return { ok: false, message: t.checkout.unavailable, fields: {} };
+  }
+  if (isAppError(error) && error.code === "rate_limited") {
+    return { ok: false, message: t.errors.rate_limited, fields: {} };
   }
   if (isAppError(error) && error.code === "validation_failed") {
     const fields = mapCheckoutServerFields(error.message);
@@ -107,6 +111,7 @@ export async function placeCheckoutAction(
 
   let order;
   try {
+    await enforceAbuse("checkout");
     order = await (
       await getOrderServices()
     ).checkout({

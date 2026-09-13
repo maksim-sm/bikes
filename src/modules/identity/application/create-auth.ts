@@ -10,7 +10,7 @@ import {
   createMemorySessions,
   createMemoryUserAccounts,
 } from "../infrastructure/memory-auth-repository";
-import { createMemoryRateLimiter } from "../infrastructure/memory-rate-limiter";
+import { createMemoryRateLimiter } from "@/lib/abuse";
 import { createSecurityLog } from "../infrastructure/security-log";
 import { createSha256TokenDigest } from "../infrastructure/sha256-token";
 import type { AuthMailer } from "./auth-ports";

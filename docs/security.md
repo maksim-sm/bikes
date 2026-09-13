@@ -42,15 +42,11 @@ Ordered by impact if this build were exposed on the public internet.
    called at runtime. `POST /api/v1/payments/webhooks` accepts
    `x-mock-signature: ok`. A live provider must replace this before any real
    money moves.
-2. **Server-action rate keys are process-global** (`v5.0.0-6.3.1`). API login
-   keys by IP (`clientRateKey`). HTML login/register/admin login use static
-   keys such as `"account-login"`. One shared in-memory bucket for all
-   visitors, and no checkout throttle despite architecture §14.
-3. **Demo passwords live in source** (`v5.0.0-6.3.2`, `v5.0.0-13` secrets).
+2. **Demo passwords live in source** (`v5.0.0-6.3.2`, `v5.0.0-13` secrets).
    `StaffPass12` / `CustomerPass12` are compiled constants. Demo login buttons
    are compiled out of production, but `createDemoAuthServices()` still seeds
    those users whenever `NODE_ENV !== "production"`.
-4. **Public payment status by id** (`v5.0.0-8.2.2`).
+3. **Public payment status by id** (`v5.0.0-8.2.2`).
    `GET /api/v1/payments/:id` is `public` and returns `orderId`, status, and
    amount. UUIDs reduce guessability; it is still an unauthenticated object
    read.
@@ -59,6 +55,10 @@ Closed in ADR-0041: document CSP with a per-request nonce, HSTS on https,
 `nosniff` / frame / referrer / permissions headers, `__Host-` cookies,
 JSON-LD `\u003c` escaping, and production startup failure when
 `DATABASE_URL`, https `APP_URL`, or `AUTH_SECRET` is missing.
+
+Closed in ADR-0042: shared `src/lib/abuse` limiter on login, register,
+password reset, admin login, checkout, payment start, and webhooks. HTML
+actions key by IP. Limits stay in-process until a second instance exists.
 
 What is already in good shape: parameterized Prisma (including catalog FTS),
 Argon2id at OWASP parameters, hashed session tokens, Origin CSRF on `/api`
@@ -248,15 +248,15 @@ primary implementation site, not an exhaustive list.
 
 ### Validation and business logic
 
-| ID    | Requirement (short)               | Lvl | Status      | Evidence / gap                                                     |
-| ----- | --------------------------------- | --- | ----------- | ------------------------------------------------------------------ |
-| 2.1.1 | Document validation rules         | 1   | **Partial** | `docs/api.md`, checkout `validate.ts`; no single schema catalogue. |
-| 2.2.1 | Allow-list / schema validation    | 1   | **Met**     | Zod on `/api`; checkout and auth actions validate server-side.     |
-| 2.2.2 | Validate at a trusted layer       | 1   | **Met**     | Prices, stock, and totals recomputed in services.                  |
-| 2.3.1 | Sequential business flows         | 1   | **Partial** | Order/payment/fulfillment state machines; payment runtime is mock. |
-| 2.3.3 | Transactions succeed or roll back | 2   | L2+         | Checkout holds and inventory ledger are transactional (ADR-0014).  |
-| 2.3.4 | No double-book of limited stock   | 2   | L2+         | Race-safe reservations; integration tests exist.                   |
-| 2.4.1 | Anti-automation on costly routes  | 2   | L2+         | Auth API limited; checkout and search are not.                     |
+| ID    | Requirement (short)               | Lvl | Status      | Evidence / gap                                                         |
+| ----- | --------------------------------- | --- | ----------- | ---------------------------------------------------------------------- |
+| 2.1.1 | Document validation rules         | 1   | **Partial** | `docs/api.md`, checkout `validate.ts`; no single schema catalogue.     |
+| 2.2.1 | Allow-list / schema validation    | 1   | **Met**     | Zod on `/api`; checkout and auth actions validate server-side.         |
+| 2.2.2 | Validate at a trusted layer       | 1   | **Met**     | Prices, stock, and totals recomputed in services.                      |
+| 2.3.1 | Sequential business flows         | 1   | **Partial** | Order/payment/fulfillment state machines; payment runtime is mock.     |
+| 2.3.3 | Transactions succeed or roll back | 2   | L2+         | Checkout holds and inventory ledger are transactional (ADR-0014).      |
+| 2.3.4 | No double-book of limited stock   | 2   | L2+         | Race-safe reservations; integration tests exist.                       |
+| 2.4.1 | Anti-automation on costly routes  | 2   | **Met**     | Auth, checkout, payment start, and webhooks (ADR-0042). Search is not. |
 
 ### XSS, cookies, CSRF, headers
 
@@ -300,23 +300,23 @@ primary implementation site, not an exhaustive list.
 
 ### Authentication
 
-| ID     | Requirement (short)             | Lvl | Status      | Evidence / gap                                                    |
-| ------ | ------------------------------- | --- | ----------- | ----------------------------------------------------------------- |
-| 6.1.1  | Document brute-force controls   | 1   | **Partial** | ADR-0016 describes the port; server-action keys are undocumented. |
-| 6.2.1  | Password ≥ 8 (15 recommended)   | 1   | **Met**     | Minimum 10.                                                       |
-| 6.2.2  | Users can change password       | 1   | **Partial** | Customers yes; staff no.                                          |
-| 6.2.3  | Change requires current + new   | 1   | **Met**     | Customer change-password.                                         |
-| 6.2.4  | Block top-3000 passwords        | 1   | **Gap**     | Length only.                                                      |
-| 6.2.5  | No composition rules            | 1   | **Met**     | Length 10–128 only.                                               |
-| 6.2.6  | `type=password`                 | 1   | **Met**     | Login, register, security forms.                                  |
-| 6.2.8  | Verify password unmodified      | 1   | **Met**     | Passed through to Argon2.                                         |
-| 6.2.9  | Allow ≥ 64 characters           | 2   | L2+         | Max 128.                                                          |
-| 6.2.10 | No periodic rotation            | 2   | L2+         | No expiry.                                                        |
-| 6.3.1  | Brute-force / stuffing controls | 1   | **Partial** | API IP bucket; HTML actions share one key; in-process only.       |
-| 6.3.2  | No default admin accounts       | 1   | **Partial** | No production seed; demo `staff@bikes.local` in non-prod source.  |
-| 6.3.3  | MFA                             | 2   | L2+         | Not implemented. ADR-0016 “when to revisit”.                      |
-| 6.4.2  | No secret questions             | 1   | **Met**     | Absent.                                                           |
-| 6.4.3  | Reset does not bypass MFA       | 2   | L2+         | Reset exists; no MFA to bypass.                                   |
+| ID     | Requirement (short)             | Lvl | Status      | Evidence / gap                                                          |
+| ------ | ------------------------------- | --- | ----------- | ----------------------------------------------------------------------- |
+| 6.1.1  | Document brute-force controls   | 1   | **Partial** | ADR-0016 describes the port; server-action keys are undocumented.       |
+| 6.2.1  | Password ≥ 8 (15 recommended)   | 1   | **Met**     | Minimum 10.                                                             |
+| 6.2.2  | Users can change password       | 1   | **Partial** | Customers yes; staff no.                                                |
+| 6.2.3  | Change requires current + new   | 1   | **Met**     | Customer change-password.                                               |
+| 6.2.4  | Block top-3000 passwords        | 1   | **Gap**     | Length only.                                                            |
+| 6.2.5  | No composition rules            | 1   | **Met**     | Length 10–128 only.                                                     |
+| 6.2.6  | `type=password`                 | 1   | **Met**     | Login, register, security forms.                                        |
+| 6.2.8  | Verify password unmodified      | 1   | **Met**     | Passed through to Argon2.                                               |
+| 6.2.9  | Allow ≥ 64 characters           | 2   | L2+         | Max 128.                                                                |
+| 6.2.10 | No periodic rotation            | 2   | L2+         | No expiry.                                                              |
+| 6.3.1  | Brute-force / stuffing controls | 1   | **Met**     | IP + hashed-email keys; HTML actions use `x-forwarded-for`. In-process. |
+| 6.3.2  | No default admin accounts       | 1   | **Partial** | No production seed; demo `staff@bikes.local` in non-prod source.        |
+| 6.3.3  | MFA                             | 2   | L2+         | Not implemented. ADR-0016 “when to revisit”.                            |
+| 6.4.2  | No secret questions             | 1   | **Met**     | Absent.                                                                 |
+| 6.4.3  | Reset does not bypass MFA       | 2   | L2+         | Reset exists; no MFA to bypass.                                         |
 
 ### Session management
 
@@ -408,7 +408,6 @@ Keep these visible so §14 is not treated as implemented fact.
 
 | Claim in `docs/architecture.md` §14 | Finding                                                 |
 | ----------------------------------- | ------------------------------------------------------- |
-| Rate-limit checkout                 | Not implemented.                                        |
 | Secrets only via `lib/config.ts`    | `compose.ts` still reads `process.env` for demo wiring. |
 | Webhooks verify provider signatures | Code path yes; production compose still uses the mock.  |
 
@@ -416,6 +415,6 @@ Keep these visible so §14 is not treated as implemented fact.
 
 Re-run the review when any of these land: a real `PaymentProvider`, HSTS
 preload, MFA, a seed pipeline that removes demo passwords from production
-builds, or checkout rate limits. Update the checklist rows; do not silently
-edit an Accepted ADR. Headers, `__Host-` cookies, JSON-LD escaping, and
-production secret validation closed in ADR-0041.
+builds, or a distributed rate-limit adapter. Update the checklist rows; do
+not silently edit an Accepted ADR. Headers and secrets closed in ADR-0041.
+Abuse controls closed in ADR-0042.

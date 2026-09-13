@@ -1,3 +1,4 @@
+import { clientRateKey as abuseClientRateKey } from "@/lib/abuse";
 import { ForbiddenError } from "@/lib/errors";
 import { env } from "@/lib/config";
 
@@ -17,7 +18,5 @@ export function usesSecureCookies(): boolean {
 }
 
 export function clientRateKey(request: Request, action: string): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || "local";
-  return `${action}:${ip}`;
+  return abuseClientRateKey(request, action);
 }
