@@ -71,7 +71,9 @@ describe("system messages and notifications", () => {
       code: "conflict",
       message: t.errors.conflict,
     });
-    expect(toHttpError(new Error("ECONNRESET boom")).message).toBe(t.errors.internal_error);
+    expect(toHttpError(new Error("ECONNRESET boom")).message).toBe(
+      t.errors.internal_error,
+    );
     const placed = notificationCopy("order.placed", { number: "B-1" });
     expect(placed.body).toContain("B-1");
     expect(placed.title).toBe(t.notifications["order.placed"].title);

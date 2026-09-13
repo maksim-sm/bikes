@@ -23,10 +23,7 @@ export function siteMetadata(
   };
 }
 
-export function pageMetadata(
-  title: string,
-  description?: string,
-): Metadata {
+export function pageMetadata(title: string, description?: string): Metadata {
   return description ? { title, description } : { title };
 }
 

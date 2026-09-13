@@ -149,9 +149,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             <section className={styles.section} aria-labelledby="warranty-heading">
               <h2 id="warranty-heading">{t.product.warranty}</h2>
               {product.warrantyMonths !== null ? (
-                <p>
-                  {formatPlural(product.warrantyMonths, t.plural.warrantyMonths)}
-                </p>
+                <p>{formatPlural(product.warrantyMonths, t.plural.warrantyMonths)}</p>
               ) : null}
               {product.warrantyText ? <p>{product.warrantyText}</p> : null}
             </section>

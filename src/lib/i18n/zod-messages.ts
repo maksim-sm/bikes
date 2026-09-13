@@ -10,10 +10,7 @@ interface ZodIssueLike {
  * Maps a Zod issue to catalogue copy. Field names stay in `path`; the
  * customer-facing sentence is Russian and locale-swappable.
  */
-export function zodIssueMessage(
-  issue: ZodIssueLike,
-  messages: Messages = ru,
-): string {
+export function zodIssueMessage(issue: ZodIssueLike, messages: Messages = ru): string {
   switch (issue.code) {
     case "invalid_type":
     case "invalid_value":

@@ -4,10 +4,7 @@ import { ru, type Messages } from "./messages/ru";
 export type SystemErrorCode = keyof Messages["errors"];
 export type NotificationCode = keyof Messages["notifications"];
 
-export function systemMessage(
-  code: string,
-  messages: Messages = ru,
-): string {
+export function systemMessage(code: string, messages: Messages = ru): string {
   if (code in messages.errors) {
     return messages.errors[code as SystemErrorCode];
   }
