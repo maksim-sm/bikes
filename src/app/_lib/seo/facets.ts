@@ -16,6 +16,8 @@ import {
 } from "@/modules/catalog";
 
 export const CATALOG_PATH = "/catalog";
+/** Storefront listing page size. `page>1` is noindex (see `resolveCatalogSeo`). */
+export const CATALOG_PAGE_SIZE = 24;
 
 export type LandingDimension = "category" | "brand" | "type";
 export type CatalogPathKind = "catalog" | LandingDimension;
@@ -369,4 +371,50 @@ export function resolveCatalogSeo(input: {
     ...(redirectTo ? { redirectTo } : {}),
     ...(invalidPath ? { invalidPath: true } : {}),
   };
+}
+
+/** Current listing URL for pagination. Keeps utility filters; omits `page=1`. */
+export function catalogViewHref(decision: CatalogSeoDecision, page: number): string {
+  const path =
+    decision.pathKind === "catalog" || !decision.landingSlug
+      ? CATALOG_PATH
+      : catalogLandingPath(decision.pathKind, decision.landingSlug);
+  const query = new URLSearchParams();
+  if (decision.pathKind !== "category" && decision.filters.categorySlug) {
+    query.set("category", decision.filters.categorySlug);
+  }
+  if (decision.pathKind !== "brand" && decision.filters.brandSlug) {
+    query.set("brand", decision.filters.brandSlug);
+  }
+  if (decision.pathKind !== "type" && decision.filters.bicycleType) {
+    query.set("type", bicycleTypePathSlug(decision.filters.bicycleType));
+  }
+  setIf(query, "q", decision.filters.q);
+  if (decision.filters.available !== undefined) {
+    query.set("available", decision.filters.available ? "true" : "false");
+  }
+  setIf(query, "frameSize", decision.filters.frameSize);
+  setIf(query, "wheelSize", decision.filters.wheelSize);
+  setIf(query, "frameMaterial", decision.filters.frameMaterial);
+  setIf(query, "groupset", decision.filters.groupset);
+  setIf(query, "brakeType", decision.filters.brakeType);
+  if (decision.filters.minPriceMinor !== undefined) {
+    query.set("minPrice", String(decision.filters.minPriceMinor));
+  }
+  if (decision.filters.maxPriceMinor !== undefined) {
+    query.set("maxPrice", String(decision.filters.maxPriceMinor));
+  }
+  if (page > 1) {
+    query.set("page", String(page));
+  }
+  const defaultSortField: CatalogSortField = decision.filters.q
+    ? "relevance"
+    : "publishedAt";
+  if (decision.sort.field !== defaultSortField) {
+    query.set("sort", decision.sort.field);
+  }
+  if (decision.sort.direction !== "desc") {
+    query.set("order", decision.sort.direction);
+  }
+  return withQuery(path, query);
 }

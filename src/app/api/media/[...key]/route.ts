@@ -3,6 +3,9 @@ import { isMediaKey, placeholderSvg } from "@/modules/media";
 
 export const dynamic = "force-dynamic";
 
+/** Keys are immutable object ids. Redis is not required to cache these bytes. */
+const MEDIA_CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800";
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ key: string[] }> },
@@ -17,7 +20,7 @@ export async function GET(
       status: 200,
       headers: {
         "content-type": object.contentType,
-        "cache-control": "public, max-age=3600",
+        "cache-control": MEDIA_CACHE_CONTROL,
         "x-content-type-options": "nosniff",
       },
     });
@@ -26,7 +29,7 @@ export async function GET(
     status: 200,
     headers: {
       "content-type": "image/svg+xml; charset=utf-8",
-      "cache-control": "public, max-age=3600",
+      "cache-control": MEDIA_CACHE_CONTROL,
       "x-content-type-options": "nosniff",
     },
   });

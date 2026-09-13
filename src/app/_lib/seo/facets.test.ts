@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   bicycleTypePathSlug,
   catalogLandingPath,
+  catalogViewHref,
   parseBicycleTypePathSlug,
   resolveCatalogSeo,
   sitemapCatalogLandingPaths,
@@ -198,5 +199,17 @@ describe("resolveCatalogSeo", () => {
       resolveCatalogSeo({ pathKind: "category", pathSlug: "Road Bikes" }).invalidPath,
     ).toBe(true);
     expect(catalogLandingPath("category", "road")).toBe("/catalog/category/road");
+  });
+
+  it("builds pagination URLs without putting page=1 in the query", () => {
+    const decision = resolveCatalogSeo({
+      pathKind: "category",
+      pathSlug: "road",
+      searchParams: { available: "true" },
+    });
+    expect(catalogViewHref(decision, 1)).toBe("/catalog/category/road?available=true");
+    expect(catalogViewHref(decision, 2)).toBe(
+      "/catalog/category/road?available=true&page=2",
+    );
   });
 });

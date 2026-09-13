@@ -1,10 +1,13 @@
 import type { Metadata, Route } from "next";
+import { cache } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getCatalogServices } from "@/app/api/_lib/compose";
 import { Breadcrumbs, storefrontCrumbs } from "@/app/_lib/seo/breadcrumbs";
 import {
   bicycleTypePathSlug,
+  CATALOG_PAGE_SIZE,
   catalogLandingPath,
+  catalogViewHref,
   resolveCatalogSeo,
   type CatalogPathKind,
   type CatalogSearchParams,
@@ -65,6 +68,15 @@ export function catalogLandingCopy(
   return { title: t.catalog.title, description: t.catalog.description };
 }
 
+const loadCatalogTaxonomy = cache(async () => {
+  const catalog = await getCatalogServices();
+  const [categories, brands] = await Promise.all([
+    catalog.listCategories(),
+    catalog.listBrands(),
+  ]);
+  return { categories, brands };
+});
+
 async function resolveNamedLanding(decision: CatalogSeoDecision): Promise<{
   categories: Category[];
   brands: Brand[];
@@ -72,11 +84,7 @@ async function resolveNamedLanding(decision: CatalogSeoDecision): Promise<{
   brandName?: string;
   missingLanding: boolean;
 }> {
-  const catalog = await getCatalogServices();
-  const [categories, brands] = await Promise.all([
-    catalog.listCategories(),
-    catalog.listBrands(),
-  ]);
+  const { categories, brands } = await loadCatalogTaxonomy();
   const category = categories.find((item) => item.slug === decision.landingSlug);
   const brand = brands.find((item) => item.slug === decision.landingSlug);
   const missingLanding =
@@ -130,7 +138,7 @@ export async function CatalogRoutePage(input: {
   const [list, names] = await Promise.all([
     catalog.listPublishedProducts({
       page: decision.page,
-      pageSize: 24,
+      pageSize: CATALOG_PAGE_SIZE,
       sort: decision.sort,
       filters: decision.filters,
     }),
@@ -171,7 +179,7 @@ export async function CatalogRoutePage(input: {
             <p className={styles.lead ?? ""}>{t.status.empty}</p>
           ) : (
             <Grid minColumnWidth="16rem" space={5} as="ul" className={styles.list ?? ""}>
-              {list.items.map((product) => {
+              {list.items.map((product, index) => {
                 const price = lowestListPriceMinor(product);
                 const image = [...product.images].sort(
                   (left, right) => left.sortOrder - right.sortOrder,
@@ -189,6 +197,9 @@ export async function CatalogRoutePage(input: {
                                 brandName: product.brandName,
                                 name: product.name,
                               })}
+                              sizes="(min-width: 768px) 16rem, 100vw"
+                              className={styles.cardImage ?? ""}
+                              priority={index === 0 && decision.page === 1}
                             />
                           ) : null}
                           <p>{product.brandName}</p>
@@ -215,6 +226,7 @@ export async function CatalogRoutePage(input: {
               })}
             </Grid>
           )}
+          <CatalogPager decision={decision} total={list.total} />
         </Stack>
       </div>
     </Container>
@@ -359,5 +371,40 @@ function FacetLink({
     <TextLink href={href} subtle>
       {children}
     </TextLink>
+  );
+}
+
+function CatalogPager({
+  decision,
+  total,
+}: {
+  decision: CatalogSeoDecision;
+  total: number;
+}) {
+  const pages = Math.max(1, Math.ceil(total / CATALOG_PAGE_SIZE));
+  if (pages <= 1) {
+    return null;
+  }
+  const page = Math.min(decision.page, pages);
+  return (
+    <nav aria-label={t.catalog.pagination} className={styles.pager ?? ""}>
+      {page > 1 ? (
+        <TextLink href={catalogViewHref(decision, page - 1)} rel="nofollow" subtle>
+          {t.catalog.previousPage}
+        </TextLink>
+      ) : (
+        <span>{t.catalog.previousPage}</span>
+      )}
+      <span>
+        {interpolate(t.catalog.pageOf, { page: String(page), pages: String(pages) })}
+      </span>
+      {page < pages ? (
+        <TextLink href={catalogViewHref(decision, page + 1)} rel="nofollow" subtle>
+          {t.catalog.nextPage}
+        </TextLink>
+      ) : (
+        <span>{t.catalog.nextPage}</span>
+      )}
+    </nav>
   );
 }

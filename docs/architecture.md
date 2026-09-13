@@ -32,6 +32,8 @@ canonical URLs, sitemap, robots, and structured data.
 `docs/environments.md` defines local, test, staging, and production,
 and who owns each secret. `docs/ci.md` defines the required CI stages.
 `docs/pre-production-audit.md` is the go-live gate (ADR-0049).
+`docs/performance.md` records Core Web Vitals, query, and cache measurements
+(ADR-0037): no Redis or search engine until those numbers demand one.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -547,7 +549,8 @@ catches up.
 ## 15. Deployment model
 
 **One application, one database, one deployment unit.** No queue, no worker
-fleet, no cache tier until a measured problem demands one.
+fleet, no cache tier until a measured problem demands one
+(`docs/performance.md`, ADR-0037).
 
 - The application is built as a single Next.js production build and deployed as
   one unit to a single hosting target. The specific platform is unresolved (see

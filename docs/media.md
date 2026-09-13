@@ -28,8 +28,10 @@ Metadata on `media`: key, sniffed content type, byte size, width, height, and a
 sanitized original filename (path segments stripped; not used as the object
 key).
 
-`GET /api/media/…` serves stored bytes with `X-Content-Type-Options: nosniff`.
-Unknown demo keys still render the SVG placeholder.
+`GET /api/media/…` serves stored bytes with `X-Content-Type-Options: nosniff`
+and `Cache-Control: public, max-age=86400, stale-while-revalidate=604800`.
+Unknown demo keys still render the SVG placeholder. Storefront `<img>` tags
+set width/height (default 1200×800) so cards do not shift (`docs/performance.md`).
 
 ## Associations
 

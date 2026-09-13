@@ -18,6 +18,20 @@
   padding: 0;
 }
 
+.cardImage {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  background: var(--color-surface);
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
 .toolbar {
   display: flex;
   flex-direction: column;
