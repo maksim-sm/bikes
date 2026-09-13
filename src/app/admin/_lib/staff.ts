@@ -6,6 +6,7 @@ import { getAuthServices } from "@/app/api/_lib/compose";
 import { usesSecureCookies } from "@/app/api/_lib/csrf";
 import { isAppError } from "@/lib/errors";
 import {
+  HOST_SESSION_COOKIE_NAME,
   SESSION_COOKIE_NAME,
   hasCapability,
   requireAdmin,
@@ -30,7 +31,10 @@ export {
 
 export async function currentPrincipal(): Promise<Principal> {
   const store = await cookies();
-  const token = store.get(SESSION_COOKIE_NAME)?.value ?? null;
+  const token =
+    store.get(HOST_SESSION_COOKIE_NAME)?.value ??
+    store.get(SESSION_COOKIE_NAME)?.value ??
+    null;
   return (await getAuthServices()).resolve(token);
 }
 

@@ -74,9 +74,14 @@ export async function demoStaffLoginAction(): Promise<LoginState> {
 
 export async function staffLogoutAction(): Promise<void> {
   const { cookies } = await import("next/headers");
-  const { SESSION_COOKIE_NAME } = await import("@/modules/identity");
+  const { HOST_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME } = await import(
+    "@/modules/identity"
+  );
   const store = await cookies();
-  const token = store.get(SESSION_COOKIE_NAME)?.value ?? null;
+  const token =
+    store.get(HOST_SESSION_COOKIE_NAME)?.value ??
+    store.get(SESSION_COOKIE_NAME)?.value ??
+    null;
   const auth = await getAuthServices();
   const result = await auth.logout({
     rawToken: token,

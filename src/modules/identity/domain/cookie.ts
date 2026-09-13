@@ -1,4 +1,8 @@
-import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from "./auth";
+import { HOST_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL_MS } from "./auth";
+
+export type SessionCookieName =
+  | typeof SESSION_COOKIE_NAME
+  | typeof HOST_SESSION_COOKIE_NAME;
 
 export interface HttpOnlyCookie {
   name: string;
@@ -11,7 +15,11 @@ export interface HttpOnlyCookie {
 }
 
 export interface SessionCookie extends HttpOnlyCookie {
-  name: typeof SESSION_COOKIE_NAME;
+  name: SessionCookieName;
+}
+
+export function sessionCookieName(secure: boolean): SessionCookieName {
+  return secure ? HOST_SESSION_COOKIE_NAME : SESSION_COOKIE_NAME;
 }
 
 export function sessionCookie(
@@ -20,7 +28,7 @@ export function sessionCookie(
   maxAge = SESSION_TTL_MS / 1000,
 ): SessionCookie {
   return {
-    name: SESSION_COOKIE_NAME,
+    name: sessionCookieName(secure),
     value: rawToken,
     path: "/",
     httpOnly: true,
@@ -63,4 +71,12 @@ export function readCookieValue(
     }
   }
   return null;
+}
+
+/** Prefers the `__Host-` cookie when both names are present. */
+export function readSessionTokenFromHeader(cookieHeader: string | null): string | null {
+  return (
+    readCookieValue(cookieHeader, HOST_SESSION_COOKIE_NAME) ??
+    readCookieValue(cookieHeader, SESSION_COOKIE_NAME)
+  );
 }

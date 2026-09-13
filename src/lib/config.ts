@@ -6,52 +6,111 @@ import { z } from "zod";
  * Nothing else may read `process.env`. Validation happens once, eagerly, so a
  * misconfigured deployment fails at startup with a readable message rather than
  * at 2am inside a checkout request.
+ *
+ * Production (`next start`) requires DATABASE_URL, an https APP_URL, and
+ * AUTH_SECRET. `next build` sets NODE_ENV=production but NEXT_PHASE is
+ * `phase-production-build`; secrets are not demanded then so CI can compile
+ * without live credentials (ADR-0041).
  */
-const serverSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+const DEV_DATABASE_URL = "postgresql://bikes:bikes@localhost:5432/bikes";
+const DEV_APP_URL = "http://localhost:3000";
 
-  /** Public origin of the site, used for absolute URLs and payment return URLs. */
-  APP_URL: z.url().default("http://localhost:3000"),
+/** Used only when production secrets are not being enforced. Never in `next start`. */
+export const DEV_AUTH_SECRET = "dev-only-auth-secret-not-for-production";
 
-  /** Default and fallback locale. Russian-only for now, per ADR-0009. */
-  APP_LOCALE: z.literal("ru").default("ru"),
+const postgresUrl = z
+  .string()
+  .min(1)
+  .refine((value) => value.startsWith("postgres"), "Must be a PostgreSQL connection URL");
 
-  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+const authSecret = z
+  .string()
+  .min(32, "Must be at least 32 characters so it has enough entropy to sign cookies");
 
-  /**
-   * PostgreSQL connection URL. Required for migrations and any code that
-   * imports `@/lib/db`. The default is the local development database.
-   */
-  DATABASE_URL: z
-    .string()
-    .min(1)
-    .refine(
-      (value) => value.startsWith("postgres"),
-      "Must be a PostgreSQL connection URL",
-    )
-    .default("postgresql://bikes:bikes@localhost:5432/bikes"),
-});
+export type Env = {
+  NODE_ENV: "development" | "test" | "production";
+  APP_URL: string;
+  APP_LOCALE: "ru";
+  LOG_LEVEL: "debug" | "info" | "warn" | "error";
+  DATABASE_URL: string;
+  AUTH_SECRET: string;
+};
 
-export type Env = z.infer<typeof serverSchema>;
+export function isProductionBuildPhase(source: NodeJS.ProcessEnv = process.env): boolean {
+  return source.NEXT_PHASE === "phase-production-build";
+}
+
+export function enforceProductionSecrets(
+  source: NodeJS.ProcessEnv = process.env,
+  nodeEnv: Env["NODE_ENV"] = (source.NODE_ENV as Env["NODE_ENV"]) ?? "development",
+): boolean {
+  return nodeEnv === "production" && !isProductionBuildPhase(source);
+}
+
+function blankToUndefined(value: unknown): unknown {
+  return value === "" ? undefined : value;
+}
+
+export function parseEnv(source: NodeJS.ProcessEnv): Env {
+  const nodeEnvResult = z
+    .enum(["development", "test", "production"])
+    .default("development")
+    .safeParse(blankToUndefined(source.NODE_ENV));
+  if (!nodeEnvResult.success) {
+    throw invalidEnv(nodeEnvResult.error.issues);
+  }
+  const nodeEnv = nodeEnvResult.data;
+  const strict = enforceProductionSecrets(source, nodeEnv);
+
+  const schema = z.object({
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    APP_URL: strict
+      ? z
+          .url()
+          .refine(
+            (value) => value.startsWith("https://"),
+            "Must be an https origin in production",
+          )
+      : z.url().default(DEV_APP_URL),
+    APP_LOCALE: z.literal("ru").default("ru"),
+    LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+    DATABASE_URL: strict ? postgresUrl : postgresUrl.default(DEV_DATABASE_URL),
+    AUTH_SECRET: strict ? authSecret : authSecret.default(DEV_AUTH_SECRET),
+  });
+
+  const parsed = schema.safeParse({
+    NODE_ENV: blankToUndefined(source.NODE_ENV),
+    APP_URL: blankToUndefined(source.APP_URL),
+    APP_LOCALE: blankToUndefined(source.APP_LOCALE),
+    LOG_LEVEL: blankToUndefined(source.LOG_LEVEL),
+    DATABASE_URL: blankToUndefined(source.DATABASE_URL),
+    AUTH_SECRET: blankToUndefined(source.AUTH_SECRET),
+  });
+  if (!parsed.success) {
+    throw invalidEnv(parsed.error.issues);
+  }
+  return parsed.data;
+}
+
+function invalidEnv(issues: readonly { path: PropertyKey[]; message: string }[]): Error {
+  const problems = issues
+    .map((issue) => `  - ${issue.path.join(".") || "(root)"}: ${issue.message}`)
+    .join("\n");
+  return new Error(
+    `Invalid environment configuration:\n${problems}\n\n` +
+      `Copy .env.example to .env.local and fill in the missing values.`,
+  );
+}
 
 function load(): Env {
-  const parsed = serverSchema.safeParse(process.env);
-
-  if (!parsed.success) {
-    const problems = parsed.error.issues
-      .map((issue) => `  - ${issue.path.join(".") || "(root)"}: ${issue.message}`)
-      .join("\n");
-
-    throw new Error(
-      `Invalid environment configuration:\n${problems}\n\n` +
-        `Copy .env.example to .env.local and fill in the missing values.`,
-    );
-  }
-
-  return parsed.data;
+  return parseEnv(process.env);
 }
 
 export const env: Env = load();
 
 export const isProduction = env.NODE_ENV === "production";
 export const isDevelopment = env.NODE_ENV === "development";
+
+export function publicOriginIsHttps(appUrl: string = env.APP_URL): boolean {
+  return appUrl.startsWith("https://");
+}

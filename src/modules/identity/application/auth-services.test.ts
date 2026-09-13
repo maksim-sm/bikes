@@ -62,7 +62,18 @@ describe("customer authentication", () => {
     });
     expect(loggedIn.cookie.httpOnly).toBe(true);
     expect(loggedIn.cookie.sameSite).toBe("lax");
+    expect(loggedIn.cookie.name).toBe("bikes_session");
     expect(loggedIn.principal.type).toBe("customer");
+
+    const secure = await auth.login({
+      email: "ivan@example.by",
+      password: "correct-horse",
+      requestId: "r4-secure",
+      rateKey: "ip:1-secure",
+      secureCookie: true,
+    });
+    expect(secure.cookie.name).toBe("__Host-bikes_session");
+    expect(secure.cookie.secure).toBe(true);
 
     const principal = await auth.resolve(loggedIn.cookie.value);
     expect(principal).toEqual(loggedIn.principal);

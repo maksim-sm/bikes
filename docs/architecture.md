@@ -489,15 +489,21 @@ Rules:
   a form field, or a hidden input.
 - **Secrets come only from validated environment variables** through
   `lib/config.ts`, which fails fast at startup if a required variable is missing.
-  No secret is committed, and `.env.example` lists names with empty values.
+  Production `next start` requires `DATABASE_URL`, an https `APP_URL`, and
+  `AUTH_SECRET` (ADR-0041). No secret is committed, and `.env.example` lists
+  names with empty values.
 - **Prices and stock are recomputed server-side on every cart read and at
   checkout.** A cart submitted from the browser is a list of product ids and
   quantities, never prices. This is the most commonly exploited weakness in
   small ecommerce builds.
 - **Webhooks verify provider signatures** before any processing, and are
   idempotent.
-- **Mutations are CSRF-protected**, cookies are httpOnly/Secure/SameSite, and
-  security headers including a Content-Security-Policy are set at the edge.
+- **Mutations are CSRF-protected**. Cookies are httpOnly, `SameSite=Lax`, and
+  `Secure` with a `__Host-` prefix when the origin is https (ADR-0041).
+- **Security headers** (CSP with a per-request nonce, HSTS on https,
+  `X-Frame-Options`, `nosniff`, Referrer-Policy, Permissions-Policy) are set
+  in `src/middleware.ts` and `next.config.ts`. The CSP does not allow
+  third-party scripts.
 - **Personal data is minimised.** Store what fulfilment requires. Card data is
   never stored or logged; it is handled by the provider.
 - Rate-limit authentication attempts and checkout submission.
@@ -506,11 +512,10 @@ Rules:
   pinned and prereleases are not adopted accidentally.
 
 The verification record for these rules is the OWASP ASVS 5.0 checklist in
-`docs/security.md` (ADR-0040). Several bullets above are still intent: CSP and
-HSTS are not set in this repository, checkout is not rate-limited, compose
-still selects the mock payment provider, and a few app files read
-`process.env` outside `lib/config.ts`. Treat a **Gap** row in the checklist as
-authoritative over a §14 sentence until the code catches up.
+`docs/security.md` (ADR-0040, ADR-0041). Remaining intent, not yet code:
+checkout is not rate-limited, and compose still selects the mock payment
+provider. Treat a **Gap** row in the checklist as authoritative over a §14
+sentence until the code catches up.
 
 ## 15. Deployment model
 
