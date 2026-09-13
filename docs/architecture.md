@@ -31,6 +31,7 @@ transactional email outbox. `docs/seo.md` defines storefront metadata,
 canonical URLs, sitemap, robots, and structured data.
 `docs/environments.md` defines local, test, staging, and production,
 and who owns each secret. `docs/ci.md` defines the required CI stages.
+`docs/pre-production-audit.md` is the go-live gate (ADR-0049).
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -572,6 +573,9 @@ fleet, no cache tier until a measured problem demands one.
 - Database backups are automated and restoration is tested at least once before
   the store accepts real orders. An untested backup is not a backup.
   Policy and the production migrate runbook: `docs/database.md`.
+  The 2026-09-13 audit (`docs/pre-production-audit.md`) records that
+  this gate is **not yet evidenced** and that the shop is **not
+  production ready** while blockers remain.
 - Rollback is redeploying the previous build, or restoring the
   pre-migration dump if data is wrong. This is only safe because of the
   migration rule above. There are no down migrations. Graceful drain:
