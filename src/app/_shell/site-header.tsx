@@ -24,8 +24,12 @@ export async function SiteHeader() {
             <TextLink className={styles.navLink} href="/catalog" subtle>
               {t.nav.catalog}
             </TextLink>
-            <span className={styles.navLink}>{t.nav.delivery}</span>
-            <span className={styles.navLink}>{t.nav.contacts}</span>
+            <TextLink className={styles.navLink} href="/delivery" subtle>
+              {t.nav.delivery}
+            </TextLink>
+            <TextLink className={styles.navLink} href="/contacts" subtle>
+              {t.nav.contacts}
+            </TextLink>
           </nav>
 
           <div className={styles.tools}>

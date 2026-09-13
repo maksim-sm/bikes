@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: t.checkout.confirmationTitle,
+  robots: { index: false, follow: false },
 };
 
 interface PageProps {

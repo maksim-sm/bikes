@@ -179,6 +179,7 @@ decide it. See `src/modules/README.md` for the internal layering rules.
   stack; each lists the conditions under which reopening it is legitimate.
 - `docs/BASELINE.md` — the pre-implementation audit.
 - `docs/notifications.md` — transactional email outbox and attempt history.
+- `docs/seo.md` — storefront metadata, sitemap, robots, and structured data.
 
 ## Status
 

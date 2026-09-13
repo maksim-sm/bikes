@@ -95,6 +95,8 @@ describe("emails and metadata", () => {
     expect(emailHtml(rendered)).toContain("<p>");
     expect(emailHtml(rendered)).toContain("ira@example.by");
     expect(productPageTitle("Trek", "Émonda")).toBe("Trek Émonda");
+    expect(t.catalog.description.length).toBeGreaterThan(10);
+    expect(t.seo.breadcrumbs.length).toBeGreaterThan(0);
     expect(interpolate(t.checkout.confirmationLead, { number: "B-9" })).toContain("B-9");
   });
 });

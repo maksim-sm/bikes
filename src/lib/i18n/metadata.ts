@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { env } from "@/lib/config";
 import { interpolate } from "./interpolate";
 import { defaultLocale, metaFor, type Locale } from "./locale";
 import { ru, type Messages } from "./messages/ru";
@@ -9,6 +10,7 @@ export function siteMetadata(
 ): Metadata {
   const meta = metaFor(locale);
   return {
+    metadataBase: new URL(env.APP_URL),
     title: {
       default: messages.site.name,
       template: interpolate(messages.meta.titleTemplate, { shop: messages.site.name }),
@@ -17,6 +19,7 @@ export function siteMetadata(
     openGraph: {
       locale: meta.openGraphLocale,
       siteName: messages.site.name,
+      type: "website",
     },
   };
 }

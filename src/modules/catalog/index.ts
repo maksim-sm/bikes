@@ -16,6 +16,7 @@ export {
   isVariantStatus,
   lowestListPriceMinor,
   normalizeProductSlug,
+  PRODUCT_SLUG_PATTERN,
   publishProduct,
   unpublishProduct,
   type BicycleType,

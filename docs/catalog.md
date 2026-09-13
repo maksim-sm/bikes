@@ -49,6 +49,8 @@ published product through catalog services, then ask **inventory** for
 per-variant availability by id (no catalog→inventory SQL join). Delivery quotes
 for Минск come from the delivery module. Images are opaque media keys. Uploaded files are stored by the `media` module
 and served from `/api/media/…`; unknown demo keys still render placeholders.
+Slugs are lowercase hyphenated ASCII; a mixed-case URL redirects to the stored
+slug. Published slugs appear in `/sitemap.xml` (`docs/seo.md`).
 
 Variant size and color are real radio groups. The selected option is marked
 with a thicker border **and** the visible word «выбрано»; color is never the

@@ -117,6 +117,15 @@ describe("catalog services", () => {
     expect(listed.items.map((item) => item.slug)).toEqual(["emonda"]);
   });
 
+  it("resolves a product slug after lowercasing", async () => {
+    const catalog = createCatalogServices({
+      catalog: memoryCatalog([product()]),
+      clock: { now: () => now },
+    });
+    const found = await catalog.getProductBySlug("Emonda");
+    expect(found.slug).toBe("emonda");
+  });
+
   it("does not leak unpublished products by slug", async () => {
     const catalog = createCatalogServices({
       catalog: memoryCatalog([product({ status: "DRAFT" })]),

@@ -183,6 +183,7 @@ export const ru = {
 
   catalog: {
     title: "Каталог велосипедов",
+    description: "Шоссейные и городские велосипеды с доставкой по Беларуси.",
     fromPrice: "от",
     openProduct: "Открыть карточку",
   },
@@ -217,6 +218,7 @@ export const ru = {
     brakeType: "Тормоза",
     description: "Описание",
     gallery: "Фотографии модели",
+    imageFallback: "{brand} {name}",
     addFailed: "Не удалось добавить товар в корзину",
     wishlistAdd: "В избранное",
     wishlistRemove: "Убрать из избранного",
@@ -577,6 +579,33 @@ export const ru = {
     productTitle: "{brand} {name}",
     notFoundTitle: "Страница не найдена",
     openGraphLocale: "ru_BY",
+    productDescription: "{brand} {name} — {type}. Доставка по Беларуси.",
+  },
+
+  seo: {
+    breadcrumbs: "Навигационная цепочка",
+    home: "Главная",
+  },
+
+  pages: {
+    deliveryTitle: "Доставка и оплата",
+    deliveryDescription: "Курьер по Минску, самовывоз и доставка по Беларуси.",
+    deliveryLead:
+      "Доставляем по Минску и областям Беларуси. Стоимость считается на оформлении заказа.",
+    deliveryCourier:
+      "Курьер по Минску: обычно на следующий рабочий день после подтверждения заказа.",
+    deliveryPickup:
+      "Самовывоз из магазина: пр-т Независимости 95, Минск. Можно забрать в день заказа.",
+    deliveryRegional:
+      "Доставка по Беларуси: 2–7 рабочих дней в зависимости от области.",
+    deliveryPayment:
+      "Оплата при получении или онлайн после оформления. Цену фиксирует сервер.",
+    contactsTitle: "Контакты",
+    contactsDescription: "Адрес магазина в Минске, телефон и почта.",
+    contactsLead: "Магазин в Минске. Отвечаем в рабочие дни.",
+    contactsEmail: "info@bikes.local",
+    contactsPhone: "+375 17 388-00-00",
+    contactsAddress: "пр-т Независимости 95, Минск, 220012",
   },
 
   errors: {

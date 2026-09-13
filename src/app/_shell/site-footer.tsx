@@ -13,6 +13,12 @@ export function SiteFooter() {
             © {year} {t.site.name}. {t.footer.rights}.
           </span>
           <Cluster space={4}>
+            <TextLink href="/delivery" subtle>
+              {t.nav.delivery}
+            </TextLink>
+            <TextLink href="/contacts" subtle>
+              {t.nav.contacts}
+            </TextLink>
             <TextLink href="/legal/terms" subtle>
               {t.footer.terms}
             </TextLink>

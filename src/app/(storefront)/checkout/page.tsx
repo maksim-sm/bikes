@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: t.checkout.title,
+  robots: { index: false, follow: false },
 };
 
 const DEFAULT_REGION = "Минск";

@@ -1,0 +1,25 @@
+.nav {
+  margin-block-end: var(--space-4);
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.item:not(:last-child)::after {
+  content: "/";
+  color: var(--color-text-muted);
+}

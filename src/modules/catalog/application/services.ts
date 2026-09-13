@@ -1,6 +1,7 @@
 import { NotFoundError } from "@/lib/errors";
 import {
   isListedOnStorefront,
+  normalizeProductSlug,
   type Brand,
   type Category,
   type Product,
@@ -39,7 +40,7 @@ export function createCatalogServices(deps: {
     },
 
     async getProductBySlug(slug: string) {
-      const product = await deps.catalog.findBySlug(slug);
+      const product = await deps.catalog.findBySlug(normalizeProductSlug(slug));
       if (!product || !isListedOnStorefront(product, deps.clock.now())) {
         throw new NotFoundError("product not found", { slug });
       }

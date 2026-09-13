@@ -25,7 +25,8 @@ self-service area. `docs/wishlist.md` defines the authenticated product
 wishlist. `docs/admin.md` defines the staff console, route protection,
 and session timeout. `docs/i18n.md` defines catalogues, formatting,
 emails, and in-app copy. `docs/notifications.md` defines the
-transactional email outbox.
+transactional email outbox. `docs/seo.md` defines storefront metadata,
+canonical URLs, sitemap, robots, and structured data.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -414,6 +415,9 @@ building an unused translation pipeline now.
 - Product content that is genuinely translatable (names, descriptions) is
   modelled with a locale column from the first migration, even while only `ru`
   rows exist. Retrofitting this into a populated catalogue is painful.
+- Public pages set title, description, canonical, and Open Graph. `robots.txt`
+  and the sitemap list only the storefront. Product and store JSON-LD live in
+  `app/_lib/seo` (`docs/seo.md`, ADR-0035).
 
 ## 12. Observability
 
