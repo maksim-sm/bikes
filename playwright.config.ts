@@ -50,7 +50,11 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     env: {
-      ...process.env,
+      ...Object.fromEntries(
+        Object.entries(process.env).filter(
+          (entry): entry is [string, string] => entry[1] !== undefined,
+        ),
+      ),
       APP_URL: baseURL,
       BIKES_NEXT_DIST_DIR: ".next-e2e",
     },
