@@ -13,7 +13,7 @@ export {
   type PageMeta,
   type SuccessEnvelope,
 } from "./envelope";
-export { httpStatusForCode, toHttpError } from "./errors";
+export { httpStatusForCode, retryAfterSeconds, toHttpError } from "./errors";
 export { parseFilters } from "./filter";
 export { logRequestEnd, logRequestError, logRequestStart } from "./logging";
 export {

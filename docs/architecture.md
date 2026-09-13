@@ -506,16 +506,19 @@ Rules:
   third-party scripts.
 - **Personal data is minimised.** Store what fulfilment requires. Card data is
   never stored or logged; it is handled by the provider.
-- Rate-limit authentication attempts and checkout submission.
+- Rate-limit authentication attempts, checkout submission, payment
+  initiation, and payment webhooks through `src/lib/abuse` (ADR-0042).
+  The default backend is in-process memory; Redis is not required at this
+  scale.
 - Dependency updates are reviewed; the baseline audit notes that `prisma`'s
   `latest` npm tag currently resolves to a release candidate, so versions are
   pinned and prereleases are not adopted accidentally.
 
 The verification record for these rules is the OWASP ASVS 5.0 checklist in
-`docs/security.md` (ADR-0040, ADR-0041). Remaining intent, not yet code:
-checkout is not rate-limited, and compose still selects the mock payment
-provider. Treat a **Gap** row in the checklist as authoritative over a §14
-sentence until the code catches up.
+`docs/security.md` (ADR-0040, ADR-0041, ADR-0042). Remaining intent, not
+yet code: compose still selects the mock payment provider. Treat a **Gap**
+row in the checklist as authoritative over a §14 sentence until the code
+catches up.
 
 ## 15. Deployment model
 

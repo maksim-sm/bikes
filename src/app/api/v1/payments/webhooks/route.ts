@@ -1,4 +1,5 @@
 import { UnauthenticatedError, ValidationError } from "@/lib/errors";
+import { enforceAbuse } from "@/app/api/_lib/abuse";
 import { withRoute } from "@/app/api/_lib/route";
 import { getPaymentServices } from "@/app/api/_lib/compose";
 
@@ -15,6 +16,7 @@ function headerMap(headers: Headers): Record<string, string> {
 export const POST = withRoute(
   "public",
   async (ctx) => {
+    await enforceAbuse("webhook", ctx.request);
     const rawBody = await ctx.request.text();
     try {
       const payment = await getPaymentServices().handleWebhook(

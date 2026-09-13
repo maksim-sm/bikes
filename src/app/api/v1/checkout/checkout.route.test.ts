@@ -10,7 +10,9 @@ import {
 import { POST as addCartItem } from "../cart/items/route";
 import { POST as checkout } from "./route";
 import { GET as listQuotes } from "../delivery/quotes/route";
+import { assertAbuseLimit } from "@/lib/abuse";
 import {
+  getAbuseLimiter,
   getNotificationServices,
   resetRepositories,
   setCatalogInventory,
@@ -286,5 +288,36 @@ describe("checkout HTTP", () => {
         expect.objectContaining({ methodCode: "by-regional", costMinor: 0 }),
       ]),
     );
+  });
+
+  it("rejects checkout after the IP budget is spent", async () => {
+    seedDemoCommerce();
+    const limiter = getAbuseLimiter();
+    for (let i = 0; i < 10; i += 1) {
+      await assertAbuseLimit(limiter, "checkout", ["local"]);
+    }
+    const response = await checkout(
+      jsonRequest("/api/v1/checkout", {
+        customerEmail: "ira@example.by",
+        customerName: "Ира",
+        customerPhone: "+375291112233",
+        destination: {
+          recipientName: "Ира",
+          phone: "+375291112233",
+          region: "Минск",
+          city: "Минск",
+          street: "Независимости 1",
+          postalCode: "220000",
+        },
+        deliveryMethodCode: "minsk-courier",
+        paymentMethodCode: "cash_on_delivery",
+      }),
+    );
+    expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBeTruthy();
+    expect(await response.json()).toMatchObject({
+      ok: false,
+      error: { code: "rate_limited" },
+    });
   });
 });

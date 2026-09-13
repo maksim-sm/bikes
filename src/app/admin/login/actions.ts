@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { serverActionRateKey } from "@/app/api/_lib/abuse";
 import { getAuthServices } from "@/app/api/_lib/compose";
 import { mergeGuestCartForPrincipal } from "@/app/_lib/complete-login";
 import {
@@ -29,7 +30,7 @@ async function signIn(email: string, password: string): Promise<LoginState> {
       email,
       password,
       requestId: "admin-login",
-      rateKey: "admin-login",
+      rateKey: await serverActionRateKey("admin-login"),
       secureCookie: cookieSecurity(),
     });
     if (!canAccessAdmin(result.principal)) {
@@ -47,6 +48,9 @@ async function signIn(email: string, password: string): Promise<LoginState> {
     }
     home = adminHomePath(result.principal);
   } catch (error) {
+    if (isAppError(error) && error.code === "rate_limited") {
+      return { ok: false, message: t.errors.rate_limited };
+    }
     if (isAppError(error)) {
       return { ok: false, message: t.admin.loginFailed };
     }

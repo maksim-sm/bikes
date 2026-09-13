@@ -71,6 +71,7 @@ import {
   DEMO_ORDER_ID,
   DEMO_PROVIDER_PAYMENT_ID,
 } from "./demo-account";
+import { createMemoryRateLimiter, type RateLimiter } from "@/lib/abuse";
 import { isAppError } from "@/lib/errors";
 import {
   createCheckoutHoldReconciler,
@@ -191,6 +192,7 @@ const composeGlobals = globalThis as unknown as {
   bikesMemoryWishlist?: WishlistRepository;
   bikesMemoryAudit?: AuditRepository;
   bikesMemoryNotifications?: NotificationRepository;
+  bikesAbuseLimiter?: RateLimiter;
 };
 
 const DEMO_STOCK: InventoryItem[] = [
@@ -232,6 +234,7 @@ let auditOverride: AuditRepository | null = null;
 let notificationOverride: NotificationRepository | null = null;
 let authOverride: AuthServices | null = null;
 let authPromise: Promise<AuthServices> | null = null;
+let abuseLimiter: RateLimiter | null = null;
 let mediaOverride: MediaServices | null = null;
 let mediaPromise: Promise<MediaServices> | null = null;
 let stockOverride: InventoryServices | null = null;
@@ -490,6 +493,17 @@ export function resetRepositories(): void {
   composeGlobals.bikesMemoryShipments = createMemoryShipments();
   delete composeGlobals.bikesAuthPromise;
   delete composeGlobals.bikesInventory;
+  abuseLimiter = null;
+  delete composeGlobals.bikesAbuseLimiter;
+}
+
+export function getAbuseLimiter(): RateLimiter {
+  if (process.env.VITEST === "true") {
+    abuseLimiter ??= createMemoryRateLimiter();
+    return abuseLimiter;
+  }
+  composeGlobals.bikesAbuseLimiter ??= createMemoryRateLimiter();
+  return composeGlobals.bikesAbuseLimiter;
 }
 
 export function setInventoryServices(services: InventoryServices): void {
