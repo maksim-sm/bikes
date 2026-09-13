@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { formatPrice, t } from "@/lib/i18n";
+import { formatPlural, formatPrice, interpolate, t } from "@/lib/i18n";
 import { Button, TextLink } from "@/ui";
 import {
   resolveSelection,
@@ -136,7 +136,10 @@ export function ProductPurchase({ variants }: { variants: ProductPageVariant[] }
               <dt>{t.product.availability}</dt>
               <dd>
                 {inStock
-                  ? `${t.product.inStock} · ${detail.available} ${t.product.unitsLeft}`
+                  ? interpolate(t.inStockDetail, {
+                      status: t.product.inStock,
+                      units: formatPlural(detail.available, t.plural.unitsLeft),
+                    })
                   : t.product.outOfStock}
               </dd>
             </div>

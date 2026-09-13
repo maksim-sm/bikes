@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getAuthServices } from "@/app/api/_lib/compose";
-import { t } from "@/lib/i18n";
+import { notificationCopy, t } from "@/lib/i18n";
 import { ButtonLink, Container, Stack } from "@/ui";
 import styles from "../account.module.css";
 
@@ -37,7 +37,9 @@ export default async function VerifyEmailPage({
         <Stack space={5}>
           <h1>{t.account.verifyTitle}</h1>
           <p className={ok ? styles.success : styles.error} role="status">
-            {token.length === 0 || !ok ? t.account.verifyFailed : t.account.verifyDone}
+            {token.length === 0 || !ok
+              ? t.account.verifyFailed
+              : notificationCopy("email.verified").body}
           </p>
           <div>
             <ButtonLink href="/login" variant="primary">

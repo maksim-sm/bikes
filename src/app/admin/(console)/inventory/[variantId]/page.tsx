@@ -6,7 +6,7 @@ import {
   getInventoryServices,
 } from "@/app/api/_lib/compose";
 import { isAppError } from "@/lib/errors";
-import { formatDateTime, t } from "@/lib/i18n";
+import { formatStoreDateTime, t } from "@/lib/i18n";
 import { TextLink } from "@/ui";
 import { actorLabel, movementTypeLabel } from "../../../_lib/inventory-copy";
 import { labelForVariant, variantStockLabels } from "../../../_lib/inventory-catalog";
@@ -106,7 +106,7 @@ export default async function AdminInventoryVariantPage({
           <tbody>
             {[...movements].reverse().map((row) => (
               <tr key={row.id}>
-                <td>{formatDateTime(row.createdAt)}</td>
+                <td>{formatStoreDateTime(row.createdAt)}</td>
                 <td>{movementTypeLabel(row.type)}</td>
                 <td>{row.quantity}</td>
                 <td>{row.onHandAfter}</td>

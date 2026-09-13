@@ -1,6 +1,6 @@
 # ADR-0009: Russian-first localization
 
-- Status: Accepted
+- Status: Accepted (amended by [ADR-0033](0033-russian-first-i18n-surfaces.md))
 - Date: 2026-09-11
 
 ## Context

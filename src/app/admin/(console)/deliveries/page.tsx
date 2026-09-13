@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getDeliveryServices } from "@/app/api/_lib/compose";
 import { isAppError } from "@/lib/errors";
-import { formatDateTime, formatPrice, t } from "@/lib/i18n";
+import { formatPrice, formatStoreDateTime, t } from "@/lib/i18n";
 import type { DeliveryKind, ShipmentRecord } from "@/modules/delivery";
 import { Button, TextField, TextLink } from "@/ui";
 import { requireAdminOrderManagement } from "../../_lib/staff";
@@ -153,7 +153,7 @@ export default async function AdminDeliveriesPage({
                 <th>{t.admin.shippedAt}</th>
                 <td>
                   {shipment.shippedAt
-                    ? formatDateTime(shipment.shippedAt)
+                    ? formatStoreDateTime(shipment.shippedAt)
                     : t.admin.noTime}
                 </td>
               </tr>
@@ -161,7 +161,7 @@ export default async function AdminDeliveriesPage({
                 <th>{t.admin.deliveredAt}</th>
                 <td>
                   {shipment.deliveredAt
-                    ? formatDateTime(shipment.deliveredAt)
+                    ? formatStoreDateTime(shipment.deliveredAt)
                     : t.admin.noTime}
                 </td>
               </tr>

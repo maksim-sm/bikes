@@ -28,7 +28,7 @@ Rules:
 | [0006](0006-manual-first-delivery.md)              | Manual-first delivery integration               | Accepted (amended by [0025](0025-belarus-delivery-configuration.md))                                             |
 | [0007](0007-object-storage-media.md)               | Object storage for media, keys not URLs         | Accepted                                                                                                         |
 | [0008](0008-testing-strategy.md)                   | Testing strategy                                | Accepted                                                                                                         |
-| [0009](0009-russian-first-i18n.md)                 | Russian-first localization                      | Accepted                                                                                                         |
+| [0009](0009-russian-first-i18n.md)                 | Russian-first localization                      | Accepted (amended by [0033](0033-russian-first-i18n-surfaces.md))                                                |
 | [0010](0010-byn-money-representation.md)           | BYN money as integer minor units                | Accepted                                                                                                         |
 | [0011](0011-css-modules-design-tokens.md)          | CSS Modules with design tokens                  | Accepted                                                                                                         |
 | [0012](0012-first-catalogue-schema.md)             | Variants own stock grain; no EAV                | Partially superseded by [0014](0014-race-safe-inventory.md)                                                      |
@@ -52,3 +52,4 @@ Rules:
 | [0030](0030-admin-order-operations.md)             | Staff order queue, notes, and refunds           | Accepted                                                                                                         |
 | [0031](0031-admin-inventory-operations.md)         | Staff stock view, adjustments, movement actor   | Accepted                                                                                                         |
 | [0032](0032-admin-audit-log.md)                    | Admin audit log; no secrets in payloads         | Accepted                                                                                                         |
+| [0033](0033-russian-first-i18n-surfaces.md)        | i18n surfaces; Minsk time; Russian plurals      | Accepted                                                                                                         |

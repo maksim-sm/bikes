@@ -23,7 +23,8 @@ defines storefront listing filters (PostgreSQL, not Elasticsearch).
 staff shipment assignment. `docs/account.md` defines the customer
 self-service area. `docs/wishlist.md` defines the authenticated product
 wishlist. `docs/admin.md` defines the staff console, route protection,
-and session timeout.
+and session timeout. `docs/i18n.md` defines catalogues, formatting,
+emails, and notifications.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -394,18 +395,19 @@ added is unresolved, so the architecture must make adding it cheap without
 building an unused translation pipeline now.
 
 - **No user-facing string is hardcoded in a component.** All copy comes from
-  message catalogues in `lib/i18n/messages/<locale>.ts`. This is the one rule
-  that, if broken early, makes a second locale prohibitively expensive later.
-- `ru` is the only locale shipped initially and is the fallback.
-- Routing ships **without** a locale path segment until a second locale is
-  actually committed to. Adding `/[locale]/` later is a routing change; the
-  expensive part — extracting strings — is handled by the rule above.
-- Locale is resolved once in `lib/i18n` and passed down. Domain modules are
-  locale-agnostic: services return codes and structured data, and `app/`
-  translates them for display. An error from `orders` is a code, not a Russian
-  sentence.
-- Formatting of currency, dates, and numbers goes through `Intl` helpers in
-  `lib/i18n`, never through string concatenation. Prices display in BYN.
+  message catalogues in `lib/i18n/messages/<locale>.ts` (`docs/i18n.md`). This
+  is the one rule that, if broken early, makes a second locale prohibitively
+  expensive later.
+- `ru` is the only locale shipped initially and is the fallback. The registry
+  records `ru-BY`, BYN, and `Europe/Minsk`. Adding a language is a catalogue
+  plus a registry row — not `/[locale]/` routing (ADR-0009, ADR-0033).
+- Locale is resolved once in `lib/i18n`. Domain modules are locale-agnostic:
+  services return codes and structured data; `app/` translates them. An error
+  from `orders` is a code, not a Russian sentence.
+- Currency, dates, numbers, and plurals go through `Intl` helpers in
+  `lib/i18n`. Dates display in Minsk time. Prices display in BYN.
+- Validation, HTTP system messages, emails, notifications, and metadata have
+  their own catalogue sections. HTTP `error.message` is localized by code.
 - Product content that is genuinely translatable (names, descriptions) is
   modelled with a locale column from the first migration, even while only `ru`
   rows exist. Retrofitting this into a populated catalogue is painful.
@@ -519,7 +521,7 @@ reconsideration except under the conditions each ADR names: the modular monolith
 to stable 7.10.0 (ADR-0004), the provider-neutral payment abstraction
 (ADR-0005), manual-first delivery (ADR-0006, ADR-0025), object storage for media
 (ADR-0007), the testing strategy (ADR-0008), Russian-first localization
-(ADR-0009), BYN as integer minor units (ADR-0010), CSS Modules with design
+(ADR-0009, ADR-0033), BYN as integer minor units (ADR-0010), CSS Modules with design
 tokens for styling (ADR-0011), the first catalogue schema with per-variant
 stock grain and no EAV (ADR-0012), independent order/payment/fulfillment
 statuses (ADR-0013), the race-safe inventory ledger (ADR-0014), Route

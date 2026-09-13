@@ -1,22 +1,17 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { env } from "@/lib/config";
-import { t } from "@/lib/i18n";
+import { metaFor, resolveLocale, t } from "@/lib/i18n";
+import { siteMetadata } from "@/lib/i18n/metadata";
 import { SkipLink } from "@/ui";
 import "@/ui/tokens.css";
 import "@/ui/base.css";
 
-export const metadata: Metadata = {
-  title: {
-    default: t.site.name,
-    template: `%s — ${t.site.name}`,
-  },
-  description: t.site.description,
-};
+export const metadata: Metadata = siteMetadata(resolveLocale(env.APP_LOCALE));
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang={env.APP_LOCALE}>
+    <html lang={metaFor(resolveLocale(env.APP_LOCALE)).htmlLang} dir="ltr">
       <body>
         <SkipLink href="#main">{t.nav.skipToContent}</SkipLink>
         {children}

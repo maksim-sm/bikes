@@ -1,17 +1,34 @@
+import { emailActionUrl, renderEmail, t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import type { AuthMailer } from "../application/auth-ports";
 
 /**
- * Development mailer. Logs that mail was queued, never the raw token.
- * Replace with a provider adapter when an email vendor is chosen.
+ * Development mailer. Renders catalogue copy and logs the subject, never
+ * the raw token or the action URL that contains it.
  */
 export function createLoggingMailer(): AuthMailer {
   return {
     async sendEmailVerification(input) {
-      logger.info("auth.email.verification_queued", { email: input.email });
+      const rendered = renderEmail("verify", {
+        shop: t.site.name,
+        email: input.email,
+        url: emailActionUrl("verify", input.rawToken),
+      });
+      logger.info("auth.email.verification_queued", {
+        email: input.email,
+        subject: rendered.subject,
+      });
     },
     async sendPasswordReset(input) {
-      logger.info("auth.email.password_reset_queued", { email: input.email });
+      const rendered = renderEmail("passwordReset", {
+        shop: t.site.name,
+        email: input.email,
+        url: emailActionUrl("passwordReset", input.rawToken),
+      });
+      logger.info("auth.email.password_reset_queued", {
+        email: input.email,
+        subject: rendered.subject,
+      });
     },
   };
 }

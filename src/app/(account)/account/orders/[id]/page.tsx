@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getDeliveryServices, getOrderServices } from "@/app/api/_lib/compose";
 import { paymentMethodLabel } from "@/app/(storefront)/checkout/payment-label";
 import { isAppError } from "@/lib/errors";
-import { formatDateTime, formatPrice, t } from "@/lib/i18n";
+import { formatPrice, formatStoreDateTime, t } from "@/lib/i18n";
 import { Card, Stack, TextLink } from "@/ui";
 import { requireAccountCustomer } from "../../../_lib/guard";
 import {
@@ -129,7 +129,7 @@ export default async function AccountOrderPage({
                 <th>{t.admin.shippedAt}</th>
                 <td>
                   {shipment.shippedAt
-                    ? formatDateTime(shipment.shippedAt)
+                    ? formatStoreDateTime(shipment.shippedAt)
                     : t.admin.noTime}
                 </td>
               </tr>
@@ -137,7 +137,7 @@ export default async function AccountOrderPage({
                 <th>{t.admin.deliveredAt}</th>
                 <td>
                   {shipment.deliveredAt
-                    ? formatDateTime(shipment.deliveredAt)
+                    ? formatStoreDateTime(shipment.deliveredAt)
                     : t.admin.noTime}
                 </td>
               </tr>

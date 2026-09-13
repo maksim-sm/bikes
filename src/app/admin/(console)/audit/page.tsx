@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getAuditServices, getAuthServices } from "@/app/api/_lib/compose";
-import { formatDateTime, t } from "@/lib/i18n";
+import { formatStoreDateTime, t } from "@/lib/i18n";
 import { Button, TextField } from "@/ui";
 import { auditActionLabel, formatAuditJson } from "../../_lib/audit-copy";
 import { requireAdminTitle } from "../../_lib/staff";
@@ -81,7 +81,7 @@ export default async function AdminAuditPage({
           <tbody>
             {rows.map((row) => (
               <tr key={row.id}>
-                <td>{formatDateTime(row.createdAt)}</td>
+                <td>{formatStoreDateTime(row.createdAt)}</td>
                 <td>
                   {row.actorUserId
                     ? (emails.get(row.actorUserId) ?? row.actorUserId)

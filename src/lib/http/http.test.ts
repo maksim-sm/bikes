@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ConflictError, ValidationError } from "@/lib/errors";
+import { t } from "@/lib/i18n";
 import { failure, readRequestId, success } from "./envelope";
 import { toHttpError } from "./errors";
 import { parseFilters } from "./filter";
@@ -30,12 +31,12 @@ describe("error mapping", () => {
     expect(toHttpError(new ConflictError("insufficient available inventory"))).toEqual({
       status: 409,
       code: "conflict",
-      message: "insufficient available inventory",
+      message: t.errors.conflict,
     });
     expect(toHttpError(new Error("ECONNRESET boom"))).toEqual({
       status: 500,
       code: "internal_error",
-      message: "internal error",
+      message: t.errors.internal_error,
     });
   });
 });

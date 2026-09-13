@@ -7,7 +7,7 @@ import {
   getPaymentServices,
 } from "@/app/api/_lib/compose";
 import { isAppError } from "@/lib/errors";
-import { formatDateTime, formatPrice, t } from "@/lib/i18n";
+import { formatPrice, formatStoreDateTime, t } from "@/lib/i18n";
 import type { PaymentStatus } from "@/modules/payments";
 import { Card, TextLink } from "@/ui";
 import { minorToBynInput } from "../../../_lib/money";
@@ -237,7 +237,7 @@ export default async function AdminOrderDetailPage({
                   <th>{t.admin.shippedAt}</th>
                   <td>
                     {shipment.shippedAt
-                      ? formatDateTime(shipment.shippedAt)
+                      ? formatStoreDateTime(shipment.shippedAt)
                       : t.admin.noTime}
                   </td>
                 </tr>
@@ -245,7 +245,7 @@ export default async function AdminOrderDetailPage({
                   <th>{t.admin.deliveredAt}</th>
                   <td>
                     {shipment.deliveredAt
-                      ? formatDateTime(shipment.deliveredAt)
+                      ? formatStoreDateTime(shipment.deliveredAt)
                       : t.admin.noTime}
                   </td>
                 </tr>

@@ -32,7 +32,7 @@ Error:
 {
   "ok": false,
   "requestId": "2c1e…",
-  "error": { "code": "not_found", "message": "product not found" }
+  "error": { "code": "not_found", "message": "Ничего не найдено" }
 }
 ```
 
@@ -66,7 +66,9 @@ Zod runs at the Route Handler boundary (`parseWithSchema`, `parsePageQuery`,
 | `rate_limited`      | 429                    |
 | anything else       | 500 (`internal_error`) |
 
-Unexpected throws become `internal_error` with the message `"internal error"`.
+Unexpected throws become `internal_error`. `error.message` is the Russian
+catalogue line for that code (`docs/i18n.md`); `code` stays a stable English
+identifier. Domain English text never appears in the envelope.
 
 ## Authentication checks
 

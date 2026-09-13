@@ -296,7 +296,7 @@ export const ru = {
     delivery: "Доставка",
     total: "К оплате",
     confirmationTitle: "Заказ принят",
-    confirmationLead: "Мы зафиксировали заказ. Его номер:",
+    confirmationLead: "Мы зафиксировали заказ. Его номер: {number}.",
     backToCatalog: "Вернуться в каталог",
   },
 
@@ -571,6 +571,113 @@ export const ru = {
     auditConfigDeliver: "Доставка отмечена",
     auditRoleChange: "Изменены роли",
   },
+
+  meta: {
+    titleTemplate: "%s — {shop}",
+    productTitle: "{brand} {name}",
+    notFoundTitle: "Страница не найдена",
+    openGraphLocale: "ru_BY",
+  },
+
+  errors: {
+    validation_failed: "Проверьте введённые данные",
+    unauthenticated: "Войдите, чтобы продолжить",
+    forbidden: "Недостаточно прав для этого действия",
+    not_found: "Ничего не найдено",
+    conflict: "Действие нельзя выполнить в текущем состоянии",
+    rate_limited: "Слишком много запросов. Подождите и попробуйте снова",
+    internal_error: "Произошла внутренняя ошибка",
+  },
+
+  validation: {
+    invalid: "Некорректное значение",
+    invalidType: "Неверный тип значения",
+    required: "Заполните это поле",
+    tooSmall: "Значение слишком маленькое",
+    tooBig: "Значение слишком большое",
+    invalidEmail: "Введите корректный адрес электронной почты",
+    invalidUrl: "Введите корректную ссылку",
+  },
+
+  time: {
+    zoneMinsk: "Минск",
+  },
+
+  plural: {
+    unitsLeft: {
+      one: "осталась {count} штука",
+      few: "осталось {count} штуки",
+      many: "осталось {count} штук",
+    },
+    warrantyMonths: {
+      one: "{count} месяц",
+      few: "{count} месяца",
+      many: "{count} месяцев",
+    },
+    items: {
+      one: "{count} товар",
+      few: "{count} товара",
+      many: "{count} товаров",
+    },
+  },
+
+  email: {
+    verify: {
+      subject: "Подтвердите почту — {shop}",
+      preview: "Ссылка для подтверждения действует ограниченное время.",
+      text: "Здравствуйте.\n\nПодтвердите адрес {email}, открыв ссылку:\n{url}\n\nЕсли вы не регистрировались, проигнорируйте письмо.\n\n{shop}",
+    },
+    passwordReset: {
+      subject: "Сброс пароля — {shop}",
+      preview: "Одноразовая ссылка для смены пароля.",
+      text: "Здравствуйте.\n\nЧтобы задать новый пароль для {email}, откройте ссылку:\n{url}\n\nЕсли вы не запрашивали сброс, проигнорируйте письмо.\n\n{shop}",
+    },
+    orderPlaced: {
+      subject: "Заказ {number} принят — {shop}",
+      preview: "Мы зафиксировали заказ. Итог {total}.",
+      text: "Здравствуйте, {name}.\n\nЗаказ {number} принят. К оплате {total}.\n\n{shop}",
+    },
+    paymentFailed: {
+      subject: "Оплата заказа {number} не прошла — {shop}",
+      preview: "Попробуйте оплатить снова или выберите другой способ.",
+      text: "Здравствуйте, {name}.\n\nОплата заказа {number} не прошла. Резерв товара будет снят, если оплата не будет завершена.\n\n{shop}",
+    },
+    shipmentShipped: {
+      subject: "Заказ {number} отправлен — {shop}",
+      preview: "Трек-номер: {tracking}.",
+      text: "Здравствуйте, {name}.\n\nЗаказ {number} передан в доставку. Трек-номер: {tracking}.\nЧасовой пояс отправления: {zone}.\n\n{shop}",
+    },
+  },
+
+  notifications: {
+    "order.placed": {
+      title: "Заказ принят",
+      body: "Заказ {number} зафиксирован. Подтверждение отправим на почту.",
+    },
+    "payment.failed": {
+      title: "Оплата не прошла",
+      body: "Оплата заказа {number} не прошла. Можно попробовать снова.",
+    },
+    "payment.expired": {
+      title: "Срок оплаты истёк",
+      body: "Резерв по заказу {number} снят. Оформите заказ заново, если товар ещё нужен.",
+    },
+    "shipment.shipped": {
+      title: "Заказ в пути",
+      body: "Заказ {number} отправлен. Трек: {tracking}.",
+    },
+    "shipment.delivered": {
+      title: "Заказ доставлен",
+      body: "Заказ {number} отмечен как доставленный.",
+    },
+    "email.verified": {
+      title: "Почта подтверждена",
+      body: "Теперь можно войти в личный кабинет.",
+    },
+  },
+
+  cartInsufficient: "Доступно только {units}.",
+  inStockDetail: "{status} · {units}",
 
   dev: {
     underConstruction: "Приложение находится в разработке",

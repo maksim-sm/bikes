@@ -7,6 +7,7 @@ import {
   ValidationError,
   isAppError,
 } from "@/lib/errors";
+import { systemMessage } from "@/lib/i18n";
 
 export interface HttpErrorView {
   status: number;
@@ -32,13 +33,13 @@ export function toHttpError(error: unknown): HttpErrorView {
     return {
       status: STATUS_BY_CODE[error.code] ?? 400,
       code: error.code,
-      message: error.message,
+      message: systemMessage(error.code),
     };
   }
   return {
     status: 500,
     code: "internal_error",
-    message: "internal error",
+    message: systemMessage("internal_error"),
   };
 }
 

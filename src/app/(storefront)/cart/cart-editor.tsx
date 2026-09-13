@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { formatPrice, t } from "@/lib/i18n";
+import { formatPlural, formatPrice, interpolate, t } from "@/lib/i18n";
 import type { CartLineView } from "@/modules/cart";
 import { Button, SelectField } from "@/ui";
 import {
@@ -23,7 +23,9 @@ function issueMessage(line: CartLineView): string | null {
     return t.cart.unavailable;
   }
   if (line.issues.includes("insufficient_available")) {
-    return `${t.cart.insufficient} ${line.available} ${t.product.unitsLeft}`;
+    return interpolate(t.cartInsufficient, {
+      units: formatPlural(line.available, t.plural.unitsLeft),
+    });
   }
   return null;
 }

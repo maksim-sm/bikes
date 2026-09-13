@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isAppError } from "@/lib/errors";
-import { formatPrice, t } from "@/lib/i18n";
+import { formatPlural, formatPrice, productPageTitle, t } from "@/lib/i18n";
 import { Container, Stack } from "@/ui";
 import { loadProductPage } from "../../_lib/load-product-page";
 import { MediaImage } from "../../_lib/media-image";
@@ -30,9 +30,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   try {
     const product = await loadProductPage(slug);
-    return { title: `${product.brandName} ${product.name}` };
+    return { title: productPageTitle(product.brandName, product.name) };
   } catch {
-    return { title: t.status.notFound };
+    return { title: t.meta.notFoundTitle };
   }
 }
 
@@ -150,7 +150,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               <h2 id="warranty-heading">{t.product.warranty}</h2>
               {product.warrantyMonths !== null ? (
                 <p>
-                  {product.warrantyMonths} {t.product.warrantyMonths}
+                  {formatPlural(product.warrantyMonths, t.plural.warrantyMonths)}
                 </p>
               ) : null}
               {product.warrantyText ? <p>{product.warrantyText}</p> : null}

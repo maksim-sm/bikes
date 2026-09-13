@@ -4,7 +4,7 @@ import {
   getCatalogRepository,
   getInventoryServices,
 } from "@/app/api/_lib/compose";
-import { formatDateTime, t } from "@/lib/i18n";
+import { formatStoreDateTime, t } from "@/lib/i18n";
 import { Button, TextField, TextLink } from "@/ui";
 import { actorLabel, movementTypeLabel } from "../../_lib/inventory-copy";
 import {
@@ -125,7 +125,7 @@ export default async function AdminInventoryPage({
               const label = labelForVariant(labels, row.variantId);
               return (
                 <tr key={row.id}>
-                  <td>{formatDateTime(row.createdAt)}</td>
+                  <td>{formatStoreDateTime(row.createdAt)}</td>
                   <td>
                     <TextLink href={`/admin/inventory/${row.variantId}`}>
                       {label.sku}

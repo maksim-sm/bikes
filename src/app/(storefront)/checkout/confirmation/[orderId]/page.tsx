@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getOrderServices } from "@/app/api/_lib/compose";
-import { formatPrice, t } from "@/lib/i18n";
+import { formatPrice, notificationCopy, t } from "@/lib/i18n";
 import { ButtonLink, Card, Container, Stack } from "@/ui";
 import { paymentMethodLabel } from "../../payment-label";
 import styles from "../../checkout.module.css";
@@ -30,9 +30,7 @@ export default async function CheckoutConfirmationPage({ params }: PageProps) {
       <div className={styles.page}>
         <Stack space={5}>
           <h1>{t.checkout.confirmationTitle}</h1>
-          <p>
-            {t.checkout.confirmationLead} <strong>{order.number}</strong>
-          </p>
+          <p>{notificationCopy("order.placed", { number: order.number }).body}</p>
           <Card filled>
             <ul className={styles.lines}>
               {order.items.map((item) => (
