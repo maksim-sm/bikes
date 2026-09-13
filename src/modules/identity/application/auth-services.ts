@@ -264,7 +264,7 @@ export function createAuthServices(deps: {
       const user = await deps.users.findByEmail(email);
       if (user && user.disabledAt === null) {
         const rawToken = await issueOneTime(user, "PASSWORD_RESET");
-        await deps.mailer.sendPasswordReset({ email, rawToken });
+        await deps.mailer.sendPasswordReset({ email, rawToken, userId: user.id });
       }
       deps.log.record("auth.password_reset.request", {
         requestId: input.requestId,

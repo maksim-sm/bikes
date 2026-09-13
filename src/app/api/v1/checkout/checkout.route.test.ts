@@ -11,6 +11,7 @@ import { POST as addCartItem } from "../cart/items/route";
 import { POST as checkout } from "./route";
 import { GET as listQuotes } from "../delivery/quotes/route";
 import {
+  getNotificationServices,
   resetRepositories,
   setCatalogInventory,
   setCatalogRepository,
@@ -96,6 +97,7 @@ describe("checkout HTTP", () => {
     const body = (await placed.json()) as {
       ok: boolean;
       data: {
+        id: string;
         totalMinor: number;
         subtotalMinor: number;
         deliveryCostMinor: number;
@@ -112,6 +114,14 @@ describe("checkout HTTP", () => {
       unitPriceMinor: 349900,
       quantity: 2,
     });
+    const notices = await getNotificationServices().listByEntity("order", body.data.id);
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toMatchObject({
+      event: "order.created",
+      status: "SENT",
+      recipientEmail: "ira@example.by",
+    });
+    expect(notices[0]?.attempts).toHaveLength(1);
   });
 
   it("rejects an empty cart and invalid customer data", async () => {

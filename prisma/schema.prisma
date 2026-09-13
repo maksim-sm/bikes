@@ -160,6 +160,14 @@ enum InventoryMovementType {
   @@map("inventory_movement_type")
 }
 
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+
+  @@map("notification_status")
+}
+
 // ===========================================================================
 // identity
 // Owns: users, credentials, roles, customer profiles, addresses, wishlists.
@@ -772,6 +780,48 @@ model AuditLog {
   @@index([actorUserId, createdAt], map: "audit_logs_actor_created_at_idx")
   @@index([action, createdAt], map: "audit_logs_action_created_at_idx")
   @@map("audit_logs")
+}
+
+// ===========================================================================
+// notifications
+// Owns: the outbox of customer messages and each send attempt. Commerce
+// modules persist first, then dispatch. A failed send must not roll back
+// order or payment rows. Tokens never live in payload JSON.
+// ===========================================================================
+
+model Notification {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event           String             @db.VarChar(40)
+  entityType      String             @map("entity_type") @db.VarChar(20)
+  entityId        String             @map("entity_id") @db.VarChar(80)
+  recipientEmail  String             @map("recipient_email") @db.VarChar(320)
+  channel         String             @default("email") @db.VarChar(20)
+  status          NotificationStatus @default(PENDING)
+  idempotencyKey  String             @unique @map("idempotency_key") @db.VarChar(160)
+  payload         Json
+  lastError       String?            @map("last_error") @db.VarChar(240)
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  sentAt          DateTime?          @map("sent_at") @db.Timestamptz(6)
+
+  attempts NotificationAttempt[]
+
+  @@index([entityType, entityId, createdAt], map: "notifications_entity_created_at_idx")
+  @@index([event, status, createdAt], map: "notifications_event_status_created_at_idx")
+  @@map("notifications")
+}
+
+model NotificationAttempt {
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  notificationId String             @map("notification_id") @db.Uuid
+  status         NotificationStatus
+  error          String?            @db.VarChar(240)
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId, createdAt], map: "notification_attempts_notification_created_at_idx")
+  @@map("notification_attempts")
 }
 
 // ===========================================================================

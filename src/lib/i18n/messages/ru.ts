@@ -637,15 +637,60 @@ export const ru = {
       preview: "Мы зафиксировали заказ. Итог {total}.",
       text: "Здравствуйте, {name}.\n\nЗаказ {number} принят. К оплате {total}.\n\n{shop}",
     },
+    orderCreated: {
+      subject: "Заказ {number} принят — {shop}",
+      preview: "Мы зафиксировали заказ. Итог {total}.",
+      text: "Здравствуйте, {name}.\n\nЗаказ {number} принят. К оплате {total}.\n\n{shop}",
+    },
+    paymentPending: {
+      subject: "Ожидаем оплату заказа {number} — {shop}",
+      preview: "Платёж по заказу {number} создан. Сумма {amount}.",
+      text: "Здравствуйте, {name}.\n\nДля заказа {number} создан платёж на {amount}. Завершите оплату, чтобы мы начали комплектацию.\n\n{shop}",
+    },
+    paymentSuccessful: {
+      subject: "Оплата заказа {number} получена — {shop}",
+      preview: "Заказ {number} оплачен. Сумма {amount}.",
+      text: "Здравствуйте, {name}.\n\nОплата заказа {number} прошла успешно. Мы получили {amount} и передаём заказ на комплектацию.\n\n{shop}",
+    },
     paymentFailed: {
       subject: "Оплата заказа {number} не прошла — {shop}",
       preview: "Попробуйте оплатить снова или выберите другой способ.",
       text: "Здравствуйте, {name}.\n\nОплата заказа {number} не прошла. Резерв товара будет снят, если оплата не будет завершена.\n\n{shop}",
     },
+    orderProcessing: {
+      subject: "Заказ {number} собирается — {shop}",
+      preview: "Мы готовим заказ {number} к отправке.",
+      text: "Здравствуйте, {name}.\n\nЗаказ {number} передан на комплектацию. Как только посылка уйдёт, пришлём трек-номер.\n\n{shop}",
+    },
+    orderShipped: {
+      subject: "Заказ {number} отправлен — {shop}",
+      preview: "Трек-номер: {tracking}.",
+      text: "Здравствуйте, {name}.\n\nЗаказ {number} передан в доставку. Трек-номер: {tracking}.\nЧасовой пояс отправления: {zone}.\n\n{shop}",
+    },
     shipmentShipped: {
       subject: "Заказ {number} отправлен — {shop}",
       preview: "Трек-номер: {tracking}.",
       text: "Здравствуйте, {name}.\n\nЗаказ {number} передан в доставку. Трек-номер: {tracking}.\nЧасовой пояс отправления: {zone}.\n\n{shop}",
+    },
+    orderDelivered: {
+      subject: "Заказ {number} доставлен — {shop}",
+      preview: "Заказ {number} получен.",
+      text: "Здравствуйте, {name}.\n\nЗаказ {number} отмечен как доставленный. Спасибо, что выбрали нас.\n\n{shop}",
+    },
+    orderCancelled: {
+      subject: "Заказ {number} отменён — {shop}",
+      preview: "Заказ {number} больше не обрабатывается.",
+      text: "Здравствуйте, {name}.\n\nЗаказ {number} отменён. Если вы уже оплатили заказ, возврат оформим отдельно.\n\n{shop}",
+    },
+    refundInitiated: {
+      subject: "Возврат по заказу {number} начат — {shop}",
+      preview: "Мы оформляем возврат по заказу {number}. Сумма {amount}.",
+      text: "Здравствуйте, {name}.\n\nПо заказу {number} начат возврат на {amount}. Сообщим, когда деньги вернутся.\n\n{shop}",
+    },
+    refundCompleted: {
+      subject: "Возврат по заказу {number} выполнен — {shop}",
+      preview: "Деньги по заказу {number} возвращены. Сумма {amount}.",
+      text: "Здравствуйте, {name}.\n\nВозврат по заказу {number} выполнен. Сумма {amount}. Срок зачисления зависит от банка.\n\n{shop}",
     },
   },
 
@@ -653,6 +698,18 @@ export const ru = {
     "order.placed": {
       title: "Заказ принят",
       body: "Заказ {number} зафиксирован. Подтверждение отправим на почту.",
+    },
+    "order.created": {
+      title: "Заказ принят",
+      body: "Заказ {number} зафиксирован. Подтверждение отправим на почту.",
+    },
+    "payment.pending": {
+      title: "Ожидаем оплату",
+      body: "Для заказа {number} создан платёж.",
+    },
+    "payment.successful": {
+      title: "Оплата получена",
+      body: "Заказ {number} оплачен.",
     },
     "payment.failed": {
       title: "Оплата не прошла",
@@ -662,13 +719,37 @@ export const ru = {
       title: "Срок оплаты истёк",
       body: "Резерв по заказу {number} снят. Оформите заказ заново, если товар ещё нужен.",
     },
+    "order.processing": {
+      title: "Заказ собирается",
+      body: "Заказ {number} передан на комплектацию.",
+    },
+    "order.shipped": {
+      title: "Заказ в пути",
+      body: "Заказ {number} отправлен. Трек: {tracking}.",
+    },
     "shipment.shipped": {
       title: "Заказ в пути",
       body: "Заказ {number} отправлен. Трек: {tracking}.",
     },
+    "order.delivered": {
+      title: "Заказ доставлен",
+      body: "Заказ {number} отмечен как доставленный.",
+    },
     "shipment.delivered": {
       title: "Заказ доставлен",
       body: "Заказ {number} отмечен как доставленный.",
+    },
+    "order.cancelled": {
+      title: "Заказ отменён",
+      body: "Заказ {number} отменён.",
+    },
+    "refund.initiated": {
+      title: "Возврат начат",
+      body: "По заказу {number} оформляется возврат.",
+    },
+    "refund.completed": {
+      title: "Возврат выполнен",
+      body: "Возврат по заказу {number} завершён.",
     },
     "email.verified": {
       title: "Почта подтверждена",

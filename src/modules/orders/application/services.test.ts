@@ -13,6 +13,11 @@ import type {
   OrderRepository,
   PlaceOrderInput,
 } from "./ports";
+import {
+  createFailingEmailChannel,
+  createMemoryNotificationRepository,
+  createNotificationServices,
+} from "@/modules/notifications";
 import { createOrderServices } from "./services";
 import type { Order } from "../domain/order";
 
@@ -85,6 +90,7 @@ function setup(options?: {
     orderId: string;
   }) => Promise<void>;
   cart?: Partial<Cart>;
+  notify?: ReturnType<typeof createNotificationServices>;
 }) {
   const orders = new Map<string, Order>();
   const repo: OrderRepository = {
@@ -164,6 +170,7 @@ function setup(options?: {
     inventory,
     delivery,
     clock: { now: () => new Date("2026-09-12T10:00:00.000Z") },
+    ...(options?.notify ? { notify: options.notify } : {}),
   });
   return { services, reserved, cancelled, committed, orders, cart };
 }
@@ -348,5 +355,51 @@ describe("order services", () => {
     await expect(services.completeOrder(placed.id, ops)).rejects.toBeInstanceOf(
       ConflictError,
     );
+  });
+
+  it("records order.created after a successful checkout and keeps PLACED if mail fails", async () => {
+    const created = createNotificationServices({
+      notifications: createMemoryNotificationRepository(),
+      channel: createFailingEmailChannel("smtp_down"),
+    });
+    const { services } = setup({ notify: created });
+    const order = await services.placeOrder(placeInput());
+    expect(order.status).toBe("PLACED");
+    const rows = await created.listByEntity("order", order.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ event: "order.created", status: "FAILED" });
+  });
+
+  it("does not notify created or cancelled when reserve fails mid-checkout", async () => {
+    const notify = createNotificationServices({
+      notifications: createMemoryNotificationRepository(),
+      channel: createFailingEmailChannel(),
+    });
+    let calls = 0;
+    const { services, orders } = setup({
+      notify,
+      reserve: async () => {
+        calls += 1;
+        if (calls === 1) {
+          throw new ConflictError("insufficient available inventory");
+        }
+      },
+    });
+    await expect(services.checkout(placeInput())).rejects.toBeInstanceOf(ConflictError);
+    const cancelled = [...orders.values()][0];
+    expect(cancelled?.status).toBe("CANCELLED");
+    expect(await notify.listByEntity("order", cancelled!.id)).toEqual([]);
+  });
+
+  it("notifies order.cancelled after an explicit cancel", async () => {
+    const notify = createNotificationServices({
+      notifications: createMemoryNotificationRepository(),
+      channel: createFailingEmailChannel(),
+    });
+    const { services } = setup({ notify });
+    const placed = await services.placeOrder(placeInput());
+    await services.cancelOrder(placed.id, customerPrincipal("user-1"));
+    const events = (await notify.listByEntity("order", placed.id)).map((row) => row.event);
+    expect(events.sort()).toEqual(["order.cancelled", "order.created"]);
   });
 });

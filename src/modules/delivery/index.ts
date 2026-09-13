@@ -26,7 +26,11 @@ export {
   type ShipmentTracking,
 } from "./domain/shipment";
 export type { DeliveryRepository, ShipmentRepository } from "./application/ports";
-export { createDeliveryServices, type DeliveryServices } from "./application/services";
+export {
+  createDeliveryServices,
+  type DeliveryOrderContact,
+  type DeliveryServices,
+} from "./application/services";
 export {
   createDemoDeliveryRepository,
   createMemoryShipments,

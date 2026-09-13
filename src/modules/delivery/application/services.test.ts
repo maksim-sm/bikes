@@ -8,6 +8,11 @@ import {
   type DeliveryMethodRecord,
   type DeliveryZone,
 } from "../domain/quote";
+import {
+  createCapturingEmailChannel,
+  createMemoryNotificationRepository,
+  createNotificationServices,
+} from "@/modules/notifications";
 import type { DeliveryRepository, ShipmentRecord, ShipmentRepository } from "./ports";
 import { createDeliveryServices } from "./services";
 
@@ -265,5 +270,61 @@ describe("delivery services", () => {
         userId: "user-1",
       }),
     ).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it("notifies processing, shipped, and delivered after each shipment write", async () => {
+    const channel = createCapturingEmailChannel();
+    const notify = createNotificationServices({
+      notifications: createMemoryNotificationRepository(),
+      channel,
+    });
+    const methods: DeliveryRepository = {
+      async getMethod() {
+        return courier;
+      },
+      async listMethods() {
+        return [courier];
+      },
+      async listActiveMethods() {
+        return [courier];
+      },
+      async listZones() {
+        return [];
+      },
+    };
+    const rows = new Map<string, ShipmentRecord>();
+    const shipments: ShipmentRepository = {
+      async findByOrder(orderId) {
+        return rows.get(orderId) ?? null;
+      },
+      async save(shipment) {
+        rows.set(shipment.orderId, shipment);
+        return shipment;
+      },
+    };
+    const delivery = createDeliveryServices({
+      methods,
+      shipments,
+      notify,
+      lookupRecipient: async () => ({
+        email: "ira@example.by",
+        name: "Ира",
+        number: "B-9",
+      }),
+    });
+    const ops = staffPrincipal("ops", ["order_management"]);
+    await delivery.assignShipment(ops, {
+      orderId: "o1",
+      methodCode: "minsk-courier",
+      costMinor: 2500,
+    });
+    await delivery.markShipped(ops, "o1", "BY123");
+    await delivery.markDelivered(ops, "o1");
+    expect(channel.sent.map((row) => row.event)).toEqual([
+      "order.processing",
+      "order.shipped",
+      "order.delivered",
+    ]);
+    expect(channel.sent[1]?.payload.tracking).toBe("BY123");
   });
 });

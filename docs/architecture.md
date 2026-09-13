@@ -24,7 +24,8 @@ staff shipment assignment. `docs/account.md` defines the customer
 self-service area. `docs/wishlist.md` defines the authenticated product
 wishlist. `docs/admin.md` defines the staff console, route protection,
 and session timeout. `docs/i18n.md` defines catalogues, formatting,
-emails, and notifications.
+emails, and in-app copy. `docs/notifications.md` defines the
+transactional email outbox.
 
 Implementation status: the application foundation exists — Next.js App Router,
 TypeScript, the `src/` layout below, configuration validation, the ESLint
@@ -78,6 +79,7 @@ src/
     pricing/
     inventory/
     audit/
+    notifications/
   ui/                     Design system: tokens and domain-agnostic primitives
     tokens.css            Type, spacing, colour, radii, motion — every token
     base.css              Element reset and the single global focus style
@@ -124,7 +126,8 @@ Each module owns a slice of the business and the tables backing it.
 | `identity`  | Users, sessions, roles, customer profiles, addresses, wishlists                              | Order data                           |
 | `media`     | Image upload, storage references, opaque keys                                                | Which product an image belongs to    |
 | `inventory` | On-hand, reservations, movements (receipt, adjust, reserve, release, commit, return, cancel) | Product identity, order status       |
-| `audit`     | Append-only change history                                                                   | Domain state itself                  |
+| `audit`         | Append-only change history                                                                   | Domain state itself                  |
+| `notifications` | Transactional email outbox and send attempts                                                 | Order, payment, or user rows         |
 
 `catalog` and `pricing` are deliberately separate: promotions, VAT display, and
 currency rules change on a different schedule from the product catalogue, and
@@ -423,7 +426,11 @@ pipeline, or log aggregation cluster is in scope.**
 - A request id is generated at the `app/` boundary and threaded through service
   calls so that one customer's failed checkout can be reconstructed from logs.
 - **Never log** passwords, session tokens, payment card data, provider secrets,
-  or full webhook bodies containing personal data.
+  or full webhook bodies containing personal data. Notification payloads follow
+  the same rule (`docs/notifications.md`, ADR-0034): reset tokens stay off the
+  outbox row.
+- Customer emails are sent **after** commerce state is committed. A failed send
+  is a `FAILED` outbox row, not a rolled-back order.
 - Log at the boundaries: one line per inbound request, one per outbound
   third-party call with its duration and outcome, one per domain error. Not one
   per function.

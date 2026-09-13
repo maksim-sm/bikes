@@ -32,7 +32,7 @@ Rules:
 | [0010](0010-byn-money-representation.md)           | BYN money as integer minor units                | Accepted                                                                                                         |
 | [0011](0011-css-modules-design-tokens.md)          | CSS Modules with design tokens                  | Accepted                                                                                                         |
 | [0012](0012-first-catalogue-schema.md)             | Variants own stock grain; no EAV                | Partially superseded by [0014](0014-race-safe-inventory.md)                                                      |
-| [0013](0013-independent-commerce-statuses.md)      | Independent order/payment/fulfillment statuses  | Accepted (amended by [0023](0023-server-authoritative-payment-state.md))                                         |
+| [0013](0013-independent-commerce-statuses.md)      | Independent order/payment/fulfillment statuses  | Accepted (amended by [0023](0023-server-authoritative-payment-state.md), [0034](0034-transactional-notification-outbox.md)) |
 | [0014](0014-race-safe-inventory.md)                | Race-safe inventory ledger in `inventory`       | Accepted (amended by [0024](0024-payment-failure-releases-holds.md), [0031](0031-admin-inventory-operations.md)) |
 | [0015](0015-http-route-handler-contract.md)        | Route Handler envelope, auth, and DTOs          | Accepted                                                                                                         |
 | [0016](0016-customer-authentication.md)            | Argon2id + hashed httpOnly sessions             | Accepted                                                                                                         |
@@ -52,4 +52,5 @@ Rules:
 | [0030](0030-admin-order-operations.md)             | Staff order queue, notes, and refunds           | Accepted                                                                                                         |
 | [0031](0031-admin-inventory-operations.md)         | Staff stock view, adjustments, movement actor   | Accepted                                                                                                         |
 | [0032](0032-admin-audit-log.md)                    | Admin audit log; no secrets in payloads         | Accepted                                                                                                         |
-| [0033](0033-russian-first-i18n-surfaces.md)        | i18n surfaces; Minsk time; Russian plurals      | Accepted                                                                                                         |
+| [0033](0033-russian-first-i18n-surfaces.md)        | i18n surfaces; Minsk time; Russian plurals      | Accepted (amended by [0034](0034-transactional-notification-outbox.md))                                          |
+| [0034](0034-transactional-notification-outbox.md)  | Transactional email outbox; send after persist  | Accepted                                                                                                         |

@@ -45,12 +45,14 @@ import {
 import {
   createCustomerServices,
   createDemoAuthServices,
+  createLoggingMailer,
   createMemoryAuthServices,
   createMemoryCustomerRepository,
   createMemoryWishlistRepository,
   createPrismaCustomerRepository,
   createPrismaWishlistRepository,
   createWishlistServices,
+  type AuthMailer,
   type AuthServices,
   type CustomerRepository,
   type CustomerServices,
@@ -106,6 +108,14 @@ import {
   type AuditRepository,
   type AuditServices,
 } from "@/modules/audit";
+import {
+  createLoggingEmailChannel,
+  createMemoryNotificationRepository,
+  createNotificationServices,
+  createPrismaNotificationRepository,
+  type NotificationRepository,
+  type NotificationServices,
+} from "@/modules/notifications";
 
 export const emptyCatalog: CatalogRepository = {
   async findBySlug() {
@@ -180,6 +190,7 @@ const composeGlobals = globalThis as unknown as {
   bikesMemoryCustomers?: CustomerRepository;
   bikesMemoryWishlist?: WishlistRepository;
   bikesMemoryAudit?: AuditRepository;
+  bikesMemoryNotifications?: NotificationRepository;
 };
 
 const DEMO_STOCK: InventoryItem[] = [
@@ -218,6 +229,7 @@ let wishlistStock: WishlistStock = {
   },
 };
 let auditOverride: AuditRepository | null = null;
+let notificationOverride: NotificationRepository | null = null;
 let authOverride: AuthServices | null = null;
 let authPromise: Promise<AuthServices> | null = null;
 let mediaOverride: MediaServices | null = null;
@@ -386,6 +398,8 @@ export function getDeliveryServices(): DeliveryServices {
   return createDeliveryServices({
     methods: getDeliveryRepository(),
     shipments: getShipmentRepository(),
+    notify: getNotificationServices(),
+    lookupRecipient: lookupOrderContact,
   });
 }
 
@@ -416,6 +430,7 @@ export async function getOrderServices(): Promise<OrderServices> {
     payments: {
       cancelOpenForOrder: (orderId) => getPaymentServices().cancelOpenForOrder(orderId),
     },
+    notify: getNotificationServices(),
   });
 }
 
@@ -452,6 +467,7 @@ export function resetRepositories(): void {
     },
   };
   auditOverride = null;
+  notificationOverride = null;
   authOverride = null;
   authPromise = null;
   mediaOverride = null;
@@ -466,6 +482,7 @@ export function resetRepositories(): void {
   composeGlobals.bikesMemoryCustomers = createMemoryCustomerRepository();
   composeGlobals.bikesMemoryWishlist = createMemoryWishlistRepository();
   composeGlobals.bikesMemoryAudit = createMemoryAuditRepository();
+  composeGlobals.bikesMemoryNotifications = createMemoryNotificationRepository();
   paymentRepo = createMemoryPaymentRepository();
   paymentProvider = new MockPaymentProvider();
   composeGlobals.bikesMemoryPayments = paymentRepo;
@@ -654,8 +671,14 @@ export async function getAuthServices(): Promise<AuthServices> {
   if (!composeGlobals.bikesAuthPromise) {
     composeGlobals.bikesAuthPromise =
       process.env.NODE_ENV !== "production"
-        ? createDemoAuthServices()
-        : import("@/modules/identity").then((mod) => mod.createPrismaAuthServices());
+        ? createDemoAuthServices({
+            mailer: passwordResetOutboxMailer(createLoggingMailer()),
+          })
+        : import("@/modules/identity").then((mod) =>
+            mod.createPrismaAuthServices({
+              mailer: passwordResetOutboxMailer(mod.createLoggingMailer()),
+            }),
+          );
   }
   return composeGlobals.bikesAuthPromise;
 }
@@ -723,6 +746,8 @@ export function getPaymentServices() {
         }
       },
     },
+    notify: getNotificationServices(),
+    lookupRecipient: lookupOrderContact,
   });
 }
 
@@ -757,4 +782,63 @@ export function getAuditServices(): AuditServices {
     audit: getAuditRepository(),
     clock: { now: () => new Date() },
   });
+}
+
+export function setNotificationRepository(repository: NotificationRepository): void {
+  notificationOverride = repository;
+}
+
+function getNotificationRepository(): NotificationRepository {
+  if (notificationOverride) {
+    return notificationOverride;
+  }
+  if (process.env.VITEST === "true") {
+    composeGlobals.bikesMemoryNotifications ??= createMemoryNotificationRepository();
+    return composeGlobals.bikesMemoryNotifications;
+  }
+  if (process.env.NODE_ENV !== "production") {
+    composeGlobals.bikesMemoryNotifications ??= createMemoryNotificationRepository();
+    return composeGlobals.bikesMemoryNotifications;
+  }
+  return createPrismaNotificationRepository();
+}
+
+export function getNotificationServices(): NotificationServices {
+  return createNotificationServices({
+    notifications: getNotificationRepository(),
+    channel: createLoggingEmailChannel(),
+    clock: { now: () => new Date() },
+  });
+}
+
+async function lookupOrderContact(orderId: string) {
+  try {
+    const order = await (await getOrderServices()).getPlacedOrder(orderId);
+    return {
+      email: order.customerEmail,
+      name: order.customerName,
+      number: order.number,
+    };
+  } catch (error) {
+    if (isAppError(error) && error.code === "not_found") {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function passwordResetOutboxMailer(inner: AuthMailer): AuthMailer {
+  return {
+    sendEmailVerification: (input) => inner.sendEmailVerification(input),
+    async sendPasswordReset(input) {
+      await getNotificationServices().dispatch({
+        event: "password.reset",
+        entityType: "user",
+        entityId: input.userId ?? input.email,
+        recipientEmail: input.email,
+        payload: { email: input.email },
+        secret: { urlToken: input.rawToken },
+      });
+    },
+  };
 }

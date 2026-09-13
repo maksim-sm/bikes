@@ -1,6 +1,6 @@
 # ADR-0033: Localization surfaces and Minsk-aware formatting
 
-- Status: Accepted
+- Status: Accepted (amended by [ADR-0034](0034-transactional-notification-outbox.md))
 - Date: 2026-09-13
 - Amends: [ADR-0009](0009-russian-first-i18n.md)
 

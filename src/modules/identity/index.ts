@@ -123,4 +123,7 @@ export type {
   RateLimiter,
   SecurityLog,
 } from "./application/auth-ports";
-export { createCapturingMailer } from "./infrastructure/logging-mailer";
+export {
+  createCapturingMailer,
+  createLoggingMailer,
+} from "./infrastructure/logging-mailer";

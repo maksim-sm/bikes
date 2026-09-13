@@ -43,7 +43,11 @@ export interface TokenDigest {
 
 export interface AuthMailer {
   sendEmailVerification(input: { email: string; rawToken: string }): Promise<void>;
-  sendPasswordReset(input: { email: string; rawToken: string }): Promise<void>;
+  sendPasswordReset(input: {
+    email: string;
+    rawToken: string;
+    userId?: string;
+  }): Promise<void>;
 }
 
 export interface RateLimiter {

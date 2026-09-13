@@ -33,6 +33,7 @@ import {
   type OrderLine,
   type PaymentStatus,
 } from "../domain/order";
+import type { NotificationEvent, NotificationServices } from "@/modules/notifications";
 import type {
   Clock,
   OrderCart,
@@ -99,6 +100,31 @@ function assertOwnsCart(
   }
 }
 
+async function emitOrder(
+  notify: NotificationServices | undefined,
+  order: Order,
+  event: NotificationEvent,
+): Promise<void> {
+  if (!notify || order.customerEmail.trim().length === 0) {
+    return;
+  }
+  try {
+    await notify.dispatch({
+      event,
+      entityType: "order",
+      entityId: order.id,
+      recipientEmail: order.customerEmail,
+      payload: {
+        name: order.customerName,
+        number: order.number,
+        totalMinor: order.totalMinor,
+      },
+    });
+  } catch {
+    // Channel/outbox failures must not roll back commerce state.
+  }
+}
+
 export function createOrderServices(deps: {
   orders: OrderRepository;
   carts: OrderCart;
@@ -107,6 +133,7 @@ export function createOrderServices(deps: {
   delivery: OrderDelivery;
   clock: Clock;
   payments?: OrderPayments;
+  notify?: NotificationServices;
 }): OrderServices {
   async function load(id: string): Promise<Order> {
     const order = await deps.orders.findById(id);
@@ -222,6 +249,7 @@ export function createOrderServices(deps: {
       throw error;
     }
     await deps.carts.clear(input.cartId);
+    await emitOrder(deps.notify, saved, "order.created");
     return saved;
   }
 
@@ -262,6 +290,7 @@ export function createOrderServices(deps: {
       if (deps.payments) {
         await deps.payments.cancelOpenForOrder(order.id);
       }
+      await emitOrder(deps.notify, saved, "order.cancelled");
       return saved;
     },
 

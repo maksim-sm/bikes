@@ -15,7 +15,17 @@ import {
   paymentStatusToOrderEvent,
   type NormalizedPaymentStatus,
 } from "../domain/status";
+import {
+  notificationEventsForPaymentStatus,
+  type NotificationServices,
+} from "@/modules/notifications";
 import type { Clock, PaymentOrder, PaymentProvider, PaymentRepository } from "./ports";
+
+export interface PaymentRecipient {
+  email: string;
+  name: string;
+  number: string;
+}
 
 export interface PaymentServices {
   startPayment(
@@ -48,11 +58,47 @@ export interface PaymentServices {
   cancelOpenForOrder(orderId: string): Promise<void>;
 }
 
+async function emitPayment(
+  deps: {
+    notify?: NotificationServices;
+    lookupRecipient?: (orderId: string) => Promise<PaymentRecipient | null>;
+  },
+  payment: Payment,
+): Promise<void> {
+  if (!deps.notify || !deps.lookupRecipient) {
+    return;
+  }
+  try {
+    const contact = await deps.lookupRecipient(payment.orderId);
+    if (!contact || contact.email.trim().length === 0) {
+      return;
+    }
+    const payload = {
+      name: contact.name,
+      number: contact.number,
+      totalMinor: payment.amountMinor,
+    };
+    for (const event of notificationEventsForPaymentStatus(payment.status)) {
+      await deps.notify.dispatch({
+        event,
+        entityType: "payment",
+        entityId: payment.id,
+        recipientEmail: contact.email,
+        payload,
+      });
+    }
+  } catch {
+    // Isolation: payment rows are already committed.
+  }
+}
+
 export function createPaymentServices(deps: {
   payments: PaymentRepository;
   provider: PaymentProvider;
   orders: PaymentOrder;
   clock?: Clock;
+  notify?: NotificationServices;
+  lookupRecipient?: (orderId: string) => Promise<PaymentRecipient | null>;
 }): PaymentServices {
   const clock = deps.clock ?? { now: () => new Date() };
   async function requirePayment(paymentId: string): Promise<Payment> {
@@ -94,6 +140,7 @@ export function createPaymentServices(deps: {
     }
     const updated = await deps.payments.save({ ...payment, status: next });
     await deps.orders.applyEvent(payment.orderId, paymentStatusToOrderEvent(next));
+    await emitPayment(deps, updated);
     return updated;
   }
 
@@ -140,6 +187,7 @@ export function createPaymentServices(deps: {
         expiresAt: new Date(clock.now().getTime() + PAYMENT_TIMEOUT_MS),
       });
       await deps.orders.applyEvent(orderId, paymentStatusToOrderEvent(payment.status));
+      await emitPayment(deps, payment);
       return created;
     },
 

@@ -8,6 +8,11 @@ import {
 import { customerPrincipal, staffPrincipal } from "../domain/principal";
 import { STAFF_SESSION_IDLE_MS, STAFF_SESSION_MAX_MS } from "../domain/auth";
 import { createArgon2PasswordHasher } from "../infrastructure/argon2-hasher";
+import {
+  createCapturingEmailChannel,
+  createMemoryNotificationRepository,
+  createNotificationServices,
+} from "@/modules/notifications";
 import { createCapturingMailer } from "../infrastructure/logging-mailer";
 import {
   createMemoryAuthTokens,
@@ -364,6 +369,49 @@ describe("customer authentication", () => {
     await expect(
       auth.lookupCustomer(staffPrincipal("inv", ["inventory"]), "buyer@example.by"),
     ).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it("dispatches password.reset through the outbox without storing the token", async () => {
+    const channel = createCapturingEmailChannel();
+    const notify = createNotificationServices({
+      notifications: createMemoryNotificationRepository(),
+      channel,
+    });
+    let userId = "";
+    const auth = await createMemoryAuthServices({
+      mailer: {
+        async sendEmailVerification() {},
+        async sendPasswordReset(input) {
+          userId = input.userId ?? "";
+          await notify.dispatch({
+            event: "password.reset",
+            entityType: "user",
+            entityId: input.userId ?? input.email,
+            recipientEmail: input.email,
+            payload: { email: input.email, resetToken: input.rawToken },
+            secret: { urlToken: input.rawToken },
+          });
+        },
+      },
+    });
+    await auth.register({
+      email: "reset@example.by",
+      password: "correct-horse",
+      requestId: "r1",
+      rateKey: "ip:reset",
+    });
+    await auth.requestPasswordReset({
+      email: "reset@example.by",
+      requestId: "r2",
+      rateKey: "ip:reset",
+    });
+    expect(userId).not.toBe("");
+    const rows = await notify.listByEntity("user", userId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.status).toBe("SENT");
+    expect(rows[0]?.payload).toEqual({ email: "reset@example.by" });
+    expect(JSON.stringify(rows[0])).not.toContain("correct-horse");
+    expect(channel.sent[0]?.hasToken).toBe(true);
   });
 
   it("rejects short passwords", async () => {

@@ -18,6 +18,11 @@ import type {
   RefundPaymentInput,
   VerifiedProviderEvent,
 } from "./ports";
+import {
+  createFailingEmailChannel,
+  createMemoryNotificationRepository,
+  createNotificationServices,
+} from "@/modules/notifications";
 import { createPaymentServices } from "./services";
 import { normalizePaymentStatus, type NormalizedPaymentStatus } from "../domain/status";
 
@@ -354,5 +359,51 @@ describe("staff payment operations", () => {
     await expect(
       payments.refundAsStaff(customerPrincipal("c1"), started.paymentId, 1),
     ).rejects.toBeInstanceOf(ForbiddenError);
+  });
+});
+
+describe("payment notifications", () => {
+  it("emits pending, successful, and refund events after each persisted status", async () => {
+    const notify = createNotificationServices({
+      notifications: createMemoryNotificationRepository(),
+      channel: createFailingEmailChannel("smtp_down"),
+    });
+    const provider = new MockPaymentProvider();
+    const payments = createPaymentServices({
+      payments: createMemoryPaymentRepository(),
+      provider,
+      orders: orders(),
+      notify,
+      lookupRecipient: async () => ({
+        email: "ira@example.by",
+        name: "Ира",
+        number: "B-1",
+      }),
+    });
+    const started = await payments.startPayment("o1", "https://store.local/return");
+    expect(
+      (await notify.listByEntity("payment", started.paymentId)).map((row) => row.event),
+    ).toEqual(["payment.pending"]);
+    provider.succeed(started.paymentId);
+    const paid = await payments.getPaymentStatus(started.paymentId);
+    expect(paid).toBe("SUCCEEDED");
+    const refunded = await payments.refundPayment(started.paymentId, 4500);
+    expect(refunded.status).toBe("REFUNDED");
+    const events = (await notify.listByEntity("payment", started.paymentId)).map(
+      (row) => row.event,
+    );
+    expect(events.sort()).toEqual(
+      [
+        "payment.pending",
+        "payment.successful",
+        "refund.completed",
+        "refund.initiated",
+      ].sort(),
+    );
+    expect(
+      (await notify.listByEntity("payment", started.paymentId)).every(
+        (row) => row.status === "FAILED",
+      ),
+    ).toBe(true);
   });
 });

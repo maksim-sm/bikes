@@ -91,7 +91,7 @@ src/
     api/          Route Handlers: health and `/api/v1` (see docs/api.md)
   modules/        Domain modules — the modular-monolith seam
     catalog/ pricing/ cart/ orders/
-    payments/ delivery/ identity/ media/ inventory/ audit/
+    payments/ delivery/ identity/ media/ inventory/ audit/ notifications/
   ui/             Design system: tokens and domain-agnostic primitives
   lib/            Cross-cutting infrastructure with no domain knowledge
     config.ts     Validated environment configuration
@@ -178,6 +178,7 @@ decide it. See `src/modules/README.md` for the internal layering rules.
 - `docs/adr/` — decision records. Read these before proposing a change to the
   stack; each lists the conditions under which reopening it is legitimate.
 - `docs/BASELINE.md` — the pre-implementation audit.
+- `docs/notifications.md` — transactional email outbox and attempt history.
 
 ## Status
 

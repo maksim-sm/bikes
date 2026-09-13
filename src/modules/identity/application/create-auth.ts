@@ -45,7 +45,9 @@ export const DEMO_CUSTOMER_EMAIL = "customer@bikes.local";
 export const DEMO_CUSTOMER_PASSWORD = "CustomerPass12";
 
 /** Development staff and customer accounts: verified, no Prisma required. */
-export async function createDemoAuthServices(): Promise<AuthServices> {
+export async function createDemoAuthServices(options?: {
+  mailer?: AuthMailer;
+}): Promise<AuthServices> {
   const passwords = createArgon2PasswordHasher({ cheap: true });
   const users = createMemoryUserAccounts();
   const dummyPasswordHash = await passwords.hash("timing-pad");
@@ -75,7 +77,7 @@ export async function createDemoAuthServices(): Promise<AuthServices> {
     tokens: createMemoryAuthTokens(),
     passwords,
     tokensDigest: createSha256TokenDigest(),
-    mailer: createCapturingMailer(),
+    mailer: options?.mailer ?? createCapturingMailer(),
     limiter: createMemoryRateLimiter({ limit: 20, windowMs: 60_000 }),
     log: createSecurityLog(),
     clock: { now: () => new Date() },
@@ -83,7 +85,9 @@ export async function createDemoAuthServices(): Promise<AuthServices> {
   });
 }
 
-export async function createPrismaAuthServices(): Promise<AuthServices> {
+export async function createPrismaAuthServices(options?: {
+  mailer?: AuthMailer;
+}): Promise<AuthServices> {
   const { createPrismaAuthTokens, createPrismaSessions, createPrismaUserAccounts } =
     await import("../infrastructure/prisma-auth-repository");
   const passwords = createArgon2PasswordHasher();
@@ -94,7 +98,7 @@ export async function createPrismaAuthServices(): Promise<AuthServices> {
     tokens: createPrismaAuthTokens(),
     passwords,
     tokensDigest: createSha256TokenDigest(),
-    mailer: createLoggingMailer(),
+    mailer: options?.mailer ?? createLoggingMailer(),
     limiter: createMemoryRateLimiter(),
     log: createSecurityLog(),
     clock: { now: () => new Date() },

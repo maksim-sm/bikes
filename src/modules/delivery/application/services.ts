@@ -18,7 +18,14 @@ import {
   type ShipmentRecord,
   type ShipmentTracking,
 } from "../domain/shipment";
+import type { NotificationEvent, NotificationServices } from "@/modules/notifications";
 import type { DeliveryRepository, ShipmentRepository } from "./ports";
+
+export interface DeliveryOrderContact {
+  email: string;
+  name: string;
+  number: string;
+}
 
 export interface Clock {
   now(): Date;
@@ -74,10 +81,47 @@ function trackingOf(input: ShipmentTracking): ShipmentTracking {
   }
 }
 
+async function emitShipment(
+  deps: {
+    notify?: NotificationServices;
+    lookupRecipient?: (orderId: string) => Promise<DeliveryOrderContact | null>;
+  },
+  shipment: ShipmentRecord,
+  event: NotificationEvent,
+): Promise<void> {
+  if (!deps.notify || !deps.lookupRecipient) {
+    return;
+  }
+  try {
+    const contact = await deps.lookupRecipient(shipment.orderId);
+    if (!contact || contact.email.trim().length === 0) {
+      return;
+    }
+    const payload: Record<string, string | number> = {
+      name: contact.name,
+      number: contact.number,
+    };
+    if (shipment.trackingNumber) {
+      payload.tracking = shipment.trackingNumber;
+    }
+    await deps.notify.dispatch({
+      event,
+      entityType: "order",
+      entityId: shipment.orderId,
+      recipientEmail: contact.email,
+      payload,
+    });
+  } catch {
+    // Isolation: shipment rows are already committed.
+  }
+}
+
 export function createDeliveryServices(deps: {
   methods: DeliveryRepository;
   shipments: ShipmentRepository;
   clock?: Clock;
+  notify?: NotificationServices;
+  lookupRecipient?: (orderId: string) => Promise<DeliveryOrderContact | null>;
 }): DeliveryServices {
   const now = () => (deps.clock ?? { now: () => new Date() }).now();
 
@@ -144,7 +188,7 @@ export function createDeliveryServices(deps: {
           orderId: input.orderId,
         });
       }
-      return deps.shipments.save({
+      const assigned = await deps.shipments.save({
         id: crypto.randomUUID(),
         orderId: input.orderId,
         methodCode: input.methodCode,
@@ -152,6 +196,8 @@ export function createDeliveryServices(deps: {
         status: "ASSIGNED",
         ...emptyTracking(),
       });
+      await emitShipment(deps, assigned, "order.processing");
+      return assigned;
     },
 
     async updateTracking(principal, orderId, tracking) {
@@ -174,13 +220,18 @@ export function createDeliveryServices(deps: {
         throw new ValidationError("trackingNumber is required");
       }
       try {
-        return deps.shipments.save({
+        const shipped = await deps.shipments.save({
           ...shipment,
           ...tracking,
           status: nextShipmentStatus(shipment.status, "ship"),
           shippedAt: shipment.shippedAt ?? now(),
         });
-      } catch {
+        await emitShipment(deps, shipped, "order.shipped");
+        return shipped;
+      } catch (error) {
+        if (error instanceof ConflictError) {
+          throw error;
+        }
         throw new ConflictError("shipment cannot be marked shipped", { orderId });
       }
     },
@@ -189,12 +240,17 @@ export function createDeliveryServices(deps: {
       requireOrderManagementRole(principal);
       const shipment = await loadShipment(orderId);
       try {
-        return deps.shipments.save({
+        const delivered = await deps.shipments.save({
           ...shipment,
           status: nextShipmentStatus(shipment.status, "deliver"),
           deliveredAt: shipment.deliveredAt ?? now(),
         });
-      } catch {
+        await emitShipment(deps, delivered, "order.delivered");
+        return delivered;
+      } catch (error) {
+        if (error instanceof ConflictError) {
+          throw error;
+        }
         throw new ConflictError("shipment cannot be marked delivered", { orderId });
       }
     },

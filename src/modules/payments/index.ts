@@ -47,6 +47,10 @@ export type {
   RefundPaymentInput,
   VerifiedProviderEvent,
 } from "./application/ports";
-export { createPaymentServices, type PaymentServices } from "./application/services";
+export {
+  createPaymentServices,
+  type PaymentRecipient,
+  type PaymentServices,
+} from "./application/services";
 export { createMemoryPaymentRepository } from "./infrastructure/memory-payment-repository";
 export { MockPaymentProvider } from "./infrastructure/mock-provider";

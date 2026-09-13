@@ -64,4 +64,5 @@ Customers and wishlist are not their own modules: they are services on
 | `identity`  | Users, sessions, roles, profiles, addresses, wishlists |
 | `media`     | Image storage abstraction                              |
 | `inventory` | On-hand, reservations, movements (per variant)         |
-| `audit`     | Append-only change history (actor + request context)   |
+| `audit`         | Append-only change history (actor + request context)   |
+| `notifications` | Transactional email outbox and send attempts           |
