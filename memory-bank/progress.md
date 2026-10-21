@@ -23,10 +23,10 @@
 
 | Параметр                  | Значение                               |
 | ------------------------- | -------------------------------------- |
-| Текущая фаза              | Фаза 0. Инфраструктура                 |
-| Последний выполненный шаг | Шаг 7. Настроить CI                    |
-| Следующий шаг             | Шаг 8. Добавить заголовки безопасности |
-| Выполнено шагов           | 7 из 87                                |
+| Текущая фаза              | Фаза 0 завершена, далее Фаза 1         |
+| Последний выполненный шаг | Шаг 8. Добавить заголовки безопасности |
+| Следующий шаг             | Шаг 9. Цветовые токены                 |
+| Выполнено шагов           | 8 из 87                                |
 | Блокеры                   | нет                                    |
 
 ---
@@ -42,7 +42,7 @@
 - [x] Шаг 5. Подключить axe к Playwright
 - [x] Шаг 6. Подключить Lighthouse CI
 - [x] Шаг 7. Настроить CI
-- [ ] Шаг 8. Добавить заголовки безопасности
+- [x] Шаг 8. Добавить заголовки безопасности
 
 ### Фаза 1. Дизайн-система
 
@@ -155,6 +155,7 @@
 
 | Дата       | Шаг | Тесты Vitest | E2E Playwright | axe (serious/critical) | LH Perf / A11y / BP / SEO | JS первой загрузки | Покрытие `lib/` |
 | ---------- | --- | ------------ | -------------- | ---------------------- | ------------------------- | ------------------ | --------------- |
+| 2026-10-21 | 8   | 3            | 6 (chromium)   | 0                      | 94 / 100 / 96 / 100       | 137 КБ             | 100%            |
 | 2026-10-21 | 6   | 3            | 4 (chromium)   | 0                      | 95 / 100 / 96 / 100       | 134 КБ             | 100%            |
 
 ---
@@ -185,6 +186,15 @@
 - Заметки для следующего шага: <нет | что важно знать>
 ```
 
+### 2026-10-21 — Шаг 8. Добавить заголовки безопасности
+
+- Статус: выполнен
+- Сделано: в `next.config.ts` добавлен `headers()` для всех путей: `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security: max-age=63072000`, `X-Frame-Options: SAMEORIGIN`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`, `Content-Security-Policy-Report-Only` (`default-src 'self'`; `script-src 'self' 'unsafe-inline'`, в dev ещё `'unsafe-eval'`; `style-src 'self' 'unsafe-inline'`; `img-src 'self' data: blob: https:`; `font-src 'self' data:`; `connect-src 'self'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`).
+- Файлы: `next.config.ts`, `e2e/security/headers.spec.ts`.
+- Тесты: `[e2e]` главная отдаёт все заголовки с ожидаемыми значениями, а блокирующего `Content-Security-Policy` нет (`@smoke`, chromium-desktop и chromium-mobile). Те же заголовки подтверждены `curl -I` на production-сборке (`next start`). `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, Playwright (6 тестов) и Lighthouse CI проходят (Perf 94, A11y 100, BP 96, SEO 100, LCP 1,6 с, CLS 0, JS 137 КБ; TBT 283 мс — известное предупреждение №1).
+- Отклонения: (1) в `AGENTS.md` п. 9 конкретной политики CSP нет, там сказано лишь «сначала Report-Only»; использована консервативная стартовая политика из списка выше, ужесточение — шаг 86; (2) `frame-ancestors` в CSP не указан: в Report-Only он игнорируется и пишет предупреждение в консоль, а от встраивания защищает `X-Frame-Options`; (3) `'unsafe-inline'` в `script-src` нужен для встроенных скриптов гидратации Next, замена на nonce — шаг 86; (4) тест проверяет CSP по ключевым директивам, а не по полной строке: в dev она отличается `'unsafe-eval'`; (5) WebKit в песочнице по-прежнему не запускался; (6) браузерная проверка 375/1280 px не выполнялась: интерфейс не менялся, e2e на обоих профилях (десктоп 1280 и мобильный 375) зелёные.
+- Заметки для следующего шага: при добавлении внешних источников (аналитика, шрифты, изображения не с `'self'`) расширять `connect-src`, `img-src`, `script-src`; нарушения Report-Only пока никуда не отправляются, сборщика отчётов нет. Фаза 0 завершена, шаг 9 начинает дизайн-систему (`app/globals.css`).
+
 ### 2026-10-21 — Шаг 7. Настроить CI
 
 - Статус: выполнен в части кода; проверка на GitHub и защита `main` — за владельцем репозитория (см. «Открытые вопросы» №2)
@@ -197,11 +207,11 @@
 ### 2026-10-21 — Шаг 6. Подключить Lighthouse CI
 
 - Статус: выполнен
-- Сделано: `@lhci/cli`; `lighthouserc.json` — мобильный профиль, 3 прогона, медиана, сервер `next start -p 3100` (отдельный порт, чтобы не попасть на dev-сервер на 3000), отчёты в `.lighthouseci/`; пороги-ошибки: Performance ≥ 0.9, Accessibility / Best Practices / SEO ≥ 0.95, LCP ≤ 2.5 с, CLS ≤ 0.1, JS первой загрузки ≤ 200 КБ; скрипт `pnpm lighthouse` = `next build && lhci autorun` (заглушка заменена).
+- Сделано: `@lhci/cli`; `lighthouserc.json` — мобильный профиль, 3 прогона, медиана, сервер `next start -p 3100` (отдельный порт, чтобы не попа��ть на dev-сервер на 3000), отчёты в `.lighthouseci/`; пороги-ошибки: Performance ≥ 0.9, Accessibility / Best Practices / SEO ≥ 0.95, LCP ≤ 2.5 с, CLS ≤ 0.1, JS первой загрузки ≤ 200 КБ; скрипт `pnpm lighthouse` = `next build && lhci autorun` (заглушка заменена).
 - Файлы: `lighthouserc.json`, `package.json`, `pnpm-lock.yaml`, `.gitignore`, `eslint.config.mjs` (игнор `.lighthouseci/`).
 - Тесты: главная проходит все пороги (Perf 94–96, A11y 100, BP 96, SEO 100, LCP ≈ 1,4 с, CLS 0, JS 134 КБ). Проверка падения: на dev-сервере (случайно) Lighthouse выдал нарушения Performance 0,84, JS 797 КБ, TBT 738 мс и завершился кодом 1. `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, Playwright (chromium) проходят.
 - Отклонения: (1) TBT — `warn`, см. «Открытые вопросы» №1; (2) в песочнице для запуска нужен `CHROME_PATH` на Chromium от Playwright (`~/.cache/ms-playwright/chromium-*/chrome-linux64/chrome`), в CI Chrome есть на раннере; (3) пресет `perf` не используется — он запускает только категорию Performance; (4) порог «JS» проверяется по `transferSize` главной страницы; (5) сценарии корзины и чекаута в Lighthouse (по плану — шаги 84, 87) пока не добавлены, список URL один.
-- Заметки для следующего шага: в CI запускать `pnpm lighthouse`; при `ubuntu-latest` Chrome доступен без `CHROME_PATH`. Новые страницы добавлять в `collect.url` в `lighthouserc.json` (порт 3100). Не запускать Lighthouse при занятом 3100.
+- Заметки для следующего шага: в CI запускать `pnpm lighthouse`; при `ubuntu-latest` Chrome доступен без `CHROME_PATH`. Новые страницы добавлять в `collect.url` в `lighthouserc.json` (пор�� 3100). Не запускать Lighthouse при занятом 3100.
 
 ### 2026-10-21 — Шаг 5. Подключить axe к Playwright
 
