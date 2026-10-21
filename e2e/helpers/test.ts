@@ -19,10 +19,8 @@ export const test = base.extend({
     });
     page.on("response", (response) => {
       if (response.status() >= 400) {
-        const { method } = response.request();
-        problems.push(
-          `HTTP ${response.status()} ${method()} ${response.url()}`,
-        );
+        const method = response.request().method();
+        problems.push(`HTTP ${response.status()} ${method} ${response.url()}`);
       }
     });
 
