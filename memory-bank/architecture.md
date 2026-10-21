@@ -18,20 +18,22 @@
 
 ## 1. Текущее состояние
 
-Выполнен шаг 1: проект инициализирован, главная — заглушка, каталоги из раздела 9 ДД созданы пустыми (с `.gitkeep`). В репозитории:
+Выполнены шаги 1–2: проект инициализирован, главная — заглушка, каталоги из раздела 9 ДД созданы пустыми (с `.gitkeep`), настроены ESLint и Prettier. В репозитории:
 
-| Путь | Роль |
-| --- | --- |
-| `app/` | `layout.tsx` (минимальный, `lang="ru"`), `page.tsx` (заглушка с H1), `globals.css` (только `@import "tailwindcss"`), `api/` (пусто) |
-| `components/`, `data/`, `lib/`, `types/`, `public/images/` | Пустые каталоги-заготовки (`.gitkeep`), наполняются по плану |
-| `package.json`, `tsconfig.json`, `next.config.ts`, `eslint.config.mjs`, `pnpm-lock.yaml` | Конфигурация проекта |
-| `AGENTS.md` (корень) | Автогенерируемый блок правил Next.js + ссылка на `memory-bank/AGENTS.md` |
-| `README.md` | Описание репозитория |
-| `memory-bank/project-design-document.md` | Дизайн-документ — источник истины по требованиям |
-| `memory-bank/AGENTS.md` | Правила работы ИИ-агентов |
-| `memory-bank/implementation-plan.md` | Пошаговый план реализации (87 шагов) с тестами |
-| `memory-bank/progress.md` | Журнал выполненных шагов |
-| `memory-bank/architecture.md` | Этот файл: архитектура и роли файлов |
+| Путь                                                                                     | Роль                                                                                                                                |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `app/`                                                                                   | `layout.tsx` (минимальный, `lang="ru"`), `page.tsx` (заглушка с H1), `globals.css` (только `@import "tailwindcss"`), `api/` (пусто) |
+| `components/`, `data/`, `lib/`, `types/`, `public/images/`                               | Пустые каталоги-заготовки (`.gitkeep`), наполняются по плану                                                                        |
+| `package.json`, `tsconfig.json`, `next.config.ts`, `pnpm-lock.yaml` | Конфигурация проекта |
+| `eslint.config.mjs` | ESLint (flat): Next, TypeScript, React Hooks, jsx-a11y; запреты `any`, `console`, `@ts-ignore` без описания; запрет импорта из `data/` вне `app/api/` |
+| `.prettierrc.json`, `.prettierignore` | Prettier с сортировкой классов Tailwind |
+| `AGENTS.md` (корень)                                                                     | Автогенерируемый блок правил Next.js + ссылка на `memory-bank/AGENTS.md`                                                            |
+| `README.md`                                                                              | Описание репозитория                                                                                                                |
+| `memory-bank/project-design-document.md`                                                 | Дизайн-документ — источник истины по требованиям                                                                                    |
+| `memory-bank/AGENTS.md`                                                                  | Правила работы ИИ-агентов                                                                                                           |
+| `memory-bank/implementation-plan.md`                                                     | Пошаговый план реализации (87 шагов) с тестами                                                                                      |
+| `memory-bank/progress.md`                                                                | Журнал выполненных шагов                                                                                                            |
+| `memory-bank/architecture.md`                                                            | Этот файл: архитектура и роли файлов                                                                                                |
 
 ---
 
@@ -71,15 +73,15 @@ data/*               мок-данные (товары, бренды, катег
 
 ### 2.3. Потоки данных
 
-| Поток | Путь |
-| --- | --- |
-| Каталог / товар | `page.tsx` (Server) → `lib/api` → `app/api/products` → `data/products` |
-| Фильтры, сортировка, пагинация | URL search params → `page.tsx` → `lib/api` (повторный запрос при изменении URL) |
-| Корзина | Client-компонент → SWR (`/api/cart`) с оптимистичным `mutate` → cookie-сессия гостя |
-| Чекаут | Форма (react-hook-form + zod) → `POST /api/orders` → сервер пересчитывает итоги → `PaymentProvider` → страница успеха |
-| Сессия | `POST /api/auth/*` → httpOnly cookie → `proxy.ts` защищает `/account/*` → профиль через SWR `/api/account/me` |
-| Избранное / сравнение | Гость — локальное хранилище; после входа — перенос и синхронизация через `/api/account/favorites`, `/api/account/compare` |
-| Подбор | Ответы квиза в URL → `POST /api/podbor` → `lib/podbor.ts` |
+| Поток                          | Путь                                                                                                                      |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Каталог / товар                | `page.tsx` (Server) → `lib/api` → `app/api/products` → `data/products`                                                    |
+| Фильтры, сортировка, пагинация | URL search params → `page.tsx` → `lib/api` (повторный запрос при изменении URL)                                           |
+| Корзина                        | Client-компонент → SWR (`/api/cart`) с оптимистичным `mutate` → cookie-сессия гостя                                       |
+| Чекаут                         | Форма (react-hook-form + zod) → `POST /api/orders` → сервер пересчитывает итоги → `PaymentProvider` → страница успеха     |
+| Сессия                         | `POST /api/auth/*` → httpOnly cookie → `proxy.ts` защищает `/account/*` → профиль через SWR `/api/account/me`             |
+| Избранное / сравнение          | Гость — локальное хранилище; после входа — перенос и синхронизация через `/api/account/favorites`, `/api/account/compare` |
+| Подбор                         | Ответы квиза в URL → `POST /api/podbor` → `lib/podbor.ts`                                                                 |
 
 ---
 
@@ -87,106 +89,107 @@ data/*               мок-данные (товары, бренды, катег
 
 ### 3.1. Корень проекта
 
-| Путь | Роль | Шаг | Статус |
-| --- | --- | --- | --- |
-| `package.json` | Зависимости и скрипты (dev, build, typecheck, lint; `test`, `e2e`, `lighthouse` — заглушки до шагов 3, 4, 6) | 1 | есть |
-| `tsconfig.json` | TypeScript strict, алиасы путей | 1 | есть |
-| `next.config.ts` | Конфигурация Next.js (включены `cacheComponents`), заголовки безопасности (`headers()`) добавятся на шагах 8, 86 | 1, 8, 86 | есть |
-| `proxy.ts` | Защита разделов кабинета, проверка сессии | 70 | план |
-| `eslint` / `prettier` конфиги | Линтинг и форматирование | 2 | план |
-| `vitest.config.ts`, `vitest.setup.ts` | Unit- и компонентные тесты | 3 | план |
-| `playwright.config.ts` | E2E, smoke-набор, axe | 4, 5 | план |
-| `lighthouserc` | Пороги Lighthouse CI | 6 | план |
-| `.github/workflows/*` | CI: типы, линт, тесты, сборка, LH | 7 | план |
-| `components.json` | Конфигурация shadcn/ui | 12 | план |
+| Путь                                  | Роль                                                                                                             | Шаг      | Статус |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | -------- | ------ |
+| `package.json` | Зависимости и скрипты (dev, build, typecheck, lint, format, format:check; `test`, `e2e`, `lighthouse` — заглушки до шагов 3, 4, 6) | 1, 2 | есть |
+| `tsconfig.json`                       | TypeScript strict, алиасы путей                                                                                  | 1        | есть   |
+| `next.config.ts`                      | Конфигурация Next.js (включены `cacheComponents`), заголовки безопасности (`headers()`) добавятся на шагах 8, 86 | 1, 8, 86 | есть   |
+| `proxy.ts`                            | Защита разделов кабинета, проверка сессии                                                                        | 70       | план   |
+| `eslint.config.mjs` | Линтинг: правила Next, TS, Hooks, jsx-a11y, запрет импорта `data/` вне `app/api/` | 2 | есть |
+| `.prettierrc.json`, `.prettierignore` | Форматирование, сортировка классов Tailwind (`tailwindStylesheet` → `app/globals.css`) | 2 | есть |
+| `vitest.config.ts`, `vitest.setup.ts` | Unit- и компонентные тесты                                                                                       | 3        | план   |
+| `playwright.config.ts`                | E2E, smoke-набор, axe                                                                                            | 4, 5     | план   |
+| `lighthouserc`                        | Пороги Lighthouse CI                                                                                             | 6        | план   |
+| `.github/workflows/*`                 | CI: типы, линт, тесты, сборка, LH                                                                                | 7        | план   |
+| `components.json`                     | Конфигурация shadcn/ui                                                                                           | 12       | план   |
 
 ### 3.2. `app/` — маршруты
 
-| Путь | Роль | Шаг | Статус |
-| --- | --- | --- | --- |
-| `app/layout.tsx` | Корневой layout: шрифты, `lang="ru"`, шапка, подвал, метаданные по умолчанию (сейчас — минимальный: `lang="ru"`, title, description) | 1, 32 | есть (минимум) |
-| `app/globals.css` | Tailwind v4, дизайн-токены (`@theme inline`), базовые стили доступности (сейчас — только `@import "tailwindcss"`) | 1, 9–11 | есть (минимум) |
-| `app/page.tsx` | Главная (сейчас — заглушка с H1 «Bikes») | 1, 51 | есть (заглушка) |
-| `app/catalog/[category]/page.tsx` | Страница категории: фильтры, сортировка, сетка | 39–43 | план |
-| `app/search/page.tsx` | Результаты поиска | 44 | план |
-| `app/product/[slug]/page.tsx` | Карточка товара | 45–50, 76 | план |
-| `app/razmer-ramy/page.tsx` | Калькулятор размера рамы | 48 | план |
-| `app/podbor/page.tsx` | Квиз подбора и результаты | 63–64 | план |
-| `app/compare/page.tsx` | Сравнение | 66 | план |
-| `app/favorites/page.tsx` | Избранное | 67 | план |
-| `app/cart/page.tsx` | Корзина | 54 | план |
-| `app/checkout/page.tsx` | Оформление заказа | 55–58 | план |
-| `app/checkout/pay/...` | Мок-страница онлайн-оплаты картой | 59 | план |
-| `app/checkout/success/...` | Страница успеха, инструкция ЕРИП | 60 | план |
-| `app/(auth)/login`, `register`, `reset` | Вход, регистрация, восстановление пароля | 69 | план |
-| `app/account/layout.tsx` + разделы | Личный кабинет: обзор, заказы, адреса, профиль | 72–75 | план |
-| `app/(info)/*` | Доставка и оплата, гарантия, контакты, о магазине | 78 | план |
-| `app/(info)/*` (юридические) | Публичный договор, политика обработки ПД | 79 | план |
-| `app/sitemap.ts`, `app/robots.ts` | SEO-индексация | 82 | план |
-| `app/not-found.tsx`, `error.tsx`, `loading.tsx` | Глобальные состояния | 17, 32 | план |
+| Путь                                            | Роль                                                                                                                                 | Шаг       | Статус          |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | --------- | --------------- |
+| `app/layout.tsx`                                | Корневой layout: шрифты, `lang="ru"`, шапка, подвал, метаданные по умолчанию (сейчас — минимальный: `lang="ru"`, title, description) | 1, 32     | есть (минимум)  |
+| `app/globals.css`                               | Tailwind v4, дизайн-токены (`@theme inline`), базовые стили доступности (сейчас — только `@import "tailwindcss"`)                    | 1, 9–11   | есть (минимум)  |
+| `app/page.tsx`                                  | Главная (сейчас — заглушка с H1 «Bikes»)                                                                                             | 1, 51     | есть (заглушка) |
+| `app/catalog/[category]/page.tsx`               | Страница категории: фильтры, сортировка, сетка                                                                                       | 39–43     | план            |
+| `app/search/page.tsx`                           | Результаты поиска                                                                                                                    | 44        | план            |
+| `app/product/[slug]/page.tsx`                   | Карточка товара                                                                                                                      | 45–50, 76 | план            |
+| `app/razmer-ramy/page.tsx`                      | Калькулятор размера рамы                                                                                                             | 48        | план            |
+| `app/podbor/page.tsx`                           | Квиз подбора и результаты                                                                                                            | 63–64     | план            |
+| `app/compare/page.tsx`                          | Сравнение                                                                                                                            | 66        | план            |
+| `app/favorites/page.tsx`                        | Избранное                                                                                                                            | 67        | план            |
+| `app/cart/page.tsx`                             | Корзина                                                                                                                              | 54        | план            |
+| `app/checkout/page.tsx`                         | Оформление заказа                                                                                                                    | 55–58     | план            |
+| `app/checkout/pay/...`                          | Мок-страница онлайн-оплаты картой                                                                                                    | 59        | план            |
+| `app/checkout/success/...`                      | Страница успеха, инструкция ЕРИП                                                                                                     | 60        | план            |
+| `app/(auth)/login`, `register`, `reset`         | Вход, регистрация, восстановление пароля                                                                                             | 69        | план            |
+| `app/account/layout.tsx` + разделы              | Личный кабинет: обзор, заказы, адреса, профиль                                                                                       | 72–75     | план            |
+| `app/(info)/*`                                  | Доставка и оплата, гарантия, контакты, о магазине                                                                                    | 78        | план            |
+| `app/(info)/*` (юридические)                    | Публичный договор, политика обработки ПД                                                                                             | 79        | план            |
+| `app/sitemap.ts`, `app/robots.ts`               | SEO-индексация                                                                                                                       | 82        | план            |
+| `app/not-found.tsx`, `error.tsx`, `loading.tsx` | Глобальные состояния                                                                                                                 | 17, 32    | план            |
 
 ### 3.3. `app/api/` — мок-API (раздел 8.3 ДД)
 
-| Путь | Роль | Шаг | Статус |
-| --- | --- | --- | --- |
-| `app/api/categories` | Список категорий | 30 | план |
-| `app/api/products` | Каталог с фильтрами, фасетами, сортировкой, пагинацией | 30 | план |
-| `app/api/products/[slug]` | Товар | 31 | план |
-| `app/api/products/[id]/related` | Похожие модели | 31 | план |
-| `app/api/products/[id]/reviews` | Отзывы: список и создание (с модерацией) | 76–77 | план |
-| `app/api/search` | Поиск и подсказки | 31 | план |
-| `app/api/podbor` | Рекомендации по ответам квиза | 62 | план |
-| `app/api/cart` | Корзина гостя/пользователя (cookie-сессия) | 52 | план |
-| `app/api/delivery/options` | Способы и стоимость курьерской доставки | 56 | план |
-| `app/api/orders` | Создание заказа, пересчёт итогов на сервере | 58 | план |
-| `app/api/auth/*` | Мок-авторизация (httpOnly cookie) | 68 | план |
-| `app/api/account/*` | me, заказы, адреса, избранное, сравнение | 71–75 | план |
+| Путь                            | Роль                                                   | Шаг   | Статус |
+| ------------------------------- | ------------------------------------------------------ | ----- | ------ |
+| `app/api/categories`            | Список категорий                                       | 30    | план   |
+| `app/api/products`              | Каталог с фильтрами, фасетами, сортировкой, пагинацией | 30    | план   |
+| `app/api/products/[slug]`       | Товар                                                  | 31    | план   |
+| `app/api/products/[id]/related` | Похожие модели                                         | 31    | план   |
+| `app/api/products/[id]/reviews` | Отзывы: список и создание (с модерацией)               | 76–77 | план   |
+| `app/api/search`                | Поиск и подсказки                                      | 31    | план   |
+| `app/api/podbor`                | Рекомендации по ответам квиза                          | 62    | план   |
+| `app/api/cart`                  | Корзина гостя/пользователя (cookie-сессия)             | 52    | план   |
+| `app/api/delivery/options`      | Способы и стоимость курьерской доставки                | 56    | план   |
+| `app/api/orders`                | Создание заказа, пересчёт итогов на сервере            | 58    | план   |
+| `app/api/auth/*`                | Мок-авторизация (httpOnly cookie)                      | 68    | план   |
+| `app/api/account/*`             | me, заказы, адреса, избранное, сравнение               | 71–75 | план   |
 
 ### 3.4. `components/`
 
-| Каталог | Роль | Ключевые компоненты | Шаг |
-| --- | --- | --- | --- |
-| `components/ui/` | Примитивы shadcn/ui — не редактировать без нужды | button, input, select, checkbox, dialog, sheet, tabs, accordion, breadcrumb, … | 12–19 |
-| `components/common/` | Переиспользуемые элементы магазина | `Price`, `RatingStars`, `QuantityStepper`, `StockStatus`, `EmptyState`, `ErrorState`, скелетоны | 14–17 |
-| `components/layout/` | Каркас сайта | header, top-bar, mega-menu, search, footer, mobile-nav | 33–37 |
-| `components/catalog/` | Список товаров | `ProductCard`, product-grid, filters, `FilterGroup`, active-filters, sort-select, pagination | 38–43 |
-| `components/product/` | Страница товара | gallery, `VariantPicker`, specs-table, geometry-table, delivery-info, related, sticky-buy-bar | 45–50 |
-| `components/sizing/` | Размер рамы | frame-size-calculator | 48–49 |
-| `components/reviews/` | Отзывы | rating-summary, review-list, review-form | 76–77 |
-| `components/podbor/` | Квиз | quiz-step, quiz-progress, quiz-results | 63–64 |
-| `components/compare/`, `favorites/` | Списки | compare-table, toggle-кнопки | 65–67 |
-| `components/cart/` | Корзина | cart-line, cart-summary, cart-badge | 53–54 |
-| `components/checkout/` | Чекаут | `PhoneInput`, `AddressForm`, `DeliveryMethodPicker`, `PaymentMethodPicker`, order-summary, consents | 55–61 |
-| `components/account/` | Кабинет | auth-forms, orders, addresses, profile | 69–75 |
+| Каталог                             | Роль                                             | Ключевые компоненты                                                                                 | Шаг   |
+| ----------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ----- |
+| `components/ui/`                    | Примитивы shadcn/ui — не редактировать без нужды | button, input, select, checkbox, dialog, sheet, tabs, accordion, breadcrumb, …                      | 12–19 |
+| `components/common/`                | Переиспользуемые элементы магазина               | `Price`, `RatingStars`, `QuantityStepper`, `StockStatus`, `EmptyState`, `ErrorState`, скелетоны     | 14–17 |
+| `components/layout/`                | Каркас сайта                                     | header, top-bar, mega-menu, search, footer, mobile-nav                                              | 33–37 |
+| `components/catalog/`               | Список товаров                                   | `ProductCard`, product-grid, filters, `FilterGroup`, active-filters, sort-select, pagination        | 38–43 |
+| `components/product/`               | Страница товара                                  | gallery, `VariantPicker`, specs-table, geometry-table, delivery-info, related, sticky-buy-bar       | 45–50 |
+| `components/sizing/`                | Размер рамы                                      | frame-size-calculator                                                                               | 48–49 |
+| `components/reviews/`               | Отзывы                                           | rating-summary, review-list, review-form                                                            | 76–77 |
+| `components/podbor/`                | Квиз                                             | quiz-step, quiz-progress, quiz-results                                                              | 63–64 |
+| `components/compare/`, `favorites/` | Списки                                           | compare-table, toggle-кнопки                                                                        | 65–67 |
+| `components/cart/`                  | Корзина                                          | cart-line, cart-summary, cart-badge                                                                 | 53–54 |
+| `components/checkout/`              | Чекаут                                           | `PhoneInput`, `AddressForm`, `DeliveryMethodPicker`, `PaymentMethodPicker`, order-summary, consents | 55–61 |
+| `components/account/`               | Кабинет                                          | auth-forms, orders, addresses, profile                                                              | 69–75 |
 
 Расположение `Price`, `RatingStars` и других общих компонентов (`components/common/` или иное) фиксируется на шаге 14–15 и отражается здесь.
 
 ### 3.5. `lib/`, `types/`, `data/`
 
-| Путь | Роль | Шаг | Статус |
-| --- | --- | --- | --- |
-| `types/` | Модели раздела 8.2 ДД: Product, Variant, Order, Review, Address, Money (копейки) и др. | 20 | план |
-| `lib/i18n/ru.ts` | Все строки интерфейса, хелпер склонений (`Intl.PluralRules('ru')`) | 21 | план |
-| `lib/config.ts` | Реквизиты продавца, контакты, стоимость доставки, сроки — единственное место для таких значений | 22 | план |
-| `lib/format.ts` | `formatPrice` (`1 249,00 р.`), даты `ru-BY`, телефон | 23 | план |
-| `lib/validation.ts` | zod-схемы: телефон +375 (25/29/33/44), индекс, адрес, формы — общие для клиента и мок-API | 24 | план |
-| `lib/sizing.ts` | Таблицы размеров рам и расчёт по росту | 25 | план |
-| `lib/podbor.ts` | Алгоритм рекомендаций квиза | 62 | план |
-| `lib/payment/` | Интерфейс `PaymentProvider` и мок-реализация (позже bePaid / WEBPAY) | 57 | план |
-| `lib/api/` | API-клиент: типизированные функции для каждого эндпоинта, SWR-ключи | 29–31 | план |
-| `lib/analytics.ts` | События аналитики e-commerce | 83 | план |
-| `data/` | Мок-данные: categories, brands, products (~60), reviews, users, orders; служебные функции мок-API (задержка, режим ошибок) | 26–29 | план |
-| `public/images/` | Сгенерированные фото товаров и баннеров | 27, 51 | план |
+| Путь                | Роль                                                                                                                       | Шаг    | Статус |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------ | ------ |
+| `types/`            | Модели раздела 8.2 ДД: Product, Variant, Order, Review, Address, Money (копейки) и др.                                     | 20     | план   |
+| `lib/i18n/ru.ts`    | Все строки интерфейса, хелпер склонений (`Intl.PluralRules('ru')`)                                                         | 21     | план   |
+| `lib/config.ts`     | Реквизиты продавца, контакты, стоимость доставки, сроки — единственное место для таких значений                            | 22     | план   |
+| `lib/format.ts`     | `formatPrice` (`1 249,00 р.`), даты `ru-BY`, телефон                                                                       | 23     | план   |
+| `lib/validation.ts` | zod-схемы: телефон +375 (25/29/33/44), индекс, адрес, формы — общие для клиента и мок-API                                  | 24     | план   |
+| `lib/sizing.ts`     | Таблицы размеров рам и расчёт по росту                                                                                     | 25     | план   |
+| `lib/podbor.ts`     | Алгоритм рекомендаций квиза                                                                                                | 62     | план   |
+| `lib/payment/`      | Интерфейс `PaymentProvider` и мок-реализация (позже bePaid / WEBPAY)                                                       | 57     | план   |
+| `lib/api/`          | API-клиент: типизированные функции для каждого эндпоинта, SWR-ключи                                                        | 29–31  | план   |
+| `lib/analytics.ts`  | События аналитики e-commerce                                                                                               | 83     | план   |
+| `data/`             | Мок-данны��: categories, brands, products (~60), reviews, users, orders; служебные функции мок-API (задержка, режим ошибок) | 26–29  | план   |
+| `public/images/`    | Сгенерированные фото товаров и баннеров                                                                                    | 27, 51 | план   |
 
 ### 3.6. Тесты
 
-| Путь | Роль | Шаг |
-| --- | --- | --- |
-| `**/*.test.ts(x)` | Unit- и компонентные тесты рядом с исходником | 3+ |
-| `e2e/` | Сценарии Playwright, по одному файлу на страницу/сценарий | 4+ |
-| `e2e/smoke` | Smoke-набор: открытие всех страниц, отсутствие ошибок консоли и 5xx | 4 |
-| `e2e/a11y` | Проверки axe по всем страницам | 5, 85 |
-| `test/` (хелперы) | Общие фикстуры, рендер с провайдерами | 3 |
+| Путь              | Роль                                                                | Шаг   |
+| ----------------- | ------------------------------------------------------------------- | ----- |
+| `**/*.test.ts(x)` | Unit- и компонентные тесты рядом с исходником                       | 3+    |
+| `e2e/`            | Сценарии Playwright, по одному файлу на страницу/сценарий           | 4+    |
+| `e2e/smoke`       | Smoke-набор: открытие всех страниц, отсутствие ошибок консоли и 5xx | 4     |
+| `e2e/a11y`        | Проверки axe по всем страницам                                      | 5, 85 |
+| `test/` (хелперы) | Общие фикстуры, рендер с провайдерами                               | 3     |
 
 ---
 
@@ -205,15 +208,15 @@ data/*               мок-данные (товары, бренды, катег
 
 ## 5. Зависимости между модулями
 
-| Модуль | ��ависит от | Используется в |
-| --- | --- | --- |
-| `types/` | — | всё |
-| `lib/i18n/ru.ts` | — | компоненты, `lib/format.ts`, тесты |
-| `lib/format.ts`, `lib/validation.ts`, `lib/sizing.ts` | `types/`, `lib/config.ts` | компоненты, мок-API |
-| `data/` | `types/` | только `app/api/*` |
-| `app/api/*` | `data/`, `lib/validation.ts`, `lib/podbor.ts` | `lib/api/*` |
-| `lib/api/*` | `types/` | Server Components, SWR-хуки |
-| `components/*` | `components/ui`, `lib/*` (кроме `data/`) | `app/**/page.tsx` |
+| Модуль                                                | ��ависит от                                   | Используется в                     |
+| ----------------------------------------------------- | --------------------------------------------- | ---------------------------------- |
+| `types/`                                              | —                                             | всё                                |
+| `lib/i18n/ru.ts`                                      | —                                             | компоненты, `lib/format.ts`, тесты |
+| `lib/format.ts`, `lib/validation.ts`, `lib/sizing.ts` | `types/`, `lib/config.ts`                     | компоненты, мок-API                |
+| `data/`                                               | `types/`                                      | только `app/api/*`                 |
+| `app/api/*`                                           | `data/`, `lib/validation.ts`, `lib/podbor.ts` | `lib/api/*`                        |
+| `lib/api/*`                                           | `types/`                                      | Server Components, SWR-хуки        |
+| `components/*`                                        | `components/ui`, `lib/*` (кроме `data/`)      | `app/**/page.tsx`                  |
 
 Обратные зависимости (например, `lib/` → `components/`) запрещены.
 
@@ -221,13 +224,13 @@ data/*               мок-данные (товары, бренды, катег
 
 ## 6. Внешние интеграции (будущие)
 
-| Интеграция | Точка подключения | Статус |
-| --- | --- | --- |
-| Реальный бэкенд каталога и заказов | `app/api/*` или базовый URL в `lib/api/` | вне v1 |
-| bePaid / WEBPAY | новая реализация `PaymentProvider` в `lib/payment/` | вне v1 |
-| ЕРИП (выставление счёта) | бэкенд + `PaymentProvider` | вне v1 |
-| Курьерская служба (расчёт стоимости, сроки) | `app/api/delivery/options` | вне v1 |
-| Аналитика | `lib/analytics.ts` | шаг 83 |
+| Интеграция                                  | Точка подключения                                   | Статус |
+| ------------------------------------------- | --------------------------------------------------- | ------ |
+| Реальный бэкенд каталога и заказов          | `app/api/*` или базовый URL в `lib/api/`            | вне v1 |
+| bePaid / WEBPAY                             | новая реализация `PaymentProvider` в `lib/payment/` | вне v1 |
+| ЕРИП (выставление счёта)                    | бэкенд + `PaymentProvider`                          | вне v1 |
+| Курьерская служба (расчёт стоимости, сроки) | `app/api/delivery/options`                          | вне v1 |
+| Аналитика                                   | `lib/analytics.ts`                                  | шаг 83 |
 
 ---
 
@@ -235,8 +238,11 @@ data/*               мок-данные (товары, бренды, катег
 
 Архитектурные решения, принятые при реализации и не описанные в ДД. Формат: дата, шаг, решение, причина.
 
-| Дата | Шаг | Решение | Причина |
-| --- | --- | --- | --- |
-| 2026-10-21 | — | Документация проекта хранится в `memory-bank/` | Единое место контекста для ИИ-агентов |
-| 2026-10-21 | 1 | Оставлены `cacheComponents` и partial prefetching из конфигурации стартового шаблона Next.js 16.4 | Соответствует «серверные компоненты по умолчанию»; динамические данные (cookie, search params) нужно оборачивать в `<Suspense>` |
+| Дата       | Шаг | Решение                                                                                           | Причина                                                                                                                         |
+| ---------- | --- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-21 | —   | Документация проекта хранится в `memory-bank/`                                                    | Единое место контекста для ИИ-агентов                                                                                           |
+| 2026-10-21 | 1   | Оставлены `cacheComponents` и partial prefetching из конфигурации стартового шаблона Next.js 16.4 | Соответствует «серверные компоненты по умолчанию»; динамические данные (cookie, search params) нужно оборачивать в `<Suspense>` |
 | 2026-10-21 | 1 | Корневой `AGENTS.md` (автоген Next.js) сохранён со ссылкой на `memory-bank/AGENTS.md` | Next пересоздаёт блок при запуске; источник правил проекта — `memory-bank/AGENTS.md` |
+| 2026-10-21 | 2 | В ESLint из `jsx-a11y` подключены только правила `recommended`, без повторной регистрации плагина | `eslint-config-next` уже регистрирует плагин; повтор даёт ошибку «Cannot redefine plugin» |
+| 2026-10-21 | 2 | Запрет импорта `data/` реализован через `no-restricted-imports` с паттернами `@/data/**`, `**/data/**`; отключён в `app/api/**` и `data/**` | Требование AGENTS.md 3.2: UI ходит к данным только через `lib/api/*` → `app/api/*` |
+| 2026-10-21 | 2 | `lint` запускается с `--max-warnings 0` | Критерий базовой проверки: линтер без ошибок и предупреждений |

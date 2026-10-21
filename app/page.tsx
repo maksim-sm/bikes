@@ -3,5 +3,5 @@ export default function HomePage() {
     <main>
       <h1>Bikes</h1>
     </main>
-  )
+  );
 }
