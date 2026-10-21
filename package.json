@@ -14,7 +14,7 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "e2e:smoke": "playwright test --grep @smoke",
-    "lighthouse": "node -e \"console.error('Lighthouse CI будет настроен на шаге 6'); process.exit(1)\""
+    "lighthouse": "next build && lhci autorun"
   },
   "dependencies": {
     "next": "16.4.2",
@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "^4",
     "@testing-library/dom": "^10.4.2",
