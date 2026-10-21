@@ -21,13 +21,13 @@
 
 ## Текущее состояние
 
-| Параметр                  | Значение                                        |
-| ------------------------- | ----------------------------------------------- |
-| Текущая фаза              | Фаза 0. Инфраструктура                          |
-| Последний выполненный шаг | Шаг 3. Настроить Vitest и React Testing Library |
-| Следующий шаг             | Шаг 4. Настроить Playwright и smoke-набор       |
-| Выполнено шагов           | 3 из 87                                         |
-| Блокеры                   | нет                                             |
+| Параметр                  | Значение                                  |
+| ------------------------- | ----------------------------------------- |
+| Текущая фаза              | Фаза 0. Инфраструктура                    |
+| Последний выполненный шаг | Шаг 4. Настроить Playwright и smoke-набор |
+| Следующий шаг             | Шаг 5. Подключить axe к Playwright        |
+| Выполнено шагов           | 4 из 87                                   |
+| Блокеры                   | нет                                       |
 
 ---
 
@@ -38,7 +38,7 @@
 - [x] Шаг 1. Инициализировать проект
 - [x] Шаг 2. Настроить линтер и форматирование
 - [x] Шаг 3. Настроить Vitest и React Testing Library
-- [ ] Шаг 4. Настроить Playwright и smoke-набор
+- [x] Шаг 4. Настроить Playwright и smoke-набор
 - [ ] Шаг 5. Подключить axe к Playwright
 - [ ] Шаг 6. Подключить Lighthouse CI
 - [ ] Шаг 7. Настроить CI
@@ -183,6 +183,15 @@
 - Отклонения: <нет | что и почему отличается от плана/ДД>
 - Заметки для следующего шага: <нет | что важно знать>
 ```
+
+### 2026-10-21 — Шаг 4. Настроить Playwright и smoke-набор
+
+- Статус: выполнен (WebKit в песочнице не проверен, см. отклонения)
+- Сделано: `@playwright/test` с проектами `chromium-desktop` (1280×800), `chromium-mobile` (375×812, сенсорный ввод, `isMobile`) и `webkit-smoke` (только тесты с тегом `@smoke`); `webServer` поднимает приложение сам: `pnpm build && pnpm start` в CI, `pnpm dev` локально (с `reuseExistingServer`); общий хелпер `e2e/helpers/test.ts` — фикстура `page`, которая падает при `console.error`, `pageerror` и ответах 4xx/5xx; smoke-тест главной страницы (H1 виден); скрипты `e2e` и `e2e:smoke`; `playwright-report/` и `test-results/` добавлены в `.gitignore`.
+- Файлы: `playwright.config.ts`, `e2e/helpers/test.ts`, `e2e/smoke/home.spec.ts`, `package.json`, `pnpm-lock.yaml`, `.gitignore`, `next.config.ts`.
+- Тесты: smoke-тест главной проходит в `chromium-desktop` и `chromium-mobile`. `pnpm typecheck`, `pnpm lint`, `pnpm format:check` проходят.
+- Отклонения: (1) в `next.config.ts` `partialPrefetching` переключён с `true` на `false`: в Next 16.4.2 dev-режим с этим флагом на каждый запрос пишет в консоль ошибку `Could not validate instant ...` (причина в серверном логе: `Could not find the module ...instant-validation/boundary.js#PlaceValidationBoundaryBelowThisLevel in the React Client Manifest`); это внутренняя dev-проверка Next, код проекта ни при чём, с `false` ошибка исчезает; `cacheComponents` остаётся включённым; вернуть `true` после обновления Next или проверить на production-сборке; (2) проект `webkit-smoke` в песочнице не запускается: в окружении нет системных библиотек WebKit (gstreamer, flite и др.), Playwright официально поддерживает только Ubuntu/Debian; конфигурация написана, проверка WebKit — в CI на шаге 7; (3) для запуска Chromium в песочнице через `dnf` доустановлены системные библиотеки (nss, atk, libdrm и др.) — это окружение, а не зависимости проекта; (4) `pnpm build` не запускался повторно: менялся только флаг dev-проверки, сборка Next от него не зависит.
+- Заметки для следующего шага: все e2e-тесты импортируют `test` и `expect` из `e2e/helpers/test.ts`, а не из `@playwright/test`, иначе проверка консоли и 5xx не сработает; теги `@smoke` в названии теста включают тест в WebKit-проект; при добавлении страниц добавлять их в smoke-набор. Axe (шаг 5) класть в `e2e/a11y`.
 
 ### 2026-10-21 — Шаг 3. Настроить Vitest и React Testing Library
 
